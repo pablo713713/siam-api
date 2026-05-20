@@ -35,6 +35,52 @@ export class ProductosService {
     };
   }
 
+  async searchByCodigo(searchDto: SearchProductoDto) {
+    const { q, limit } = searchDto;
+    const take = limit || 20;
+
+    const query = this.productoRepository.createQueryBuilder('producto')
+      .leftJoin('PROV_PRO', 'pp', 'pp.ID_PRO = producto.ID_PRO')
+      .select([
+        'producto.ID_PRO as id',
+        'producto.COD_PRO as codPro',
+        'producto.DESC_PRO as descPro',
+        'producto.ESTADO as estado',
+        'producto.CODIGO as codigo',
+        'MAX(pp.COD_FAB) as codFab',
+        'MAX(pp.barra) as barra',
+        'MAX(pp.COD_ANT) as codAnt'
+      ])
+      .where('producto.COD_PRO LIKE :q', { q: `%${q}%` })
+      .orWhere('producto.CODIGO LIKE :q', { q: `%${q}%` })
+      .orWhere('pp.COD_FAB LIKE :q', { q: `%${q}%` })
+      .orWhere('pp.barra LIKE :q', { q: `%${q}%` })
+      .orWhere('pp.COD_ANT LIKE :q', { q: `%${q}%` })
+      .groupBy('producto.ID_PRO')
+      .addGroupBy('producto.COD_PRO')
+      .addGroupBy('producto.DESC_PRO')
+      .addGroupBy('producto.ESTADO')
+      .addGroupBy('producto.CODIGO')
+      .orderBy('producto.DESC_PRO', 'ASC')
+      .limit(take);
+
+    const items = await query.getRawMany();
+
+    return {
+      data: items.map(item => ({
+        id: item.id,
+        codPro: item.codPro,
+        descPro: item.descPro,
+        estado: item.estado,
+        codigo: item.codigo,
+        codFab: item.codFab,
+        barra: item.barra,
+        codAnt: item.codAnt
+      })),
+      limit: take,
+    };
+  }
+
   async getHistorialIngresos(id: number): Promise<HistorialIngresoDto[]> {
     const producto = await this.productoRepository.findOne({ where: { id } });
     if (!producto) {

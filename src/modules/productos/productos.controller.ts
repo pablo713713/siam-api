@@ -11,6 +11,11 @@ export class ProductosController {
     return this.productosService.search(searchDto);
   }
 
+  @Get('search/codigo')
+  async searchByCodigo(@Query() searchDto: SearchProductoDto) {
+    return this.productosService.searchByCodigo(searchDto);
+  }
+
   @Get(':id/ingresos')
   async getIngresos(@Param('id', ParseIntPipe) id: number) {
     return this.productosService.getHistorialIngresos(id);
