@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Brackets } from 'typeorm';
 import { Producto } from './entities/producto.entity';
 import { SearchProductoDto } from './dto/search-producto.dto';
 import { HistorialIngresoDto } from './dto/ingreso.dto';
 import { StockSucursalDto } from './dto/stock.dto';
 import { HistorialSalidaDto } from './dto/salida.dto';
 import { KardexDto } from './dto/kardex.dto';
+import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 
 @Injectable()
 export class ProductosService {
@@ -78,6 +79,95 @@ export class ProductosService {
         codAnt: item.codAnt
       })),
       limit: take,
+    };
+  }
+
+  async searchAdvanced(searchDto: AdvancedSearchProductoDto) {
+    const { q, codigo, page = 1, limit = 20 } = searchDto;
+    const skip = (page - 1) * limit;
+
+    const query = this.productoRepository.createQueryBuilder('producto')
+      .leftJoin('PROV_PRO', 'pp', 'pp.ID_PRO = producto.ID_PRO');
+
+    if (q) {
+      query.andWhere(new Brackets(qb => {
+        qb.where('producto.DESC_PRO LIKE :q', { q: `%${q}%` })
+          .orWhere('producto.COD_PRO LIKE :q', { q: `%${q}%` });
+      }));
+    }
+
+    if (codigo) {
+      query.andWhere(new Brackets(qb => {
+        qb.where('producto.CODIGO LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.COD_FAB LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.barra LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.COD_ANT LIKE :codigo', { codigo: `%${codigo}%` });
+      }));
+    }
+
+    query.select([
+      'producto.ID_PRO as id',
+      'producto.COD_PRO as codPro',
+      'producto.DESC_PRO as descPro',
+      'producto.ESTADO as estado',
+      'producto.CODIGO as codigo',
+      'MAX(pp.COD_FAB) as codFab',
+      'MAX(pp.barra) as barra',
+      'MAX(pp.COD_ANT) as codAnt'
+    ])
+    .groupBy('producto.ID_PRO')
+    .addGroupBy('producto.COD_PRO')
+    .addGroupBy('producto.DESC_PRO')
+    .addGroupBy('producto.ESTADO')
+    .addGroupBy('producto.CODIGO')
+    .orderBy('producto.DESC_PRO', 'ASC')
+    .offset(skip)
+    .limit(limit);
+
+    const items = await query.getRawMany();
+
+    const countQuery = this.productoRepository.createQueryBuilder('producto')
+      .select('COUNT(DISTINCT producto.ID_PRO)', 'total');
+
+    if (q || codigo) {
+      countQuery.leftJoin('PROV_PRO', 'pp', 'pp.ID_PRO = producto.ID_PRO');
+    }
+
+    if (q) {
+      countQuery.andWhere(new Brackets(qb => {
+        qb.where('producto.DESC_PRO LIKE :q', { q: `%${q}%` })
+          .orWhere('producto.COD_PRO LIKE :q', { q: `%${q}%` });
+      }));
+    }
+
+    if (codigo) {
+      countQuery.andWhere(new Brackets(qb => {
+        qb.where('producto.CODIGO LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.COD_FAB LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.barra LIKE :codigo', { codigo: `%${codigo}%` })
+          .orWhere('pp.COD_ANT LIKE :codigo', { codigo: `%${codigo}%` });
+      }));
+    }
+
+    const { total } = await countQuery.getRawOne();
+
+    return {
+      data: items.map(item => ({
+        id: item.id,
+        codPro: item.codPro,
+        descPro: item.descPro,
+        estado: item.estado,
+        codigo: item.codigo,
+        codFab: item.codFab,
+        barra: item.barra,
+        codAnt: item.codAnt
+      })),
+      meta: {
+        total: Number(total || 0),
+        page,
+        limit,
+        totalPages: Math.ceil(Number(total || 0) / limit),
+      }
     };
   }
 
