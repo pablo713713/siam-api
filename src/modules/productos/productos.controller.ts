@@ -20,4 +20,14 @@ export class ProductosController {
   async getStock(@Param('id', ParseIntPipe) id: number) {
     return this.productosService.getStockSucursal(id);
   }
+
+  @Get(':id/salidas')
+  async getSalidas(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.getHistorialSalidas(id);
+  }
+
+  @Get(':id/kardex')
+  async getKardex(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.getKardex(id);
+  }
 }
