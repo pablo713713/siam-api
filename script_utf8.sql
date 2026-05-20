@@ -1,0 +1,8602 @@
+﻿USE [BDSIAM]
+GO
+/****** Objeto: Table [dbo].[PROVEEDOR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PROVEEDOR](
+	[COD_PROV] [varchar](6) NOT NULL,
+	[NOM_PROV] [varchar](30) NOT NULL,
+	[TEL_PROV] [varchar](20) NULL,
+	[E_MAIL] [varchar](60) NULL,
+	[URL] [varchar](100) NULL,
+	[LOGO] [image] NULL,
+	[COD_PAIS] [varchar](3) NOT NULL,
+	[COD_EMP] [varchar](3) NOT NULL,
+	[cod_firma] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_PROV] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PRODUCTO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PRODUCTO](
+	[COD_PRO] [varchar](50) NULL,
+	[DESC_PRO] [varchar](150) NOT NULL,
+	[UNIDAD] [varchar](3) NULL,
+	[ESTADO] [varchar](1) NULL,
+	[IMAGEN] [image] NULL,
+	[FEC_INGRESO] [datetime] NULL,
+	[MODIFICADO] [varchar](1) NULL,
+	[COD_EMP] [varchar](3) NOT NULL,
+	[COD_MOD] [smallint] NOT NULL,
+	[CODIGO] [varchar](4) NOT NULL,
+	[ID_PRO] [int] IDENTITY(1,1) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ID_PRO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [FK_ProEmpunique_123] UNIQUE NONCLUSTERED 
+(
+	[COD_PRO] ASC,
+	[COD_EMP] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PROV_PRO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PROV_PRO](
+	[COD_PROV] [varchar](6) NOT NULL,
+	[COD_PRO] [varchar](50) NULL,
+	[COD_FAB] [varchar](50) NULL,
+	[PLIS_PRO] [money] NULL,
+	[PMAY_PRO] [money] NULL,
+	[PMIN_PRO] [money] NULL,
+	[ENVASE] [image] NULL,
+	[PVENDEDOR] [money] NULL,
+	[COD_IMP] [varchar](13) NULL,
+	[CIF_CBBA] [money] NULL,
+	[BAJA] [varchar](1) NOT NULL,
+	[FECHA_ACTUALIZADA] [datetime] NOT NULL,
+	[COD_ANT] [varchar](50) NOT NULL,
+	[DATO1] [varchar](50) NOT NULL,
+	[DATO2] [varchar](50) NOT NULL,
+	[DATO3] [varchar](50) NOT NULL,
+	[DATO4] [varchar](50) NOT NULL,
+	[DATO5] [varchar](50) NOT NULL,
+	[DATO6] [varchar](50) NOT NULL,
+	[PLIS_BS] [money] NOT NULL,
+	[PMIN_BS] [money] NOT NULL,
+	[PMAY_BS] [money] NOT NULL,
+	[COMENTARIO] [varchar](256) NOT NULL,
+	[barra] [varchar](200) NOT NULL,
+	[imgBarra] [image] NULL,
+	[swBarra] [varchar](1) NOT NULL,
+	[activa_factor] [varchar](1) NOT NULL,
+	[USUARIO_DESCARGA] [varchar](30) NOT NULL,
+	[pOferta] [smallmoney] NULL,
+	[p_fob] [smallmoney] NULL,
+	[CIFF] [smallmoney] NULL,
+	[fecha_creacion] [datetime] NULL,
+	[ID_FAB] [int] IDENTITY(1,1) NOT NULL,
+	[ID_PRO] [int] NOT NULL,
+	[pOfertaSus] [smallmoney] NOT NULL,
+	[CIFFSus] [smallmoney] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_PEDIDO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_PEDIDO](
+	[COD_PEDIDO] [varchar](16) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANT_SOLICITADO] [int] NOT NULL,
+	[CANT_AUTORIZADO] [int] NOT NULL,
+	[CANT_ENVIADO] [int] NOT NULL,
+	[OBS] [text] NULL,
+	[baja] [varchar](1) NOT NULL,
+	[NRO] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [UK_ID_CODP_123] UNIQUE NONCLUSTERED 
+(
+	[COD_PEDIDO] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[SUC_PRO_PROV] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SUC_PRO_PROV](
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NULL,
+	[STOCK_MIN] [int] NULL,
+	[cantidad_virtual] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [uk_suc_id_123] UNIQUE NONCLUSTERED 
+(
+	[COD_SUC] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__SUC_PRO_PROV__37FA4C37] UNIQUE NONCLUSTERED 
+(
+	[COD_SUC] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PEDIDO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PEDIDO](
+	[COD_PEDIDO] [varchar](16) NOT NULL,
+	[COD_SUC_ORI] [varchar](5) NOT NULL,
+	[COD_SUC_DES] [varchar](5) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[NOM_SOLICITANTE] [varchar](150) NOT NULL,
+	[FECHA] [datetime] NULL,
+	[OBS] [text] NULL,
+	[MEDIO_PEDIDO] [varchar](10) NOT NULL,
+	[ESTADO] [varchar](2) NOT NULL,
+	[tipo_pedido] [varchar](20) NOT NULL,
+	[cod_cli] [smallint] NOT NULL,
+	[FFE] [datetime] NULL,
+	[GRADO_IMPORTANCIA] [varchar](7) NOT NULL,
+	[FECHA_ENVIO] [datetime] NULL,
+	[COD_USU_VAL] [varchar](7) NOT NULL,
+	[FECHA_VALIDACION] [datetime] NULL,
+	[OBS_VAL] [text] NULL,
+	[FECHA_ELAVORACION] [datetime] NULL,
+	[COD_USU_RECEPCION] [varchar](7) NOT NULL,
+	[cod_documento] [varchar](50) NOT NULL,
+	[saw_envio] [char](1) NOT NULL,
+	[saw_valida] [char](1) NOT NULL,
+ CONSTRAINT [PK__PEDIDO__41049384] PRIMARY KEY CLUSTERED 
+(
+	[COD_PEDIDO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[SUCURSAL] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SUCURSAL](
+	[COD_SUC] [varchar](5) NOT NULL,
+	[NOM_SUC] [varchar](50) NOT NULL,
+	[DIR_SUC] [varchar](100) NULL,
+	[TEL_SUC] [varchar](20) NULL,
+	[E_MAIL] [varchar](80) NULL,
+	[COD_CIU] [varchar](5) NOT NULL,
+	[COD_EMP] [varchar](3) NOT NULL,
+	[FAX] [varchar](15) NULL,
+	[estSuc] [varchar](2) NOT NULL,
+	[ccb] [varchar](2) NOT NULL,
+	[virtual] [int] NOT NULL,
+	[credito] [varchar](2) NOT NULL,
+	[cc] [varchar](2) NOT NULL,
+	[descuento] [money] NOT NULL,
+	[cod_usu_val] [varchar](7) NOT NULL,
+	[factor_plista] [money] NOT NULL,
+	[factor_pmenor] [money] NOT NULL,
+	[factor_pmayor] [money] NOT NULL,
+	[desc_credito] [money] NOT NULL,
+	[total_credito] [money] NOT NULL,
+	[cod_usu_val_cre] [varchar](7) NOT NULL,
+	[fecha_creacion] [datetime] NOT NULL,
+	[suc_validar] [varchar](2) NOT NULL,
+	[ver_cantidad] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_SUC] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[USUARIO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[USUARIO](
+	[COD_USU] [varchar](7) NOT NULL,
+	[NOM_USU] [varchar](30) NOT NULL,
+	[AP_USU] [varchar](50) NULL,
+	[ALIAS] [varchar](30) NOT NULL,
+	[CONTRASEÑA] [varchar](100) NOT NULL,
+	[DIR_USU] [varchar](60) NULL,
+	[TEL_USU] [varchar](10) NULL,
+	[CEL_USU] [varchar](10) NULL,
+	[FEI_USU] [datetime] NULL,
+	[SUELDO] [numeric](5, 2) NULL,
+	[FOTO] [image] NULL,
+	[COD_CAR] [varchar](3) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[baja] [varchar](4) NOT NULL,
+	[validar] [int] NOT NULL,
+	[INI] [varchar](2) NOT NULL,
+	[fecha_cambio] [datetime] NOT NULL,
+	[ver_siam] [varchar](50) NOT NULL,
+	[ver_win] [varchar](255) NULL,
+	[nro_core] [varchar](150) NULL,
+	[arquitectura] [varchar](150) NULL,
+	[fecha_ingreso] [datetime] NOT NULL,
+	[ver_oferta] [int] NOT NULL,
+	[val_credito] [int] NOT NULL,
+	[ver_CIFF] [int] NOT NULL,
+	[email] [varchar](50) NULL,
+	[val_bar] [int] NOT NULL,
+	[in_sip] [int] NOT NULL,
+	[updatePrice] [int] NOT NULL,
+	[validarCC] [int] NOT NULL,
+	[val_venta] [int] NOT NULL,
+	[addDiscount] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_USU] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[ALIAS] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: View [dbo].[vPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE VIEW [dbo].[vPedido]
+AS
+SELECT p.COD_PEDIDO, s.NOM_SUC AS suc_ori, s2.NOM_SUC AS suc_des, dp.NRO, dp.ID_FAB, dp.COD_FAB, dp.CANT_SOLICITADO, spp1.CANTIDAD AS existencia, spp2.CANTIDAD AS cant_des, pv.NOM_PROV, pt.DESC_PRO, 
+                  dp.CANT_AUTORIZADO, dp.CANT_ENVIADO, u.NOM_USU, u.AP_USU
+FROM     dbo.PEDIDO AS p INNER JOIN
+                  dbo.DET_PEDIDO AS dp ON p.COD_PEDIDO = dp.COD_PEDIDO INNER JOIN
+                  dbo.SUC_PRO_PROV AS spp1 ON dp.ID_FAB = spp1.ID_FAB AND p.COD_SUC_ORI = spp1.COD_SUC INNER JOIN
+                  dbo.SUC_PRO_PROV AS spp2 ON dp.ID_FAB = spp2.ID_FAB AND p.COD_SUC_DES = spp2.COD_SUC INNER JOIN
+                  dbo.PROV_PRO AS pp ON dp.ID_FAB = pp.ID_FAB INNER JOIN
+                  dbo.PROVEEDOR AS pv ON pp.COD_PROV = pv.COD_PROV INNER JOIN
+                  dbo.PRODUCTO AS pt ON pp.ID_PRO = pt.ID_PRO INNER JOIN
+                  dbo.SUCURSAL AS s ON s.COD_SUC = p.COD_SUC_ORI INNER JOIN
+                  dbo.SUCURSAL AS s2 ON s2.COD_SUC = p.COD_SUC_DES INNER JOIN
+                  dbo.USUARIO AS u ON p.COD_USU = u.COD_USU
+GO
+/****** Objeto: Table [dbo].[__orm__] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[__orm__](
+	[databaseguid] [varchar](100) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[ACTUALIZACION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ACTUALIZACION](
+	[COD_ACTUALIZACION] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[FECHA] [datetime] NULL,
+	[ESTADO] [varchar](1) NOT NULL,
+	[SQL] [ntext] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_ACTUALIZACION] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[analisis] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[analisis](
+	[cod_cc] [int] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[obs] [varchar](256) NULL,
+	[fecha] [datetime] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_cc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[AUTOMOVIL] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[AUTOMOVIL](
+	[ID_AUTO] [int] IDENTITY(101,1) NOT NULL,
+	[DESCRIPCION] [varchar](254) NULL,
+	[YEAR_MODEL] [varchar](50) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[ESTADO] [int] NULL,
+	[ID_MOTOR] [int] NOT NULL,
+	[ID_MODELO] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ID_AUTO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[ID_MOTOR] ASC,
+	[ID_MODELO] ASC,
+	[YEAR_MODEL] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[BANCO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[BANCO](
+	[cod_BANCO] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[NOM_BANCO] [varchar](70) NOT NULL,
+	[BAJA] [varchar](2) NOT NULL,
+	[DIRECCION] [varchar](255) NULL,
+	[FONO] [varchar](50) NULL,
+	[URL] [varchar](255) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_BANCO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CAMBIO_DOLAR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CAMBIO_DOLAR](
+	[FECHA] [datetime] NOT NULL,
+	[TIPO_CAMBIO] [numeric](5, 2) NOT NULL,
+	[cOD_USU] [varchar](7) NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[FECHA] ASC,
+	[TIPO_CAMBIO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CAMBIO_DOLAR_PARALELO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CAMBIO_DOLAR_PARALELO](
+	[FECHA] [datetime] NOT NULL,
+	[FECHA_INGRESO] [datetime] NOT NULL,
+	[TIPO_CAMBIO] [numeric](5, 2) NOT NULL,
+	[COD_EMP] [varchar](3) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[FECHA] ASC,
+	[COD_EMP] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CARACTERISTICAS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CARACTERISTICAS](
+	[COD_PRO] [varchar](50) NULL,
+	[DESCRIPCION] [varchar](100) NOT NULL,
+	[MEDIDA] [varchar](15) NOT NULL,
+	[BAJA] [varchar](1) NOT NULL,
+	[ID_PRO] [int] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CARGO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CARGO](
+	[COD_CAR] [varchar](3) NOT NULL,
+	[DESC_CAR] [varchar](30) NOT NULL,
+	[PRIORIDAD] [smallint] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_CAR] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CIERRE_CAJA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CIERRE_CAJA](
+	[cod_cc] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[FECHA_INI] [datetime] NULL,
+	[FECHA_FIN] [datetime] NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[OBS] [varchar](1024) NULL,
+	[VENTA] [money] NULL,
+	[VENTA_DCH] [money] NULL,
+	[GASTO] [money] NULL,
+	[DEVOLUCION] [money] NULL,
+	[COMPRA_LOCAL] [money] NULL,
+	[CREDITO] [money] NULL,
+	[DEV_CREDITO] [money] NULL,
+	[TOTAL_SUS] [money] NULL,
+	[TOTAL_BS] [money] NULL,
+	[DOLAR] [money] NULL,
+	[POR_DESCUENTO] [float] NOT NULL,
+	[integridad] [varchar](3) NOT NULL,
+	[CREDITO_COBRAR] [money] NULL,
+	[saw] [char](1) NOT NULL,
+	[CREDITO_FOB] [money] NULL,
+	[fecha_asiento] [datetime] NOT NULL,
+	[saldo] [money] NOT NULL,
+	[saldo_anterior] [money] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_cc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CIERRE_CAJA3] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CIERRE_CAJA3](
+	[FECHA_INI] [datetime] NULL,
+	[FECHA_FIN] [datetime] NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[OBS] [varchar](256) NULL,
+	[VENTA] [money] NULL,
+	[VENTA_DCH] [money] NULL,
+	[GASTO] [money] NULL,
+	[DEVOLUCION] [money] NULL,
+	[COMPRA_LOCAL] [money] NULL,
+	[TOTAL_SUS] [money] NULL,
+	[TOTAL_BS] [money] NULL,
+	[DOLAR] [money] NULL,
+	[CREDITO] [money] NOT NULL,
+	[DEV_CREDITO] [money] NOT NULL,
+	[POR_DESCUENTO] [float] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CIUDAD] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CIUDAD](
+	[COD_CIU] [varchar](5) NOT NULL,
+	[NOM_CIU] [varchar](40) NOT NULL,
+	[DEPTO] [varchar](15) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_CIU] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CLIENTE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CLIENTE](
+	[cod_cli] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[NOM_CLI] [varchar](30) NOT NULL,
+	[APE_CLI] [varchar](50) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[FONO] [varchar](15) NOT NULL,
+	[FECHA_INGRESO] [datetime] NULL,
+	[ANTECEDENTE] [varchar](150) NULL,
+	[DESCUENTO] [numeric](7, 2) NULL,
+	[CREDITO_MAXIMO] [money] NULL,
+	[DIRECCION_TIENDA] [varchar](150) NULL,
+	[FOTO] [image] NULL,
+	[NUM_CI_NIT] [varchar](20) NOT NULL,
+	[CI_NIT] [varchar](3) NOT NULL,
+	[RAZON_SOCIAL] [varchar](150) NOT NULL,
+	[TEL_DOM] [varchar](20) NOT NULL,
+	[CEL] [varchar](20) NOT NULL,
+	[DOMICILIO] [varchar](255) NOT NULL,
+	[NOM_COLAB] [varchar](30) NOT NULL,
+	[AP_COLAB] [varchar](50) NOT NULL,
+	[codigo] [varchar](10) NOT NULL,
+	[celular] [varchar](50) NULL,
+	[email] [varchar](50) NULL,
+	[ciudad] [varchar](50) NULL,
+	[baja] [varchar](2) NOT NULL,
+ CONSTRAINT [PK__CLIENTE__3A81B327] PRIMARY KEY CLUSTERED 
+(
+	[cod_cli] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CLIENTE_CONSIGNACION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CLIENTE_CONSIGNACION](
+	[codigo] [varchar](10) NOT NULL,
+	[Tipo_cliente] [varchar](50) NOT NULL,
+	[consignacion] [varchar](50) NOT NULL,
+	[Calificacion] [varchar](2) NOT NULL,
+	[tiempo] [int] NOT NULL,
+ CONSTRAINT [PK_CLIENTE_CONSIGNACION] PRIMARY KEY CLUSTERED 
+(
+	[codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[codigoBarra] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[codigoBarra](
+	[cod_documento] [varchar](50) NOT NULL,
+	[fecha] [datetime] NULL,
+	[suc_ori] [varchar](5) NOT NULL,
+	[suc_des] [varchar](5) NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[cod_interesado] [varchar](7) NOT NULL,
+	[cod_pedido] [varchar](50) NOT NULL,
+	[estado] [varchar](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_documento] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[COMPRA_LOCAL] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[COMPRA_LOCAL](
+	[COD_COM] [varchar](9) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[TOTAL] [numeric](5, 2) NULL,
+	[OBS] [varchar](256) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_COM] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[Cotizacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Cotizacion](
+	[cod_cotizacion] [varchar](12) NOT NULL,
+	[nom_cotizacion] [varchar](50) NOT NULL,
+	[desc_cotizacion] [varchar](50) NOT NULL,
+	[fecha] [datetime] NULL,
+	[total] [money] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_cotizacion] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[nom_cotizacion] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[cotizacion_cliente] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cotizacion_cliente](
+	[cod_cotizacion] [varchar](12) NOT NULL,
+	[nro_cotizacion] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[fecha] [datetime] NULL,
+	[obs] [varchar](250) NULL,
+	[baja] [smallint] NOT NULL,
+	[p_unit] [money] NOT NULL,
+	[p_juego] [money] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_cotizacion] ASC,
+	[nro_cotizacion] ASC,
+	[cod_fab] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[cotizacion_proforma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cotizacion_proforma](
+	[cod_cotizacion] [varchar](12) NOT NULL,
+	[cod_proforma] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[fecha] [datetime] NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[cod_cliente] [smallint] NOT NULL,
+	[total] [money] NOT NULL,
+	[obs] [varchar](256) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_proforma] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[cod_cotizacion] ASC,
+	[cod_proforma] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_CLI] [smallint] NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[FEC_INICIO] [datetime] NOT NULL,
+	[FEC_FIN] [datetime] NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[SALDO] [money] NOT NULL,
+	[ESTADO] [varchar](2) NOT NULL,
+	[DOLAR] [money] NOT NULL,
+	[SALDO_FAVOR] [money] NOT NULL,
+	[OBS] [text] NULL,
+	[DevCedito] [money] NOT NULL,
+	[fecha_dev] [datetime] NOT NULL,
+	[cod_usu_desc] [varchar](7) NOT NULL,
+	[descuento] [money] NOT NULL,
+	[obs_desc] [varchar](150) NULL,
+	[Tipo_venta] [varchar](15) NOT NULL,
+	[intervalo] [int] NOT NULL,
+	[nro_pago] [int] NOT NULL,
+	[fecha_desc] [datetime] NOT NULL,
+	[fecha_val] [datetime] NOT NULL,
+	[usuario_val] [varchar](30) NOT NULL,
+	[cod_nota] [varchar](18) NOT NULL,
+	[dolarParalelo] [money] NOT NULL,
+ CONSTRAINT [PK__CREDITO__50E5F592] PRIMARY KEY CLUSTERED 
+(
+	[COD_CRE] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[CUENTA_BANCO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[CUENTA_BANCO](
+	[NRO_CUENTA] [varchar](150) NOT NULL,
+	[COD_BANCO] [smallint] NOT NULL,
+	[COD_CUENTA] [smallint] NOT NULL,
+	[FECHA_APERTURA] [datetime] NOT NULL,
+	[TIPO_MONEDA] [varchar](15) NOT NULL,
+	[TOTAL] [money] NULL,
+	[BAJA] [varchar](2) NOT NULL,
+	[OBS] [varchar](255) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[NRO_CUENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DEFECTUOSO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DEFECTUOSO](
+	[COD_FAB] [varchar](50) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[CANTIDAD] [smallint] NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[OBS] [varchar](256) NULL,
+	[ESTADO] [varchar](1) NOT NULL,
+	[ID_FAB] [int] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DEPOSITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DEPOSITO](
+	[NRO_CUENTA] [varchar](150) NOT NULL,
+	[COD_USUARIO] [varchar](7) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[MONTO_BS] [money] NULL,
+	[MONTO_sus] [money] NULL,
+	[cotizacion_dolar] [money] NOT NULL,
+	[OBS] [varchar](255) NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[deposito_ub] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[deposito_ub](
+	[cod_cc] [int] NOT NULL,
+	[cod_ub] [int] NOT NULL,
+	[monto] [money] NULL,
+	[fecha] [datetime] NULL,
+	[nro_recibo] [varchar](50) NULL,
+	[foto] [image] NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[cod_usu_dep] [varchar](7) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[det_analisis] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[det_analisis](
+	[cod_cc] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[cantidad] [int] NOT NULL,
+	[cant_calculada] [int] NOT NULL,
+	[Tipo] [varchar](10) NULL,
+	[fecha] [datetime] NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_cc] ASC,
+	[cod_fab] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_COMPRA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_COMPRA](
+	[COD_COM] [varchar](9) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [smallint] NULL,
+	[PRECIO_U] [numeric](5, 2) NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[COD_COM] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[det_cotizacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[det_cotizacion](
+	[cod_cotizacion] [varchar](12) NOT NULL,
+	[nro_cotizacion] [int] NOT NULL,
+	[descripcion] [varchar](50) NOT NULL,
+	[fecha] [datetime] NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_cotizacion] ASC,
+	[nro_cotizacion] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NOT NULL,
+	[PRECIO_CRE] [money] NOT NULL,
+	[DESCUENTO] [money] NOT NULL,
+	[desc_autorizado] [smallmoney] NOT NULL,
+	[cod_usu_auto] [varchar](7) NOT NULL,
+	[nro_registro] [int] NOT NULL,
+	[p_fob] [money] NOT NULL,
+	[existencia] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [UK_dc_id_codc_123] UNIQUE NONCLUSTERED 
+(
+	[ID_FAB] ASC,
+	[COD_CRE] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_DEVOLUCION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_DEVOLUCION](
+	[COD_VENTA] [varchar](18) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [smallint] NULL,
+	[TOTAL] [smallmoney] NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [uk_dd_id_cod_123] UNIQUE NONCLUSTERED 
+(
+	[COD_VENTA] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_DEVOLUCION_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_DEVOLUCION_CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [smallint] NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[COD_DEVC] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [uk_ddc_id_codd_123] UNIQUE NONCLUSTERED 
+(
+	[COD_DEVC] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_IMPORTACION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_IMPORTACION](
+	[COD_IMP] [varchar](11) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NULL,
+	[PREC_UNIT] [money] NULL,
+	[TOTAL] [money] NULL,
+	[NRO] [int] NOT NULL,
+	[PREC_LISTA] [money] NOT NULL,
+	[PREC_MIN] [money] NOT NULL,
+	[PREC_MAY] [money] NOT NULL,
+	[PLIS_BS] [money] NOT NULL,
+	[PMIN_BS] [money] NOT NULL,
+	[PMAY_BS] [money] NOT NULL,
+	[cant_verificado] [int] NULL,
+	[p_oferta] [money] NOT NULL,
+	[existencia] [int] NOT NULL,
+	[CIFF] [money] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+	[p_ofertaSus] [money] NOT NULL,
+	[CIFF_Sus] [money] NOT NULL,
+ CONSTRAINT [UK_ID_IMP_123] UNIQUE NONCLUSTERED 
+(
+	[COD_IMP] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_INVENTARIO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_INVENTARIO](
+	[COD_INV] [varchar](10) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NULL,
+	[DIFERENCIA] [int] NULL,
+	[OBS] [varchar](256) NULL,
+	[cif] [money] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [PK_DET_INVENTARIO] PRIMARY KEY CLUSTERED 
+(
+	[COD_INV] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UK_ID_INV_123] UNIQUE NONCLUSTERED 
+(
+	[COD_INV] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__DET_INVENTARIO__4277DAAA] UNIQUE NONCLUSTERED 
+(
+	[COD_INV] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_PAGO_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_PAGO_CREDITO](
+	[N_PAGO] [varchar](15) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[N_PAGO] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_PROFORMA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_PROFORMA](
+	[COD_PROF] [varchar](18) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [smallint] NULL,
+	[PRECIO_VENTA] [smallmoney] NOT NULL,
+	[DESC_UNIT] [real] NOT NULL,
+	[NRO] [int] NOT NULL,
+	[desc_autorizado] [smallmoney] NOT NULL,
+	[cod_usu_auto] [varchar](7) NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [PK_DET_PROFORMA] PRIMARY KEY CLUSTERED 
+(
+	[COD_PROF] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [uk_dp_id_cod_123] UNIQUE NONCLUSTERED 
+(
+	[COD_PROF] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__DET_PROFORMA__02B25B50] UNIQUE NONCLUSTERED 
+(
+	[COD_PROF] ASC,
+	[COD_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_REMIE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_REMIE](
+	[COD_REM] [varchar](13) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NOT NULL,
+	[CIF_TOTAL] [money] NOT NULL,
+	[NRO] [int] NOT NULL,
+	[existencia] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+	[cant_ctrl] [int] NOT NULL,
+	[fecha] [datetime] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[obs] [varchar](256) NULL,
+	[ok] [bit] NOT NULL,
+ CONSTRAINT [uk_id_codr_123] UNIQUE NONCLUSTERED 
+(
+	[COD_REM] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_REMIS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_REMIS](
+	[COD_REM] [varchar](16) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [int] NOT NULL,
+	[CIF_TOTAL] [money] NOT NULL,
+	[OBS] [varchar](150) NULL,
+	[NRO] [int] NOT NULL,
+	[FOB_TOTAL] [money] NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [UK_ID_CODR_1234] UNIQUE NONCLUSTERED 
+(
+	[COD_REM] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DET_VENTA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DET_VENTA](
+	[COD_VENTA] [varchar](18) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[CANTIDAD] [smallint] NOT NULL,
+	[PRECIO_VENTA] [money] NOT NULL,
+	[PREC_LISTA] [money] NOT NULL,
+	[DOLAR] [smallmoney] NOT NULL,
+	[DESC_UNIT] [real] NOT NULL,
+	[NRO] [int] NOT NULL,
+	[PLIS_BS] [smallmoney] NOT NULL,
+	[p_fob] [money] NOT NULL,
+	[existencia] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [uk_dv_id_cod_1234] UNIQUE NONCLUSTERED 
+(
+	[COD_VENTA] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DEVOLUCION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DEVOLUCION](
+	[COD_VENTA] [varchar](18) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[OBS] [varchar](256) NULL,
+ CONSTRAINT [PK_DEVOLUCION] PRIMARY KEY CLUSTERED 
+(
+	[COD_VENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__DEVOLUCION__731B1205] UNIQUE NONCLUSTERED 
+(
+	[COD_VENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[DEVOLUCION_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DEVOLUCION_CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[OBS] [text] NULL,
+	[Tipo] [bit] NOT NULL,
+	[COD_DEVC] [int] IDENTITY(1,1) NOT NULL,
+ CONSTRAINT [PK__DEVOLUCION_CREDI__705EA0EB] PRIMARY KEY CLUSTERED 
+(
+	[COD_DEVC] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[EMPRESA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[EMPRESA](
+	[COD_EMP] [varchar](3) NOT NULL,
+	[NOM_EMP] [varchar](50) NOT NULL,
+	[NOM_ENC] [varchar](30) NOT NULL,
+	[AP_ENC] [varchar](50) NULL,
+	[E_MAIL] [varchar](100) NULL,
+	[URL] [varchar](150) NULL,
+	[FONO] [varchar](11) NULL,
+	[LOGO] [image] NULL,
+	[intervalo] [int] NOT NULL,
+	[descripcion_empresa] [varchar](150) NULL,
+	[Casa_Matriz] [varchar](250) NULL,
+	[actividad_empresa] [varchar](500) NULL,
+	[leyenda] [varchar](500) NULL,
+	[ley_empresa] [varchar](500) NULL,
+	[ciudad] [varchar](30) NULL,
+	[grupo] [int] NOT NULL,
+	[fecha_creacion] [datetime] NOT NULL,
+	[dolarParalelo] [int] NOT NULL,
+	[habilitarSaldo] [int] NOT NULL,
+	[checkDiscount] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_EMP] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[GASTOS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[GASTOS](
+	[FECHA] [datetime] NOT NULL,
+	[REF_CUENTA] [int] NOT NULL,
+	[MONTO2] [smallmoney] NOT NULL,
+	[OBS] [varchar](350) NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[COD_GASTO] [varchar](13) NOT NULL,
+	[imgNOTA] [image] NULL,
+	[fecha_imagen] [datetime] NOT NULL,
+	[tipo_archivo] [varchar](64) NULL,
+	[MONTO] [money] NOT NULL,
+ CONSTRAINT [PK__gastos__05F8DC4F] PRIMARY KEY CLUSTERED 
+(
+	[COD_GASTO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[GraficoResumenCIF] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[GraficoResumenCIF](
+	[FECHA] [datetime] NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[GRUPO] [varchar](1) NULL,
+	[TOTAL] [money] NOT NULL,
+	[Cantidad] [int] NOT NULL,
+	[CIF] [money] NOT NULL,
+ CONSTRAINT [PK_GraficoResumenCIF] PRIMARY KEY CLUSTERED 
+(
+	[FECHA] ASC,
+	[COD_SUC] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[HISTORIAL] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[HISTORIAL](
+	[FECHA] [datetime] NOT NULL,
+	[usuario_siam] [varchar](50) NOT NULL,
+	[usuario_pc] [varchar](90) NOT NULL,
+	[nombre_pc] [varchar](50) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[Hoja1] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Hoja1](
+	[CODIGO VOLVO] [nvarchar](255) NULL,
+	[CODIGO ORIGINAL] [nvarchar](255) NULL,
+	[DESCRIPCION] [nvarchar](255) NULL,
+	[MARCA] [nvarchar](255) NULL,
+	[CANTIDAD MATRIZ] [float] NULL,
+	[CANTIDAD LP] [float] NULL,
+	[CANTIDAD CBBA] [float] NULL,
+	[CANTIDAD SC] [float] NULL,
+	[PREC MAYOR] [float] NULL,
+	[PREC MENOR] [float] NULL,
+	[PREC LISTA] [float] NULL,
+	[cod_tipo] [varchar](4) NULL,
+	[cod_mod] [smallint] NULL,
+	[cod_emp] [varchar](3) NULL,
+	[prec_cif] [float] NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[HojaCif] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[HojaCif](
+	[CODIGO VOLVO] [nvarchar](255) NULL,
+	[CODIGO ORIGINAL] [nvarchar](255) NULL,
+	[MARCA] [nvarchar](255) NULL,
+	[DESCRIPCION] [nvarchar](255) NULL,
+	[UNIDAD] [nvarchar](255) NULL,
+	[CANTIDAD] [float] NULL,
+	[PREC# MAYOR] [float] NULL,
+	[PREC# MENOR] [float] NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[IMAGEN_PRODUCTO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[IMAGEN_PRODUCTO](
+	[COD_FAB] [varchar](50) NOT NULL,
+	[fecha] [datetime] NOT NULL,
+	[imagen] [image] NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[IMAGEN_REMISION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[IMAGEN_REMISION](
+	[COD_REM] [varchar](16) NOT NULL,
+	[nombre_archivo] [varchar](250) NOT NULL,
+	[imagen] [image] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[COD_REM] ASC,
+	[nombre_archivo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[IMPORTACION] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[IMPORTACION](
+	[COD_IMP] [varchar](11) NOT NULL,
+	[NUM_FACTURA] [varchar](11) NOT NULL,
+	[PROVEEDOR] [varchar](100) NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[FOB] [money] NULL,
+	[TIPO_CAMBIO_EURO] [money] NULL,
+	[FOB_COM] [money] NULL,
+	[SEG_FLETE] [money] NULL,
+	[GIRO_BANCARIO] [money] NULL,
+	[PUERTO] [money] NULL,
+	[TRANSPORTE] [money] NULL,
+	[TRAMITES_TOT] [money] NULL,
+	[pTRANSPORTE] [real] NULL,
+	[pTRANS_INTERNO] [real] NULL,
+	[pMANTENIMIENTO] [real] NULL,
+	[ESTADO] [varchar](1) NULL,
+	[FAC_DEP] [real] NULL,
+	[FAC_LIS] [real] NULL,
+	[OBS] [varchar](256) NULL,
+	[cOD_JM] [varchar](10) NULL,
+	[F_DOLAR] [real] NOT NULL,
+	[cOD_REMIE] [varchar](13) NULL,
+	[factor_alma] [money] NULL,
+	[cOD_prov] [varchar](6) NOT NULL,
+	[cOD_pedido] [int] NOT NULL,
+	[DOLAR_PARALELO] [smallmoney] NOT NULL,
+ CONSTRAINT [PK__IMPORTACION__34D3C6C9] PRIMARY KEY CLUSTERED 
+(
+	[COD_IMP] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[ingresoCodigoBarra] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ingresoCodigoBarra](
+	[nro] [smallint] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[id_fab] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[cod_barra] [varchar](200) NOT NULL,
+	[cod_documento] [varchar](50) NOT NULL,
+	[preciot] [smallmoney] NOT NULL,
+	[cantidad] [smallint] NOT NULL,
+	[tipo] [varchar](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_fab] ASC,
+	[cod_documento] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[INVENTARIO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[INVENTARIO](
+	[COD_INV] [varchar](10) NOT NULL,
+	[FEC_INV] [datetime] NULL,
+	[OBS] [varchar](256) NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[ESTADO] [bit] NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[codigo] [varchar](4) NOT NULL,
+	[cod_prov] [varchar](6) NOT NULL,
+ CONSTRAINT [PK__INVENTARIO__3F9B6DFF] PRIMARY KEY CLUSTERED 
+(
+	[COD_INV] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[itemsRezagados] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[itemsRezagados](
+	[cod_fab] [varchar](50) NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[tipo] [varchar](50) NOT NULL,
+	[codigo] [varchar](18) NOT NULL,
+	[fecha] [datetime] NULL,
+	[estado] [nchar](10) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_fab] ASC,
+	[cod_usu] ASC,
+	[codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[Kardex] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Kardex](
+	[COD_USU] [varchar](7) NULL,
+	[FECHA] [datetime] NULL,
+	[CODIGO] [varchar](20) NULL,
+	[COD_FAB] [varchar](50) NULL,
+	[DESCRIPCION] [varchar](70) NULL,
+	[ENTRADA] [int] NULL,
+	[SALIDA] [int] NULL,
+	[EXISTENCIA] [int] NULL,
+	[NOM_SUC] [varchar](30) NULL,
+	[CLIENTE] [varchar](100) NULL,
+	[USUARIO] [varchar](100) NULL,
+	[OBS] [varchar](1024) NULL,
+	[ID_FAB] [int] NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[log_SIAM] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[log_SIAM](
+	[codigo] [int] IDENTITY(101,1) NOT FOR REPLICATION NOT NULL,
+	[acction] [varchar](25) NOT NULL,
+	[cod_user] [varchar](7) NOT NULL,
+	[date_log] [datetime] NOT NULL,
+	[name_computer] [varchar](150) NOT NULL,
+	[ver_siam] [varchar](50) NOT NULL,
+	[ver_windows] [varchar](255) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[logProducto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[logProducto](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[kindActivity] [varchar](50) NULL,
+	[codigo] [varchar](50) NULL,
+	[descripcion] [varchar](500) NULL,
+	[fecha] [datetime] NULL,
+	[loginUser] [varchar](20) NULL,
+	[id_pro] [int] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[logProvPro] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[logProvPro](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[kindActivity] [varchar](50) NULL,
+	[cod_fab] [varchar](50) NULL,
+	[cod_pro] [varchar](50) NULL,
+	[comentario] [varchar](256) NULL,
+	[cod_prov] [varchar](6) NULL,
+	[cif_cbba] [money] NULL,
+	[plis_bs] [money] NULL,
+	[pmin_bs] [money] NULL,
+	[pmay_bs] [money] NULL,
+	[pOferta] [smallmoney] NULL,
+	[p_fob] [smallmoney] NULL,
+	[fecha] [datetime] NULL,
+	[loginUser] [varchar](20) NULL,
+	[id_fab] [int] NULL,
+	[barra] [varchar](200) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MARCA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MARCA](
+	[COD_MARCA] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[NOM_MARCA] [varchar](50) NOT NULL,
+	[COD_PAIS] [varchar](30) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_MARCA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MEDIDA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MEDIDA](
+	[CODIGO] [varchar](4) NOT NULL,
+	[MEDIDA] [varchar](50) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[CODIGO] ASC,
+	[MEDIDA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MIGRADO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MIGRADO](
+	[CODIGO_SIAM] [nvarchar](255) NULL,
+	[CODIGO] [nvarchar](255) NULL,
+	[CODIGO_FAB] [nvarchar](255) NULL,
+	[DESCRIPCION] [nvarchar](255) NULL,
+	[PL] [nvarchar](255) NULL,
+	[PMAY] [nvarchar](255) NULL,
+	[PMIN] [nvarchar](255) NULL,
+	[MARCA] [nvarchar](255) NULL,
+	[MODELO] [nvarchar](255) NULL,
+	[PAIS_AUTO] [nvarchar](255) NULL,
+	[MOTOR] [nvarchar](255) NULL,
+	[PROVEEDOR] [nvarchar](255) NULL,
+	[PAIS_PROV] [nvarchar](255) NULL,
+	[CARACTERISTICA] [nvarchar](255) NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MOD_MOTOR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MOD_MOTOR](
+	[COD_MOT] [smallint] NOT NULL,
+	[COD_MODELO] [smallint] NOT NULL,
+	[AÑO_FAB] [datetime] NULL,
+ CONSTRAINT [PK_MOD_MOTOR] PRIMARY KEY CLUSTERED 
+(
+	[COD_MOT] ASC,
+	[COD_MODELO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MODELO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MODELO](
+	[COD_MODELO] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[NOM_MODELO] [varchar](50) NOT NULL,
+	[COD_MARCA] [smallint] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_MODELO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[MOTOR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MOTOR](
+	[COD_MOT] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[DESC_MOT] [varchar](50) NOT NULL,
+	[CILINDRADA] [varchar](20) NULL,
+	[COMBUSTIBLE] [varchar](10) NOT NULL,
+	[INYECCION] [varchar](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_MOT] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[DESC_MOT] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[N_AUTO_PRO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[N_AUTO_PRO](
+	[ID_AUTO] [int] NOT NULL,
+	[ID_PRO] [int] NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[ID_AUTO] ASC,
+	[ID_PRO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[N_MARCA_AUTOMOVIL] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[N_MARCA_AUTOMOVIL](
+	[ID_MARCA] [int] IDENTITY(101,1) NOT NULL,
+	[NOM_MARCA] [varchar](50) NOT NULL,
+	[COD_PAIS] [varchar](3) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ID_MARCA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[NOM_MARCA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[N_MODELO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[N_MODELO](
+	[ID_MODELO] [int] IDENTITY(101,1) NOT NULL,
+	[NOM_MODELO] [varchar](50) NOT NULL,
+	[ID_MARCA] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ID_MODELO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[NOM_MODELO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[N_MOTOR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[N_MOTOR](
+	[iD_MOTOR] [int] IDENTITY(101,1) NOT NULL,
+	[DESCRIPCION] [varchar](254) NOT NULL,
+	[POTENCIA] [int] NOT NULL,
+	[COMBUSTIBLE] [varchar](50) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[iD_MOTOR] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[DESCRIPCION] ASC,
+	[POTENCIA] ASC,
+	[COMBUSTIBLE] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PAGO_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PAGO_CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[N_PAGO] [varchar](15) NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[SALDO] [money] NOT NULL,
+	[FECHA] [datetime] NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[OBS] [text] NULL,
+	[estado] [varchar](2) NOT NULL,
+	[fecha_pago] [datetime] NOT NULL,
+	[tipo_pago] [varchar](50) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[N_PAGO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[COD_CRE] ASC,
+	[N_PAGO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PAIS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PAIS](
+	[COD_PAIS] [varchar](3) NOT NULL,
+	[NOM_PAIS] [varchar](30) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[COD_PAIS] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PLAN_CUENTAS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PLAN_CUENTAS](
+	[REF_CUENTA] [int] NOT NULL,
+	[CUENTA] [varchar](50) NOT NULL,
+	[IMPORTANCIA] [varchar](2) NULL,
+	[RUBRO] [varchar](7) NULL,
+	[SUC_PRO] [varchar](5) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[REF_CUENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[poliza] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[poliza](
+	[cod_poliza] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[nro_factura] [varchar](50) NOT NULL,
+	[fecha] [datetime] NOT NULL,
+	[nombre_poliza] [varchar](90) NOT NULL,
+	[cod_emp] [varchar](3) NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_poliza] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[poliza_producto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[poliza_producto](
+	[cod_poliza] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[cod_pieza] [varchar](50) NULL,
+	[foja] [smallint] NULL,
+	[nro] [int] NOT NULL,
+	[ID_FAB] [int] NOT NULL,
+ CONSTRAINT [IK_PP_ID_123] UNIQUE NONCLUSTERED 
+(
+	[cod_poliza] ASC,
+	[ID_FAB] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PRODUCTO_MOTOR] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PRODUCTO_MOTOR](
+	[COD_PRO] [varchar](50) NOT NULL,
+	[COD_MOT] [smallint] NOT NULL,
+	[BAJA] [varchar](1) NOT NULL,
+	[ID_PRO] [int] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PROFORMA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PROFORMA](
+	[COD_PROF] [varchar](18) NOT NULL,
+	[FECHA] [datetime] NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[NOTA] [varchar](256) NOT NULL,
+	[VENDIDO] [varchar](1) NOT NULL,
+	[TOTAL] [smallmoney] NOT NULL,
+	[COD_CLIENTE] [smallint] NOT NULL,
+	[FACTURA] [bit] NOT NULL,
+	[DESCUENTO] [real] NOT NULL,
+	[DESC_PROF] [real] NOT NULL,
+	[COD_INI] [varchar](7) NOT NULL,
+	[TIPO] [varchar](2) NOT NULL,
+	[TOTAL_INI] [money] NOT NULL,
+	[TIPO_PAGO] [varchar](50) NOT NULL,
+	[cod_usu_trans] [varchar](7) NOT NULL,
+	[tipo_nota] [int] NOT NULL,
+	[fecha_nota] [datetime] NOT NULL,
+	[dolarParalelo] [money] NOT NULL,
+ CONSTRAINT [PK__PROFORMA__02084FDA] PRIMARY KEY CLUSTERED 
+(
+	[COD_PROF] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PRORROGA_CREDITO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PRORROGA_CREDITO](
+	[COD_CRE] [varchar](13) NOT NULL,
+	[FECHA] [datetime] NULL,
+	[FECHA_PRORROGA] [datetime] NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[OBS] [text] NULL,
+UNIQUE NONCLUSTERED 
+(
+	[COD_CRE] ASC,
+	[FECHA_PRORROGA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[PROV_PRO_Delete] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PROV_PRO_Delete](
+	[COD_PROV] [varchar](6) NOT NULL,
+	[COD_PRO] [varchar](50) NOT NULL,
+	[COD_FAB] [varchar](50) NOT NULL,
+	[PLIS_PRO] [money] NULL,
+	[PMAY_PRO] [money] NULL,
+	[PMIN_PRO] [money] NULL,
+	[PVENDEDOR] [money] NULL,
+	[COD_IMP] [varchar](13) NULL,
+	[CIF_CBBA] [money] NULL,
+	[BAJA] [varchar](1) NOT NULL,
+	[FECHA_ACTUALIZADA] [datetime] NOT NULL,
+	[PLIS_BS] [money] NOT NULL,
+	[PMIN_BS] [money] NOT NULL,
+	[PMAY_BS] [money] NOT NULL,
+	[COMENTARIO] [varchar](256) NOT NULL,
+	[barra] [varchar](200) NOT NULL,
+	[swBarra] [varchar](1) NOT NULL,
+	[activa_factor] [varchar](1) NOT NULL,
+	[USUARIO_DESCARGA] [varchar](30) NOT NULL,
+	[fecha_cambio] [datetime] NULL,
+	[descripcion] [varchar](30) NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[REMISION_E] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[REMISION_E](
+	[COD_REM] [varchar](13) NOT NULL,
+	[COD_REMI] [varchar](16) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[COD_ORI] [varchar](5) NOT NULL,
+	[COD_DES] [varchar](5) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[OBS_REM] [varchar](1024) NULL,
+	[estado] [varchar](1) NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[USUARIO_DESCARGA] [varchar](30) NOT NULL,
+	[saw] [char](1) NOT NULL,
+	[FECHA_DESCARGA] [datetime] NOT NULL,
+ CONSTRAINT [PK__REMISION_E__2E70E1FD] PRIMARY KEY CLUSTERED 
+(
+	[COD_REM] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__REMISION_E__2F650636] UNIQUE NONCLUSTERED 
+(
+	[COD_DES] ASC,
+	[COD_REMI] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[REMISION_S] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[REMISION_S](
+	[COD_REM] [varchar](16) NOT NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[SUC_DES] [varchar](5) NOT NULL,
+	[SUC_ORI] [varchar](5) NOT NULL,
+	[FECHA] [datetime] NOT NULL,
+	[OBS_REM] [varchar](1024) NULL,
+	[revisado] [varchar](1) NOT NULL,
+	[DESCARGADO] [varchar](1) NOT NULL,
+	[ACEPTADO] [varchar](1) NOT NULL,
+	[ESTADO] [varchar](2) NOT NULL,
+	[TOTAL] [money] NOT NULL,
+	[COD_USU_REB] [varchar](7) NOT NULL,
+	[COD_USU_REB_DESC] [varchar](7) NOT NULL,
+	[COD_PEDIDO] [varchar](16) NOT NULL,
+	[MEDIO_ENVIO] [varchar](20) NULL,
+	[FECHA_ENVIO] [datetime] NULL,
+	[NOMBRE_ENVIO] [varchar](70) NULL,
+	[COD_USU_CIF] [varchar](7) NOT NULL,
+	[USUARIO_DESCARGA] [varchar](30) NOT NULL,
+	[virtual] [int] NOT NULL,
+	[SUC_TRANSITO] [varchar](5) NOT NULL,
+	[nro_nota] [varchar](50) NOT NULL,
+	[usu_count] [varchar](7) NOT NULL,
+ CONSTRAINT [PK__REMISION_S__22FF2F51] PRIMARY KEY CLUSTERED 
+(
+	[COD_REM] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[reporte_venta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[reporte_venta](
+	[cod_usu] [varchar](7) NULL,
+	[cod_fab] [varchar](50) NULL,
+	[cantidad] [int] NULL,
+	[dia] [int] NULL,
+	[fecha] [datetime] NOT NULL,
+	[tipo] [varchar](10) NULL,
+	[fecha_crea] [datetime] NOT NULL,
+	[id_fab] [int] NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_usu] ASC,
+	[cod_fab] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[RPTCaja] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[RPTCaja](
+	[CATEGORIA] [varchar](30) NULL,
+	[COD_CAT] [varchar](15) NULL,
+	[FECHA] [datetime] NULL,
+	[CODIGO] [varchar](30) NULL,
+	[DESCRIPCION] [varchar](250) NULL,
+	[CANTIDAD] [smallint] NULL,
+	[TOTAL_SUS] [money] NULL,
+	[TOTAL_BS] [money] NULL,
+	[DESCUENTO] [real] NULL,
+	[OBS] [varchar](256) NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[rptKardex] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[rptKardex](
+	[COD_USU] [varchar](7) NULL,
+	[FECHA] [datetime] NULL,
+	[CODIGO] [varchar](20) NULL,
+	[COD_PRO] [varchar](50) NULL,
+	[COD_FAB] [varchar](50) NULL,
+	[DESCRIP] [varchar](70) NULL,
+	[CANT_IMPORTACION] [int] NULL,
+	[CANT_COMPRA] [int] NULL,
+	[CANT_REMIS] [int] NULL,
+	[CANT_REMIE] [int] NULL,
+	[CANT_DEV] [int] NULL,
+	[CANT_VENTA] [int] NULL,
+	[CANT_DEFECTO] [int] NULL,
+	[COSTO_UNIT] [money] NULL,
+	[COSTO] [money] NULL,
+	[EXISTENCIA] [int] NULL,
+	[PREC_UNITARIO] [money] NULL,
+	[PREC_TOTAL] [money] NULL,
+	[DESCUENTO] [int] NULL,
+	[PRECIO_LISTA] [money] NULL,
+	[DOLAR] [smallmoney] NULL,
+	[CLIENTE] [varchar](100) NULL,
+	[ENCARGADO] [varchar](100) NULL,
+	[OBS] [varchar](256) NULL,
+	[fecha_ultima_venta] [datetime] NULL,
+	[cant_credito] [int] NULL,
+	[cant_inventario] [int] NULL,
+	[cant_devCre] [int] NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[RPTRESUMEN] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[RPTRESUMEN](
+	[VENTA] [smallmoney] NULL,
+	[VENTA_DCH] [smallmoney] NULL,
+	[GASTOS] [smallmoney] NULL,
+	[DEVOLUCIONES] [smallmoney] NULL,
+	[COMPRA_LOCAL] [smallmoney] NULL,
+	[TOTAL_SUS] [smallmoney] NULL,
+	[TOTAL_BS] [smallmoney] NULL,
+	[FECHA_INI] [datetime] NULL,
+	[FECHA_FIN] [datetime] NULL,
+	[SUCURSAL] [varchar](30) NULL,
+	[DOLAR] [smallmoney] NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_back_order] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_back_order](
+	[cod_pedido] [int] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[fecha] [datetime] NOT NULL,
+	[obs] [varchar](250) NULL,
+	[estado] [varchar](2) NOT NULL,
+	[total_bo] [money] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_det_bo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_det_bo](
+	[cod_pedido] [int] NOT NULL,
+	[cod_pedido_ori] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[prec_bo_act] [money] NOT NULL,
+	[prec_fab_ant] [money] NOT NULL,
+	[obs] [varchar](250) NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_det_Pedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_det_Pedido](
+	[cod_pedido] [int] NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[cant_preimp] [int] NOT NULL,
+	[obs_preimp] [varchar](250) NULL,
+	[prec_preimp] [money] NOT NULL,
+	[cant_val] [int] NOT NULL,
+	[prec_val] [money] NOT NULL,
+	[obs_val] [varchar](250) NULL,
+	[cant_emp] [int] NOT NULL,
+	[prec_emp] [money] NOT NULL,
+	[obs_emp] [varchar](250) NULL,
+	[plis_bs] [money] NOT NULL,
+	[pmay_bs] [money] NOT NULL,
+	[pmin_bs] [money] NOT NULL,
+	[nro] [int] NOT NULL,
+	[bo] [int] NOT NULL,
+	[id_fab] [int] NOT NULL,
+ CONSTRAINT [UK_SDP_123] UNIQUE NONCLUSTERED 
+(
+	[id_fab] ASC,
+	[cod_pedido] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_fill_det_pedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_fill_det_pedido](
+	[Alias] [varchar](30) NOT NULL,
+	[cod_pedido] [int] NOT NULL,
+	[estado] [varchar](2) NOT NULL,
+	[tipo] [varchar](10) NOT NULL,
+	[Nro] [int] NOT NULL,
+	[cod_pro] [varchar](50) NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[descripcion] [varchar](250) NULL,
+	[marca] [varchar](30) NULL,
+	[p_fob] [money] NOT NULL,
+	[cant_pedido] [int] NOT NULL,
+	[prec_total] [money] NOT NULL,
+	[exist_total] [int] NOT NULL,
+	[back_order] [int] NOT NULL,
+	[cant_transito] [int] NOT NULL,
+	[Obs_cre] [varchar](250) NULL,
+	[obs_val] [varchar](250) NULL,
+	[cant_val] [int] NOT NULL,
+	[cant_factura] [int] NOT NULL,
+	[obs_factura] [varchar](250) NULL,
+	[prec_val] [money] NOT NULL,
+	[tot_val] [money] NOT NULL,
+	[prec_fac] [money] NOT NULL,
+	[tot_fac] [money] NOT NULL,
+	[new_back_order] [int] NOT NULL,
+	[IR] [money] NOT NULL,
+	[id_fab] [int] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_firma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_firma](
+	[cod_firma] [int] IDENTITY(1,1) NOT NULL,
+	[nom_firma] [varchar](50) NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[fecha] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_firma] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_firma_proveedor] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_firma_proveedor](
+	[cod_firma] [int] IDENTITY(1,1) NOT NULL,
+	[descripcion] [varchar](50) NULL,
+	[fecha] [datetime] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_firma] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_ir] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_ir](
+	[cod_suc] [varchar](5) NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[ir_month_suc] [money] NOT NULL,
+	[ir_date] [datetime] NULL,
+	[ir_year] [int] NOT NULL,
+	[ir_month] [int] NOT NULL,
+	[cod_usu] [varchar](7) NULL,
+	[create_date] [datetime] NOT NULL,
+	[id_fab] [int] NOT NULL,
+UNIQUE NONCLUSTERED 
+(
+	[cod_suc] ASC,
+	[cod_fab] ASC,
+	[ir_year] ASC,
+	[ir_month] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_Pedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_Pedido](
+	[cod_pedido] [int] IDENTITY(1,1) NOT NULL,
+	[cod_marca] [varchar](6) NULL,
+	[fecha_creacion] [datetime] NOT NULL,
+	[fecha_envio] [datetime] NULL,
+	[estado] [varchar](2) NOT NULL,
+	[tot_prepedido] [money] NOT NULL,
+	[cod_usu_cre] [varchar](7) NOT NULL,
+	[obs_cre] [varchar](250) NULL,
+	[fecha_val] [datetime] NULL,
+	[cod_usu_val] [varchar](7) NOT NULL,
+	[obs_val] [varchar](250) NULL,
+	[tot_val] [money] NOT NULL,
+	[fecha_crea_excel] [datetime] NULL,
+	[cod_usu_emp] [varchar](7) NOT NULL,
+	[fecha_emp] [datetime] NULL,
+	[obs_emp] [varchar](250) NULL,
+	[total_emp] [money] NOT NULL,
+	[fac_transporte] [money] NOT NULL,
+	[fac_transInterno] [money] NOT NULL,
+	[fac_mant] [money] NOT NULL,
+	[fac_dep] [money] NOT NULL,
+	[fac_pl] [money] NOT NULL,
+	[fac_dolar] [money] NOT NULL,
+	[nro_factura] [varchar](50) NOT NULL,
+	[timesImport] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_pedido] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[sip_temp_inv] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[sip_temp_inv](
+	[id_fab] [int] NOT NULL,
+	[cod_usu] [varchar](7) NOT NULL,
+	[cod_fab] [varchar](50) NOT NULL,
+	[cod_pro] [varchar](50) NOT NULL,
+	[desc_pro] [varchar](150) NOT NULL,
+	[fecha_ini] [datetime] NOT NULL,
+	[fecha_fin] [datetime] NOT NULL,
+	[p_CIF] [money] NOT NULL,
+	[cant_ini] [int] NOT NULL,
+	[cant_compra] [int] NOT NULL,
+	[cant_venta] [int] NOT NULL,
+	[nom_prov] [varchar](30) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id_fab] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[id_fab] ASC,
+	[cod_usu] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[SUB_TIPO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[SUB_TIPO](
+	[codigo] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[cod_tipo] [varchar](4) NOT NULL,
+	[descripcion] [varchar](150) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[TIPO_CUENTA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TIPO_CUENTA](
+	[cod_CUENTA] [smallint] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[NOM_CUENTA] [varchar](250) NULL,
+	[BAJA] [varchar](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_CUENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[TIPO_PRODUCTO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TIPO_PRODUCTO](
+	[CODIGO] [varchar](4) NOT NULL,
+	[DESCRIPCION] [varchar](150) NULL,
+	[COD_SUC] [varchar](5) NOT NULL,
+	[P_INC] [float] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[CODIGO] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[usuario_banco] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[usuario_banco](
+	[cod_ub] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
+	[cod_banco] [smallint] NOT NULL,
+	[nombre_cuenta] [varchar](70) NULL,
+	[tipo_moneda] [varchar](15) NULL,
+	[fecha] [datetime] NULL,
+	[nro_cuenta] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[cod_ub] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[cod_banco] ASC,
+	[nro_cuenta] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Objeto: Table [dbo].[VENTA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[VENTA](
+	[COD_VENTA] [varchar](18) NOT NULL,
+	[FECHA] [datetime] NULL,
+	[COD_USU] [varchar](7) NOT NULL,
+	[TIPO] [varchar](50) NOT NULL,
+	[TOTAL] [smallmoney] NOT NULL,
+	[OBS] [varchar](256) NULL,
+	[COD_CLI] [smallint] NOT NULL,
+	[ESTADO] [varchar](1) NOT NULL,
+	[FACTURA] [bit] NOT NULL,
+	[DESC_PROF] [real] NOT NULL,
+	[COD_INI] [varchar](7) NOT NULL,
+	[TIPO_VENTA] [varchar](2) NOT NULL,
+	[TOTAL_INI] [money] NOT NULL,
+	[saw] [char](1) NOT NULL,
+	[fecha_envio] [datetime] NOT NULL,
+	[dolarParalelo] [money] NOT NULL,
+ CONSTRAINT [PK__VENTA__17036CC0] PRIMARY KEY CLUSTERED 
+(
+	[COD_VENTA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 90, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[ACTUALIZACION] ADD  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[analisis] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[AUTOMOVIL] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[AUTOMOVIL] ADD  DEFAULT ((0)) FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[BANCO] ADD  DEFAULT ('0') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR] ADD  DEFAULT (0) FOR [TIPO_CAMBIO]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR] ADD  DEFAULT ('1') FOR [cOD_USU]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR_PARALELO] ADD  DEFAULT (format(getdate(),'dd/MM/yyyy','en-us')) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR_PARALELO] ADD  DEFAULT (getdate()) FOR [FECHA_INGRESO]
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR_PARALELO] ADD  DEFAULT ((0)) FOR [TIPO_CAMBIO]
+GO
+ALTER TABLE [dbo].[CARACTERISTICAS] ADD  DEFAULT ('0') FOR [MEDIDA]
+GO
+ALTER TABLE [dbo].[CARACTERISTICAS] ADD  DEFAULT ('N') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT (getdate()) FOR [FECHA_INI]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT (getdate()) FOR [FECHA_FIN]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [VENTA]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [VENTA_DCH]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [GASTO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [DEVOLUCION]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [COMPRA_LOCAL]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [CREDITO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [DEV_CREDITO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [TOTAL_SUS]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [TOTAL_BS]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [DOLAR]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [POR_DESCUENTO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ('N') FOR [integridad]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [CREDITO_COBRAR]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ('N') FOR [saw]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [CREDITO_FOB]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT (getdate()) FOR [fecha_asiento]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [saldo]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA] ADD  DEFAULT ((0)) FOR [saldo_anterior]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__FECHA__56D3D912]  DEFAULT (getdate()) FOR [FECHA_INI]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__FECHA__57C7FD4B]  DEFAULT (getdate()) FOR [FECHA_FIN]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__VENTA__58BC2184]  DEFAULT (0) FOR [VENTA]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__VENTA__5AA469F6]  DEFAULT (0) FOR [VENTA_DCH]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__GASTO__5C8CB268]  DEFAULT (0) FOR [GASTO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__DEVOL__5E74FADA]  DEFAULT (0) FOR [DEVOLUCION]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__COMPR__605D434C]  DEFAULT (0) FOR [COMPRA_LOCAL]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__TOTAL__62458BBE]  DEFAULT (0) FOR [TOTAL_SUS]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__TOTAL__642DD430]  DEFAULT (0) FOR [TOTAL_BS]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__DOLAR__66161CA2]  DEFAULT (0) FOR [DOLAR]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__CREDI__10CB707D]  DEFAULT (0) FOR [CREDITO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  CONSTRAINT [DF__CIERRE_CA__DEV_C__12B3B8EF]  DEFAULT (0) FOR [DEV_CREDITO]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] ADD  DEFAULT (0) FOR [POR_DESCUENTO]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__NUM_CI___7DB89C09]  DEFAULT ('0') FOR [NUM_CI_NIT]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__CI_NIT__7EACC042]  DEFAULT ('NIN') FOR [CI_NIT]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__RAZON_S__3B16B004]  DEFAULT ('NINGUNO') FOR [RAZON_SOCIAL]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__TEL_DOM__3C0AD43D]  DEFAULT ('NINGUNO') FOR [TEL_DOM]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__CEL__3CFEF876]  DEFAULT ('NINGUNO') FOR [CEL]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__DOMICIL__3DF31CAF]  DEFAULT ('NINGUNO') FOR [DOMICILIO]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__NOM_COL__3EE740E8]  DEFAULT ('NINGUNO') FOR [NOM_COLAB]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  CONSTRAINT [DF__CLIENTE__AP_COLA__3FDB6521]  DEFAULT ('NINGUNO') FOR [AP_COLAB]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  DEFAULT ((0)) FOR [codigo]
+GO
+ALTER TABLE [dbo].[CLIENTE] ADD  DEFAULT ((0)) FOR [baja]
+GO
+ALTER TABLE [dbo].[CLIENTE_CONSIGNACION] ADD  DEFAULT ((0)) FOR [tiempo]
+GO
+ALTER TABLE [dbo].[codigoBarra] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[codigoBarra] ADD  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[COMPRA_LOCAL] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[COMPRA_LOCAL] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[Cotizacion] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[Cotizacion] ADD  DEFAULT ((0)) FOR [total]
+GO
+ALTER TABLE [dbo].[cotizacion_cliente] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[cotizacion_cliente] ADD  DEFAULT ((0)) FOR [baja]
+GO
+ALTER TABLE [dbo].[cotizacion_cliente] ADD  DEFAULT ((0)) FOR [p_unit]
+GO
+ALTER TABLE [dbo].[cotizacion_cliente] ADD  DEFAULT ((0)) FOR [p_juego]
+GO
+ALTER TABLE [dbo].[cotizacion_proforma] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[cotizacion_proforma] ADD  DEFAULT ((0)) FOR [total]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__TOTAL__51DA19CB]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__SALDO__52CE3E04]  DEFAULT (0) FOR [SALDO]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__ESTADO__53C2623D]  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__DOLAR__54B68676]  DEFAULT (0) FOR [DOLAR]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__SALDO_F__55AAAAAF]  DEFAULT (0) FOR [SALDO_FAVOR]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__DevCedi__2A8B4280]  DEFAULT (0) FOR [DevCedito]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__fecha__5713D034]  DEFAULT (getdate()) FOR [fecha_dev]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__cod_usu__59F03CDF]  DEFAULT ('1') FOR [cod_usu_desc]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  CONSTRAINT [DF__CREDITO__descuen__5BD88551]  DEFAULT (0) FOR [descuento]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT ('NO PLANIFICADO') FOR [Tipo_venta]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT (0) FOR [intervalo]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT (0) FOR [nro_pago]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT (getdate()) FOR [fecha_desc]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT (getdate()) FOR [fecha_val]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT (user_name()) FOR [usuario_val]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT ('1') FOR [cod_nota]
+GO
+ALTER TABLE [dbo].[CREDITO] ADD  DEFAULT ((0)) FOR [dolarParalelo]
+GO
+ALTER TABLE [dbo].[CUENTA_BANCO] ADD  DEFAULT (getdate()) FOR [FECHA_APERTURA]
+GO
+ALTER TABLE [dbo].[CUENTA_BANCO] ADD  DEFAULT ('BOLIVIANOS') FOR [TIPO_MONEDA]
+GO
+ALTER TABLE [dbo].[CUENTA_BANCO] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[CUENTA_BANCO] ADD  DEFAULT ('0') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[DEFECTUOSO] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[DEFECTUOSO] ADD  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[DEPOSITO] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[DEPOSITO] ADD  DEFAULT (0) FOR [MONTO_BS]
+GO
+ALTER TABLE [dbo].[DEPOSITO] ADD  DEFAULT (0) FOR [MONTO_sus]
+GO
+ALTER TABLE [dbo].[deposito_ub] ADD  DEFAULT ((0)) FOR [monto]
+GO
+ALTER TABLE [dbo].[deposito_ub] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[det_analisis] ADD  DEFAULT ((0)) FOR [cantidad]
+GO
+ALTER TABLE [dbo].[det_analisis] ADD  DEFAULT ((0)) FOR [cant_calculada]
+GO
+ALTER TABLE [dbo].[DET_COMPRA] ADD  DEFAULT (0) FOR [PRECIO_U]
+GO
+ALTER TABLE [dbo].[det_cotizacion] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  CONSTRAINT [DF__DET_CREDI__CANTI__5A6F5FCC]  DEFAULT (0) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  CONSTRAINT [DF__DET_CREDI__PRECI__5C57A83E]  DEFAULT (0) FOR [PRECIO_CRE]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  CONSTRAINT [DF__DET_CREDI__DESCU__5E3FF0B0]  DEFAULT (0) FOR [DESCUENTO]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  DEFAULT ((0)) FOR [desc_autorizado]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  DEFAULT ('1') FOR [cod_usu_auto]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  DEFAULT ((0)) FOR [nro_registro]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  DEFAULT ((0)) FOR [p_fob]
+GO
+ALTER TABLE [dbo].[DET_CREDITO] ADD  DEFAULT ((0)) FOR [existencia]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION] ADD  CONSTRAINT [DF__DET_DEVOL__TOTAL__79C80F94]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO] ADD  DEFAULT (0) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO] ADD  DEFAULT ((0)) FOR [COD_DEVC]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__CANTI__53584DE9]  DEFAULT ((0)) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PREC___5540965B]  DEFAULT ((0)) FOR [PREC_UNIT]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__TOTAL__5728DECD]  DEFAULT ((0)) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPORTA__NRO__5046D714]  DEFAULT ((0)) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PREC___513AFB4D]  DEFAULT ((0)) FOR [PREC_LISTA]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PREC___69D19EED]  DEFAULT ((0)) FOR [PREC_MIN]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PREC___6AC5C326]  DEFAULT ((0)) FOR [PREC_MAY]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PLIS___1C5D1EBA]  DEFAULT ((0)) FOR [PLIS_BS]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PMIN___1E45672C]  DEFAULT ((0)) FOR [PMIN_BS]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__PMAY___202DAF9E]  DEFAULT ((0)) FOR [PMAY_BS]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  CONSTRAINT [DF__DET_IMPOR__cant___737B04B8]  DEFAULT ((0)) FOR [cant_verificado]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  DEFAULT ((0)) FOR [p_oferta]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  DEFAULT ((0)) FOR [existencia]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  DEFAULT ((0)) FOR [CIFF]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  DEFAULT ((0)) FOR [p_ofertaSus]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] ADD  DEFAULT ((0)) FOR [CIFF_Sus]
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO] ADD  CONSTRAINT [DF__DET_INVEN__DIFER__4460231C]  DEFAULT (0) FOR [DIFERENCIA]
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO] ADD  CONSTRAINT [DF__det_inventa__cif__6F2063EF]  DEFAULT (1) FOR [cif]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] ADD  DEFAULT (0) FOR [CANT_SOLICITADO]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] ADD  DEFAULT (0) FOR [CANT_AUTORIZADO]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] ADD  DEFAULT (0) FOR [CANT_ENVIADO]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] ADD  DEFAULT ('0') FOR [baja]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] ADD  DEFAULT (1) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] ADD  CONSTRAINT [DF__DET_PROFO__CANTI__03A67F89]  DEFAULT (1) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] ADD  CONSTRAINT [DF__DET_PROFO__DESC___058EC7FB]  DEFAULT (0) FOR [DESC_UNIT]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] ADD  DEFAULT (0) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] ADD  DEFAULT ((0)) FOR [desc_autorizado]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] ADD  DEFAULT ('1') FOR [cod_usu_auto]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  CONSTRAINT [DF__DET_REMIE__CIF_T__149C0161]  DEFAULT (0) FOR [CIF_TOTAL]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  CONSTRAINT [DF__DET_REMIE__NRO__763775D2]  DEFAULT (0) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  DEFAULT ((0)) FOR [existencia]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  DEFAULT ((0)) FOR [cant_ctrl]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  DEFAULT ((1)) FOR [cod_usu]
+GO
+ALTER TABLE [dbo].[DET_REMIE] ADD  DEFAULT ((0)) FOR [ok]
+GO
+ALTER TABLE [dbo].[DET_REMIS] ADD  CONSTRAINT [DF__DET_REMIS__CIF_T__5C229E14]  DEFAULT (0) FOR [CIF_TOTAL]
+GO
+ALTER TABLE [dbo].[DET_REMIS] ADD  CONSTRAINT [DF__DET_REMIS__NRO__75435199]  DEFAULT (0) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_REMIS] ADD  DEFAULT ((0)) FOR [FOB_TOTAL]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  CONSTRAINT [DF__DET_VENTA__CANTI__53D770D6]  DEFAULT (1) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  CONSTRAINT [DF__DET_VENTA__PREC___47C69FAC]  DEFAULT (0) FOR [PREC_LISTA]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  CONSTRAINT [DF__DET_VENTA__DOLAR__49AEE81E]  DEFAULT (0) FOR [DOLAR]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  CONSTRAINT [DF__DET_VENTA__DESC___4E739D3B]  DEFAULT (0) FOR [DESC_UNIT]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  DEFAULT (0) FOR [NRO]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  DEFAULT (0) FOR [PLIS_BS]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  DEFAULT ((0)) FOR [p_fob]
+GO
+ALTER TABLE [dbo].[DET_VENTA] ADD  DEFAULT ((0)) FOR [existencia]
+GO
+ALTER TABLE [dbo].[DEVOLUCION] ADD  CONSTRAINT [DF__DEVOLUCIO__FECHA__740F363E]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[DEVOLUCION_CREDITO] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[DEVOLUCION_CREDITO] ADD  DEFAULT (0) FOR [Tipo]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT (1) FOR [intervalo]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT ((1)) FOR [grupo]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT (getdate()) FOR [fecha_creacion]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT ((0)) FOR [dolarParalelo]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT ((0)) FOR [habilitarSaldo]
+GO
+ALTER TABLE [dbo].[EMPRESA] ADD  DEFAULT ((0)) FOR [checkDiscount]
+GO
+ALTER TABLE [dbo].[GASTOS] ADD  CONSTRAINT [DF__GASTOS__FECHA__51BA1E3A]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[GASTOS] ADD  CONSTRAINT [DF__GASTOS__MONTO__52AE4273]  DEFAULT (0) FOR [MONTO2]
+GO
+ALTER TABLE [dbo].[GASTOS] ADD  CONSTRAINT [DF__gastos__COD_GAST__0504B816]  DEFAULT (0) FOR [COD_GASTO]
+GO
+ALTER TABLE [dbo].[GASTOS] ADD  DEFAULT (getdate()) FOR [fecha_imagen]
+GO
+ALTER TABLE [dbo].[GASTOS] ADD  DEFAULT ((0)) FOR [MONTO]
+GO
+ALTER TABLE [dbo].[GraficoResumenCIF] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[GraficoResumenCIF] ADD  CONSTRAINT [DF_GraficoResumenCIF_Cantidad]  DEFAULT (0) FOR [Cantidad]
+GO
+ALTER TABLE [dbo].[GraficoResumenCIF] ADD  CONSTRAINT [DF_GraficoResumenCIF_CIF]  DEFAULT (0) FOR [CIF]
+GO
+ALTER TABLE [dbo].[HISTORIAL] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[IMAGEN_PRODUCTO] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__FECHA__35C7EB02]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACION__FOB__36BC0F3B]  DEFAULT (0) FOR [FOB]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__TIPO___38A457AD]  DEFAULT (0) FOR [TIPO_CAMBIO_EURO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__FOB_C__39987BE6]  DEFAULT (0) FOR [FOB_COM]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__SEG_F__3B80C458]  DEFAULT (0) FOR [SEG_FLETE]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__GIRO___3D690CCA]  DEFAULT (0) FOR [GIRO_BANCARIO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__PUERT__3F51553C]  DEFAULT (0) FOR [PUERTO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__TRANS__41399DAE]  DEFAULT (0) FOR [TRANSPORTE]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__TRAMI__4321E620]  DEFAULT (0) FOR [TRAMITES_TOT]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__pTRAN__450A2E92]  DEFAULT (0) FOR [pTRANSPORTE]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__pTRAN__46F27704]  DEFAULT (0) FOR [pTRANS_INTERNO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__pMANT__48DABF76]  DEFAULT (0) FOR [pMANTENIMIENTO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__ESTAD__4AC307E8]  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__FAC_D__4BB72C21]  DEFAULT (0) FOR [FAC_DEP]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__FAC_L__4D9F7493]  DEFAULT (0) FOR [FAC_LIS]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__cOD_J__6576FE24]  DEFAULT ('M') FOR [cOD_JM]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__F_DOL__2215F810]  DEFAULT (0) FOR [F_DOLAR]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  CONSTRAINT [DF__IMPORTACI__cOD_R__371114F6]  DEFAULT ('') FOR [cOD_REMIE]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  DEFAULT ('000001') FOR [cOD_prov]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  DEFAULT ((105)) FOR [cOD_pedido]
+GO
+ALTER TABLE [dbo].[IMPORTACION] ADD  DEFAULT ((0)) FOR [DOLAR_PARALELO]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra] ADD  DEFAULT ((0)) FOR [nro]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra] ADD  DEFAULT ((1)) FOR [cod_usu]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra] ADD  DEFAULT ((0)) FOR [preciot]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra] ADD  DEFAULT ((1)) FOR [cantidad]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra] ADD  DEFAULT ('V') FOR [tipo]
+GO
+ALTER TABLE [dbo].[INVENTARIO] ADD  DEFAULT (0) FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[INVENTARIO] ADD  DEFAULT ('1') FOR [COD_USU]
+GO
+ALTER TABLE [dbo].[INVENTARIO] ADD  DEFAULT ('1') FOR [codigo]
+GO
+ALTER TABLE [dbo].[INVENTARIO] ADD  DEFAULT ('000001') FOR [cod_prov]
+GO
+ALTER TABLE [dbo].[log_SIAM] ADD  DEFAULT (getdate()) FOR [date_log]
+GO
+ALTER TABLE [dbo].[MEDIDA] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[MOD_MOTOR] ADD  DEFAULT (1) FOR [COD_MOT]
+GO
+ALTER TABLE [dbo].[MOD_MOTOR] ADD  DEFAULT (1) FOR [COD_MODELO]
+GO
+ALTER TABLE [dbo].[MODELO] ADD  DEFAULT (1) FOR [COD_MARCA]
+GO
+ALTER TABLE [dbo].[N_AUTO_PRO] ADD  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[N_MOTOR] ADD  DEFAULT ((0)) FOR [POTENCIA]
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] ADD  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] ADD  DEFAULT (0) FOR [SALDO]
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] ADD  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] ADD  DEFAULT (getdate()) FOR [fecha_pago]
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] ADD  DEFAULT ('PAGO CONTADO') FOR [tipo_pago]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  CONSTRAINT [DF__PEDIDO__NOM_SOLI__41F8B7BD]  DEFAULT ('DESCONOCIDO') FOR [NOM_SOLICITANTE]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  CONSTRAINT [DF__PEDIDO__MEDIO_PE__42ECDBF6]  DEFAULT ('TELEFONO') FOR [MEDIO_PEDIDO]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  CONSTRAINT [DF__PEDIDO__ESTADO__43E1002F]  DEFAULT ('M') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('PEDIDO SUCURSAL') FOR [tipo_pedido]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT (1) FOR [cod_cli]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('BAJA') FOR [GRADO_IMPORTANCIA]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('1') FOR [COD_USU_VAL]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('1') FOR [COD_USU_RECEPCION]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ((0)) FOR [cod_documento]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('N') FOR [saw_envio]
+GO
+ALTER TABLE [dbo].[PEDIDO] ADD  DEFAULT ('N') FOR [saw_valida]
+GO
+ALTER TABLE [dbo].[PLAN_CUENTAS] ADD  DEFAULT (0) FOR [IMPORTANCIA]
+GO
+ALTER TABLE [dbo].[PLAN_CUENTAS] ADD  DEFAULT ('EGRESO') FOR [RUBRO]
+GO
+ALTER TABLE [dbo].[PLAN_CUENTAS] ADD  DEFAULT ('0') FOR [SUC_PRO]
+GO
+ALTER TABLE [dbo].[poliza] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[poliza] ADD  DEFAULT ('1') FOR [cod_usu]
+GO
+ALTER TABLE [dbo].[poliza_producto] ADD  DEFAULT (0) FOR [nro]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT ('PZA') FOR [UNIDAD]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT ('A') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT (getdate()) FOR [FEC_INGRESO]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT ('N') FOR [MODIFICADO]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT (1) FOR [COD_MOD]
+GO
+ALTER TABLE [dbo].[PRODUCTO] ADD  DEFAULT (1) FOR [CODIGO]
+GO
+ALTER TABLE [dbo].[PRODUCTO_MOTOR] ADD  DEFAULT (1) FOR [COD_MOT]
+GO
+ALTER TABLE [dbo].[PRODUCTO_MOTOR] ADD  DEFAULT ('N') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  CONSTRAINT [DF__PROFORMA__FECHA__02FC7413]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  CONSTRAINT [DF__PROFORMA__VENDID__04E4BC85]  DEFAULT ('N') FOR [VENDIDO]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  CONSTRAINT [DF__PROFORMA__TOTAL__05D8E0BE]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  CONSTRAINT [DF__PROFORMA__COD_CL__06CD04F7]  DEFAULT (1) FOR [COD_CLIENTE]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT (0) FOR [FACTURA]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT (0) FOR [DESCUENTO]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT (0) FOR [DESC_PROF]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT ('1') FOR [COD_INI]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT ('I') FOR [TIPO]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT (0) FOR [TOTAL_INI]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  CONSTRAINT [DF__PROFORMA__TIPO_P__24BE25E8]  DEFAULT ('PAGO CONTADO') FOR [TIPO_PAGO]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT ('1') FOR [cod_usu_trans]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT ((1)) FOR [tipo_nota]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT (getdate()) FOR [fecha_nota]
+GO
+ALTER TABLE [dbo].[PROFORMA] ADD  DEFAULT ((0)) FOR [dolarParalelo]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PLIS_P__6E01572D]  DEFAULT (0) FOR [PLIS_PRO]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PMAY_P__6FE99F9F]  DEFAULT (0) FOR [PMAY_PRO]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PMIN_P__71D1E811]  DEFAULT (0) FOR [PMIN_PRO]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PVENDE__73BA3083]  DEFAULT (0) FOR [PVENDEDOR]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__CIF_CB__75A278F5]  DEFAULT (0) FOR [CIF_CBBA]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__BAJA__778AC167]  DEFAULT ('N') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__FECHA___787EE5A0]  DEFAULT (getdate()) FOR [FECHA_ACTUALIZADA]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__COD_AN__2B7F66B9]  DEFAULT ('') FOR [COD_ANT]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO1__16A44564]  DEFAULT ('') FOR [DATO1]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO2__1798699D]  DEFAULT ('') FOR [DATO2]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO3__188C8DD6]  DEFAULT ('') FOR [DATO3]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO4__1980B20F]  DEFAULT ('') FOR [DATO4]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO5__1A74D648]  DEFAULT ('') FOR [DATO5]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__DATO6__1B68FA81]  DEFAULT ('') FOR [DATO6]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PLIS_B__23FE4082]  DEFAULT (0) FOR [PLIS_BS]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PMIN_B__25E688F4]  DEFAULT (0) FOR [PMIN_BS]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__PMAY_B__27CED166]  DEFAULT (0) FOR [PMAY_BS]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__COMENT__36DC0ACC]  DEFAULT ('') FOR [COMENTARIO]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__barra__2FC4F8E9]  DEFAULT ('0') FOR [barra]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  CONSTRAINT [DF__PROV_PRO__swBarr__3489AE06]  DEFAULT ('N') FOR [swBarra]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ('0') FOR [activa_factor]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ('ANONIMO') FOR [USUARIO_DESCARGA]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ((0)) FOR [pOferta]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ((0)) FOR [p_fob]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ((0)) FOR [CIFF]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT (getdate()) FOR [fecha_creacion]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ((0)) FOR [pOfertaSus]
+GO
+ALTER TABLE [dbo].[PROV_PRO] ADD  DEFAULT ((0)) FOR [CIFFSus]
+GO
+ALTER TABLE [dbo].[PROVEEDOR] ADD  DEFAULT ((1)) FOR [cod_firma]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  CONSTRAINT [DF__REMISION___FECHA__30592A6F]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  CONSTRAINT [DF__remision___estad__32CB82C6]  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  CONSTRAINT [DF__remision___TOTAL__1590259A]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  DEFAULT ('ANONIMO') FOR [USUARIO_DESCARGA]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  DEFAULT ('N') FOR [saw]
+GO
+ALTER TABLE [dbo].[REMISION_E] ADD  DEFAULT (getdate()) FOR [FECHA_DESCARGA]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___FECHA__23F3538A]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___revis__24E777C3]  DEFAULT ('N') FOR [revisado]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___DESCA__25DB9BFC]  DEFAULT ('N') FOR [DESCARGADO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___ACEPT__26CFC035]  DEFAULT ('S') FOR [ACEPTADO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___ESTAD__247D636F]  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___TOTAL__5B2E79DB]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___COD_U__4E5E8EA2]  DEFAULT ('1') FOR [COD_USU_REB]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___COD_U__4F52B2DB]  DEFAULT ('1') FOR [COD_USU_REB_DESC]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___COD_P__57E7F8DC]  DEFAULT (1) FOR [COD_PEDIDO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  CONSTRAINT [DF__REMISION___MEDIO__361CF0BD]  DEFAULT ('TRANSPORTADORA') FOR [MEDIO_ENVIO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ('1') FOR [COD_USU_CIF]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ('ANONIMO') FOR [USUARIO_DESCARGA]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ((0)) FOR [virtual]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ('01000') FOR [SUC_TRANSITO]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ('') FOR [nro_nota]
+GO
+ALTER TABLE [dbo].[REMISION_S] ADD  DEFAULT ('1') FOR [usu_count]
+GO
+ALTER TABLE [dbo].[reporte_venta] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[reporte_venta] ADD  DEFAULT (getdate()) FOR [fecha_crea]
+GO
+ALTER TABLE [dbo].[sip_back_order] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[sip_back_order] ADD  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[sip_back_order] ADD  DEFAULT ((0)) FOR [total_bo]
+GO
+ALTER TABLE [dbo].[sip_det_bo] ADD  DEFAULT ((0)) FOR [prec_bo_act]
+GO
+ALTER TABLE [dbo].[sip_det_bo] ADD  DEFAULT ((0)) FOR [prec_fab_ant]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [cant_preimp]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [prec_preimp]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [cant_val]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [prec_val]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [cant_emp]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [prec_emp]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [plis_bs]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [pmay_bs]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [pmin_bs]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [nro]
+GO
+ALTER TABLE [dbo].[sip_det_Pedido] ADD  DEFAULT ((0)) FOR [bo]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ('dp') FOR [tipo]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [Nro]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [p_fob]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [cant_pedido]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [prec_total]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [exist_total]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [back_order]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [cant_transito]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [cant_val]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [cant_factura]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [prec_val]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [tot_val]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [prec_fac]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [tot_fac]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [new_back_order]
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] ADD  DEFAULT ((0)) FOR [IR]
+GO
+ALTER TABLE [dbo].[sip_firma] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[sip_firma_proveedor] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[sip_ir] ADD  DEFAULT ((0)) FOR [ir_month_suc]
+GO
+ALTER TABLE [dbo].[sip_ir] ADD  DEFAULT ((1990)) FOR [ir_year]
+GO
+ALTER TABLE [dbo].[sip_ir] ADD  DEFAULT ((1)) FOR [ir_month]
+GO
+ALTER TABLE [dbo].[sip_ir] ADD  DEFAULT (getdate()) FOR [create_date]
+GO
+ALTER TABLE [dbo].[sip_ir] ADD  DEFAULT ((0)) FOR [id_fab]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT (getdate()) FOR [fecha_creacion]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ('N') FOR [estado]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [tot_prepedido]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [tot_val]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [total_emp]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [fac_transporte]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [fac_transInterno]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [fac_mant]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [fac_dep]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((0)) FOR [fac_pl]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ((6.97)) FOR [fac_dolar]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ('0') FOR [nro_factura]
+GO
+ALTER TABLE [dbo].[sip_Pedido] ADD  DEFAULT ('1') FOR [timesImport]
+GO
+ALTER TABLE [dbo].[sip_temp_inv] ADD  DEFAULT (getdate()) FOR [fecha_ini]
+GO
+ALTER TABLE [dbo].[sip_temp_inv] ADD  DEFAULT (getdate()) FOR [fecha_fin]
+GO
+ALTER TABLE [dbo].[sip_temp_inv] ADD  DEFAULT ((0)) FOR [cant_ini]
+GO
+ALTER TABLE [dbo].[sip_temp_inv] ADD  DEFAULT ((0)) FOR [cant_compra]
+GO
+ALTER TABLE [dbo].[sip_temp_inv] ADD  DEFAULT ((0)) FOR [cant_venta]
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] ADD  CONSTRAINT [DF__SUC_PRO_P__CANTI__38EE7070]  DEFAULT (0) FOR [CANTIDAD]
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] ADD  CONSTRAINT [DF__SUC_PRO_P__STOCK__3AD6B8E2]  DEFAULT (0) FOR [STOCK_MIN]
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] ADD  DEFAULT ((0)) FOR [cantidad_virtual]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('0') FOR [estSuc]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('0') FOR [ccb]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((0)) FOR [virtual]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('0') FOR [credito]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('0') FOR [cc]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((0)) FOR [descuento]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((1)) FOR [cod_usu_val]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((1)) FOR [factor_plista]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((1)) FOR [factor_pmenor]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((1)) FOR [factor_pmayor]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((0)) FOR [desc_credito]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((0)) FOR [total_credito]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ((1)) FOR [cod_usu_val_cre]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT (getdate()) FOR [fecha_creacion]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('1') FOR [suc_validar]
+GO
+ALTER TABLE [dbo].[SUCURSAL] ADD  DEFAULT ('1') FOR [ver_cantidad]
+GO
+ALTER TABLE [dbo].[TIPO_CUENTA] ADD  DEFAULT ('0') FOR [BAJA]
+GO
+ALTER TABLE [dbo].[TIPO_PRODUCTO] ADD  DEFAULT ('00201') FOR [COD_SUC]
+GO
+ALTER TABLE [dbo].[TIPO_PRODUCTO] ADD  DEFAULT (1.12) FOR [P_INC]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (getdate()) FOR [FEI_USU]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (0) FOR [SUELDO]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (0) FOR [baja]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (0) FOR [validar]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ('1') FOR [INI]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (getdate()) FOR [fecha_cambio]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ('0.0.0.0') FOR [ver_siam]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT (getdate()) FOR [fecha_ingreso]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [ver_oferta]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [val_credito]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [ver_CIFF]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [val_bar]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [in_sip]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((1)) FOR [updatePrice]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [validarCC]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [val_venta]
+GO
+ALTER TABLE [dbo].[USUARIO] ADD  DEFAULT ((0)) FOR [addDiscount]
+GO
+ALTER TABLE [dbo].[usuario_banco] ADD  DEFAULT (getdate()) FOR [fecha]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  CONSTRAINT [DF__VENTA__FECHA__17F790F9]  DEFAULT (getdate()) FOR [FECHA]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  CONSTRAINT [DF__VENTA__TOTAL__18EBB532]  DEFAULT (0) FOR [TOTAL]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  CONSTRAINT [DF__VENTA__COD_CLI__19DFD96B]  DEFAULT (1) FOR [COD_CLI]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  CONSTRAINT [DF__venta__ESTADO__72E607DB]  DEFAULT ('N') FOR [ESTADO]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT (0) FOR [FACTURA]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT (0) FOR [DESC_PROF]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT ('1') FOR [COD_INI]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT ('I') FOR [TIPO_VENTA]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT (0) FOR [TOTAL_INI]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT ('N') FOR [saw]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT (getdate()) FOR [fecha_envio]
+GO
+ALTER TABLE [dbo].[VENTA] ADD  DEFAULT ((0)) FOR [dolarParalelo]
+GO
+ALTER TABLE [dbo].[analisis]  WITH CHECK ADD FOREIGN KEY([cod_cc])
+REFERENCES [dbo].[CIERRE_CAJA] ([cod_cc])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[analisis]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AUTOMOVIL]  WITH CHECK ADD FOREIGN KEY([ID_MOTOR])
+REFERENCES [dbo].[N_MOTOR] ([iD_MOTOR])
+GO
+ALTER TABLE [dbo].[AUTOMOVIL]  WITH CHECK ADD FOREIGN KEY([ID_MODELO])
+REFERENCES [dbo].[N_MODELO] ([ID_MODELO])
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR]  WITH CHECK ADD FOREIGN KEY([cOD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR_PARALELO]  WITH CHECK ADD FOREIGN KEY([COD_EMP])
+REFERENCES [dbo].[EMPRESA] ([COD_EMP])
+GO
+ALTER TABLE [dbo].[CAMBIO_DOLAR_PARALELO]  WITH CHECK ADD FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CARACTERISTICAS]  WITH CHECK ADD  CONSTRAINT [IK_CAR_PRO_123] FOREIGN KEY([ID_PRO])
+REFERENCES [dbo].[PRODUCTO] ([ID_PRO])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CARACTERISTICAS] CHECK CONSTRAINT [IK_CAR_PRO_123]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [FK__CIERRE_CA__COD_S__67FE6514] FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [FK__CIERRE_CA__COD_S__67FE6514]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [FK__CIERRE_CA__COD_U__68F2894D] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [FK__CIERRE_CA__COD_U__68F2894D]
+GO
+ALTER TABLE [dbo].[CLIENTE]  WITH CHECK ADD FOREIGN KEY([codigo])
+REFERENCES [dbo].[CLIENTE_CONSIGNACION] ([codigo])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[codigoBarra]  WITH CHECK ADD FOREIGN KEY([cod_interesado])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[codigoBarra]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[codigoBarra]  WITH CHECK ADD FOREIGN KEY([suc_des])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[codigoBarra]  WITH CHECK ADD FOREIGN KEY([suc_ori])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[COMPRA_LOCAL]  WITH CHECK ADD FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[cotizacion_cliente]  WITH CHECK ADD FOREIGN KEY([cod_cotizacion])
+REFERENCES [dbo].[Cotizacion] ([cod_cotizacion])
+GO
+ALTER TABLE [dbo].[CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__CREDITO__COD_CLI__5792F321] FOREIGN KEY([COD_CLI])
+REFERENCES [dbo].[CLIENTE] ([cod_cli])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CREDITO] CHECK CONSTRAINT [FK__CREDITO__COD_CLI__5792F321]
+GO
+ALTER TABLE [dbo].[CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__CREDITO__COD_USU__569ECEE8] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[CREDITO] CHECK CONSTRAINT [FK__CREDITO__COD_USU__569ECEE8]
+GO
+ALTER TABLE [dbo].[CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__CREDITO__cod_usu__5AE46118] FOREIGN KEY([cod_usu_desc])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[CREDITO] CHECK CONSTRAINT [FK__CREDITO__cod_usu__5AE46118]
+GO
+ALTER TABLE [dbo].[DEFECTUOSO]  WITH CHECK ADD  CONSTRAINT [fk_d_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DEFECTUOSO] CHECK CONSTRAINT [fk_d_id_123]
+GO
+ALTER TABLE [dbo].[DEPOSITO]  WITH CHECK ADD FOREIGN KEY([COD_USUARIO])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[deposito_ub]  WITH CHECK ADD FOREIGN KEY([cod_cc])
+REFERENCES [dbo].[CIERRE_CAJA] ([cod_cc])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[deposito_ub]  WITH CHECK ADD FOREIGN KEY([cod_ub])
+REFERENCES [dbo].[usuario_banco] ([cod_ub])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[deposito_ub]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[deposito_ub]  WITH CHECK ADD FOREIGN KEY([cod_usu_dep])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[det_analisis]  WITH CHECK ADD FOREIGN KEY([cod_cc])
+REFERENCES [dbo].[analisis] ([cod_cc])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_COMPRA]  WITH CHECK ADD FOREIGN KEY([COD_COM])
+REFERENCES [dbo].[COMPRA_LOCAL] ([COD_COM])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_CREDI__COD_C__60283922] FOREIGN KEY([COD_CRE])
+REFERENCES [dbo].[CREDITO] ([COD_CRE])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [FK__DET_CREDI__COD_C__60283922]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH CHECK ADD FOREIGN KEY([cod_usu_auto])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH CHECK ADD  CONSTRAINT [FK_dc_id_fab_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [FK_dc_id_fab_123]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_DEVOL__COD_V__7ABC33CD] FOREIGN KEY([COD_VENTA])
+REFERENCES [dbo].[DEVOLUCION] ([COD_VENTA])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION] CHECK CONSTRAINT [FK__DET_DEVOL__COD_V__7ABC33CD]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION]  WITH CHECK ADD  CONSTRAINT [fk_dd_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION] CHECK CONSTRAINT [fk_dd_id_123]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO]  WITH CHECK ADD  CONSTRAINT [fk_ddc_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO] CHECK CONSTRAINT [fk_ddc_id_123]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO]  WITH CHECK ADD  CONSTRAINT [FK_DET_DEVOLUCION_CREDITO_DEVOLUCION_CREDITO] FOREIGN KEY([COD_DEVC])
+REFERENCES [dbo].[DEVOLUCION_CREDITO] ([COD_DEVC])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO] CHECK CONSTRAINT [FK_DET_DEVOLUCION_CREDITO_DEVOLUCION_CREDITO]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_IMPOR__COD_I__5911273F] FOREIGN KEY([COD_IMP])
+REFERENCES [dbo].[IMPORTACION] ([COD_IMP])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [FK__DET_IMPOR__COD_I__5911273F]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH CHECK ADD  CONSTRAINT [fk_ID_fab_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [fk_ID_fab_123]
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_INVEN__COD_I__45544755] FOREIGN KEY([COD_INV])
+REFERENCES [dbo].[INVENTARIO] ([COD_INV])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO] CHECK CONSTRAINT [FK__DET_INVEN__COD_I__45544755]
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO]  WITH CHECK ADD  CONSTRAINT [pk_di_pp_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO] CHECK CONSTRAINT [pk_di_pp_id_123]
+GO
+ALTER TABLE [dbo].[DET_PAGO_CREDITO]  WITH CHECK ADD FOREIGN KEY([N_PAGO])
+REFERENCES [dbo].[PAGO_CREDITO] ([N_PAGO])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_PEDIDO]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_PEDID__COD_P__4D6A6A69] FOREIGN KEY([COD_PEDIDO])
+REFERENCES [dbo].[PEDIDO] ([COD_PEDIDO])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] CHECK CONSTRAINT [FK__DET_PEDID__COD_P__4D6A6A69]
+GO
+ALTER TABLE [dbo].[DET_PEDIDO]  WITH CHECK ADD  CONSTRAINT [FK_ID_CODP_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_PEDIDO] CHECK CONSTRAINT [FK_ID_CODP_123]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_PROFO__COD_P__0777106D] FOREIGN KEY([COD_PROF])
+REFERENCES [dbo].[PROFORMA] ([COD_PROF])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] CHECK CONSTRAINT [FK__DET_PROFO__COD_P__0777106D]
+GO
+ALTER TABLE [dbo].[DET_PROFORMA]  WITH CHECK ADD FOREIGN KEY([cod_usu_auto])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[DET_PROFORMA]  WITH CHECK ADD  CONSTRAINT [fk_dp_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_PROFORMA] CHECK CONSTRAINT [fk_dp_id_123]
+GO
+ALTER TABLE [dbo].[DET_REMIE]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_REMIE__COD_R__351DDF8C] FOREIGN KEY([COD_REM])
+REFERENCES [dbo].[REMISION_E] ([COD_REM])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_REMIE] CHECK CONSTRAINT [FK__DET_REMIE__COD_R__351DDF8C]
+GO
+ALTER TABLE [dbo].[DET_REMIE]  WITH CHECK ADD  CONSTRAINT [fk_dr_pp_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_REMIE] CHECK CONSTRAINT [fk_dr_pp_id_123]
+GO
+ALTER TABLE [dbo].[DET_REMIS]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_REMIS__COD_R__2B947552] FOREIGN KEY([COD_REM])
+REFERENCES [dbo].[REMISION_S] ([COD_REM])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_REMIS] CHECK CONSTRAINT [FK__DET_REMIS__COD_R__2B947552]
+GO
+ALTER TABLE [dbo].[DET_REMIS]  WITH CHECK ADD  CONSTRAINT [FK_ID_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_REMIS] CHECK CONSTRAINT [FK_ID_123]
+GO
+ALTER TABLE [dbo].[DET_VENTA]  WITH NOCHECK ADD  CONSTRAINT [FK__DET_VENTA__COD_V__57A801BA] FOREIGN KEY([COD_VENTA])
+REFERENCES [dbo].[VENTA] ([COD_VENTA])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DET_VENTA] CHECK CONSTRAINT [FK__DET_VENTA__COD_V__57A801BA]
+GO
+ALTER TABLE [dbo].[DET_VENTA]  WITH CHECK ADD  CONSTRAINT [fk_dv_id_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[DET_VENTA] CHECK CONSTRAINT [fk_dv_id_123]
+GO
+ALTER TABLE [dbo].[DEVOLUCION]  WITH NOCHECK ADD  CONSTRAINT [FK__DEVOLUCIO__COD_U__75F77EB0] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[DEVOLUCION] CHECK CONSTRAINT [FK__DEVOLUCIO__COD_U__75F77EB0]
+GO
+ALTER TABLE [dbo].[DEVOLUCION]  WITH NOCHECK ADD  CONSTRAINT [FK__DEVOLUCIO__COD_V__75035A77] FOREIGN KEY([COD_VENTA])
+REFERENCES [dbo].[VENTA] ([COD_VENTA])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DEVOLUCION] CHECK CONSTRAINT [FK__DEVOLUCIO__COD_V__75035A77]
+GO
+ALTER TABLE [dbo].[DEVOLUCION_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__DEVOLUCIO__COD_C__733B0D96] FOREIGN KEY([COD_CRE])
+REFERENCES [dbo].[CREDITO] ([COD_CRE])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[DEVOLUCION_CREDITO] CHECK CONSTRAINT [FK__DEVOLUCIO__COD_C__733B0D96]
+GO
+ALTER TABLE [dbo].[GASTOS]  WITH NOCHECK ADD  CONSTRAINT [FK__GASTOS__COD_USU__54968AE5] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[GASTOS] CHECK CONSTRAINT [FK__GASTOS__COD_USU__54968AE5]
+GO
+ALTER TABLE [dbo].[GASTOS]  WITH NOCHECK ADD  CONSTRAINT [FK__GASTOS__REF_CUEN__53A266AC] FOREIGN KEY([REF_CUENTA])
+REFERENCES [dbo].[PLAN_CUENTAS] ([REF_CUENTA])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[GASTOS] CHECK CONSTRAINT [FK__GASTOS__REF_CUEN__53A266AC]
+GO
+ALTER TABLE [dbo].[GraficoResumenCIF]  WITH CHECK ADD FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[IMAGEN_REMISION]  WITH CHECK ADD FOREIGN KEY([COD_REM])
+REFERENCES [dbo].[REMISION_S] ([COD_REM])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH CHECK ADD FOREIGN KEY([cOD_pedido])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH CHECK ADD FOREIGN KEY([cOD_prov])
+REFERENCES [dbo].[PROVEEDOR] ([COD_PROV])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [FK__IMPORTACI__COD_S__507BE13E] FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [FK__IMPORTACI__COD_S__507BE13E]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [FK__IMPORTACI__COD_U__4F87BD05] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [FK__IMPORTACI__COD_U__4F87BD05]
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra]  WITH CHECK ADD FOREIGN KEY([cod_documento])
+REFERENCES [dbo].[codigoBarra] ([cod_documento])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[ingresoCodigoBarra]  WITH CHECK ADD FOREIGN KEY([id_fab])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[INVENTARIO]  WITH CHECK ADD FOREIGN KEY([cod_prov])
+REFERENCES [dbo].[PROVEEDOR] ([COD_PROV])
+GO
+ALTER TABLE [dbo].[INVENTARIO]  WITH NOCHECK ADD  CONSTRAINT [FK__INVENTARI__COD_S__408F9238] FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[INVENTARIO] CHECK CONSTRAINT [FK__INVENTARI__COD_S__408F9238]
+GO
+ALTER TABLE [dbo].[INVENTARIO]  WITH CHECK ADD FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[INVENTARIO]  WITH CHECK ADD FOREIGN KEY([codigo])
+REFERENCES [dbo].[TIPO_PRODUCTO] ([CODIGO])
+GO
+ALTER TABLE [dbo].[log_SIAM]  WITH CHECK ADD FOREIGN KEY([cod_user])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[MEDIDA]  WITH CHECK ADD FOREIGN KEY([CODIGO])
+REFERENCES [dbo].[TIPO_PRODUCTO] ([CODIGO])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[MOD_MOTOR]  WITH CHECK ADD FOREIGN KEY([COD_MODELO])
+REFERENCES [dbo].[MODELO] ([COD_MODELO])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[MOD_MOTOR]  WITH CHECK ADD FOREIGN KEY([COD_MOT])
+REFERENCES [dbo].[MOTOR] ([COD_MOT])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[MODELO]  WITH CHECK ADD FOREIGN KEY([COD_MARCA])
+REFERENCES [dbo].[MARCA] ([COD_MARCA])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[N_AUTO_PRO]  WITH CHECK ADD FOREIGN KEY([ID_AUTO])
+REFERENCES [dbo].[AUTOMOVIL] ([ID_AUTO])
+GO
+ALTER TABLE [dbo].[N_AUTO_PRO]  WITH CHECK ADD FOREIGN KEY([ID_PRO])
+REFERENCES [dbo].[PRODUCTO] ([ID_PRO])
+GO
+ALTER TABLE [dbo].[N_MARCA_AUTOMOVIL]  WITH CHECK ADD FOREIGN KEY([COD_PAIS])
+REFERENCES [dbo].[PAIS] ([COD_PAIS])
+GO
+ALTER TABLE [dbo].[N_MODELO]  WITH CHECK ADD FOREIGN KEY([ID_MARCA])
+REFERENCES [dbo].[N_MARCA_AUTOMOVIL] ([ID_MARCA])
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__PAGO_CRED__COD_C__66D536B1] FOREIGN KEY([COD_CRE])
+REFERENCES [dbo].[CREDITO] ([COD_CRE])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PAGO_CREDITO] CHECK CONSTRAINT [FK__PAGO_CRED__COD_C__66D536B1]
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH NOCHECK ADD  CONSTRAINT [FK__PEDIDO__cod_cli__750E476F] FOREIGN KEY([cod_cli])
+REFERENCES [dbo].[CLIENTE] ([cod_cli])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PEDIDO] CHECK CONSTRAINT [FK__PEDIDO__cod_cli__750E476F]
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH CHECK ADD FOREIGN KEY([cod_documento])
+REFERENCES [dbo].[codigoBarra] ([cod_documento])
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH NOCHECK ADD  CONSTRAINT [FK__PEDIDO__COD_SUC___44D52468] FOREIGN KEY([COD_SUC_ORI])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[PEDIDO] CHECK CONSTRAINT [FK__PEDIDO__COD_SUC___44D52468]
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH NOCHECK ADD  CONSTRAINT [FK__PEDIDO__COD_SUC___45C948A1] FOREIGN KEY([COD_SUC_DES])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[PEDIDO] CHECK CONSTRAINT [FK__PEDIDO__COD_SUC___45C948A1]
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH CHECK ADD FOREIGN KEY([COD_USU_VAL])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH CHECK ADD FOREIGN KEY([COD_USU_RECEPCION])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[PEDIDO]  WITH NOCHECK ADD  CONSTRAINT [FK__PEDIDO__COD_USU__46BD6CDA] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PEDIDO] CHECK CONSTRAINT [FK__PEDIDO__COD_USU__46BD6CDA]
+GO
+ALTER TABLE [dbo].[poliza]  WITH CHECK ADD FOREIGN KEY([cod_emp])
+REFERENCES [dbo].[EMPRESA] ([COD_EMP])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[poliza]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[poliza_producto]  WITH NOCHECK ADD  CONSTRAINT [FK__poliza_pr__cod_p__110B679F] FOREIGN KEY([cod_poliza])
+REFERENCES [dbo].[poliza] ([cod_poliza])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[poliza_producto] CHECK CONSTRAINT [FK__poliza_pr__cod_p__110B679F]
+GO
+ALTER TABLE [dbo].[poliza_producto]  WITH CHECK ADD  CONSTRAINT [ik_ID_Pol_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[poliza_producto] CHECK CONSTRAINT [ik_ID_Pol_123]
+GO
+ALTER TABLE [dbo].[PRODUCTO]  WITH CHECK ADD FOREIGN KEY([COD_EMP])
+REFERENCES [dbo].[EMPRESA] ([COD_EMP])
+GO
+ALTER TABLE [dbo].[PRODUCTO]  WITH CHECK ADD FOREIGN KEY([CODIGO])
+REFERENCES [dbo].[TIPO_PRODUCTO] ([CODIGO])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PRODUCTO_MOTOR]  WITH CHECK ADD FOREIGN KEY([COD_MOT])
+REFERENCES [dbo].[MOTOR] ([COD_MOT])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PRODUCTO_MOTOR]  WITH CHECK ADD  CONSTRAINT [pk_id_mot_123] FOREIGN KEY([ID_PRO])
+REFERENCES [dbo].[PRODUCTO] ([ID_PRO])
+GO
+ALTER TABLE [dbo].[PRODUCTO_MOTOR] CHECK CONSTRAINT [pk_id_mot_123]
+GO
+ALTER TABLE [dbo].[PROFORMA]  WITH NOCHECK ADD  CONSTRAINT [FK__PROFORMA__COD_CL__07C12930] FOREIGN KEY([COD_CLIENTE])
+REFERENCES [dbo].[CLIENTE] ([cod_cli])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PROFORMA] CHECK CONSTRAINT [FK__PROFORMA__COD_CL__07C12930]
+GO
+ALTER TABLE [dbo].[PROFORMA]  WITH NOCHECK ADD  CONSTRAINT [FK__PROFORMA__COD_US__03F0984C] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PROFORMA] CHECK CONSTRAINT [FK__PROFORMA__COD_US__03F0984C]
+GO
+ALTER TABLE [dbo].[PROFORMA]  WITH CHECK ADD FOREIGN KEY([cod_usu_trans])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[PRORROGA_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [FK__PRORROGA___COD_C__6D823440] FOREIGN KEY([COD_CRE])
+REFERENCES [dbo].[CREDITO] ([COD_CRE])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PRORROGA_CREDITO] CHECK CONSTRAINT [FK__PRORROGA___COD_C__6D823440]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD  CONSTRAINT [ref_pro_prov_123] FOREIGN KEY([ID_PRO])
+REFERENCES [dbo].[PRODUCTO] ([ID_PRO])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [ref_pro_prov_123]
+GO
+ALTER TABLE [dbo].[PROVEEDOR]  WITH CHECK ADD FOREIGN KEY([cod_firma])
+REFERENCES [dbo].[sip_firma_proveedor] ([cod_firma])
+GO
+ALTER TABLE [dbo].[PROVEEDOR]  WITH CHECK ADD FOREIGN KEY([COD_PAIS])
+REFERENCES [dbo].[PAIS] ([COD_PAIS])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[REMISION_E]  WITH NOCHECK ADD  CONSTRAINT [FK__REMISION___COD_U__314D4EA8] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[REMISION_E] CHECK CONSTRAINT [FK__REMISION___COD_U__314D4EA8]
+GO
+ALTER TABLE [dbo].[REMISION_S]  WITH NOCHECK ADD  CONSTRAINT [FK__REMISION___COD_P__58DC1D15] FOREIGN KEY([COD_PEDIDO])
+REFERENCES [dbo].[PEDIDO] ([COD_PEDIDO])
+GO
+ALTER TABLE [dbo].[REMISION_S] CHECK CONSTRAINT [FK__REMISION___COD_P__58DC1D15]
+GO
+ALTER TABLE [dbo].[REMISION_S]  WITH NOCHECK ADD  CONSTRAINT [FK__REMISION___COD_U__27C3E46E] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[REMISION_S] CHECK CONSTRAINT [FK__REMISION___COD_U__27C3E46E]
+GO
+ALTER TABLE [dbo].[REMISION_S]  WITH CHECK ADD FOREIGN KEY([SUC_TRANSITO])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+GO
+ALTER TABLE [dbo].[sip_back_order]  WITH CHECK ADD FOREIGN KEY([cod_pedido])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[sip_back_order]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[sip_det_bo]  WITH CHECK ADD FOREIGN KEY([cod_pedido])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[sip_det_bo]  WITH CHECK ADD FOREIGN KEY([cod_pedido_ori])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD FOREIGN KEY([cod_pedido])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido]  WITH CHECK ADD FOREIGN KEY([cod_pedido])
+REFERENCES [dbo].[sip_Pedido] ([cod_pedido])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido]  WITH CHECK ADD  CONSTRAINT [fk_sfdp_id_1234] FOREIGN KEY([id_fab])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[sip_fill_det_pedido] CHECK CONSTRAINT [fk_sfdp_id_1234]
+GO
+ALTER TABLE [dbo].[sip_firma]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[sip_firma_proveedor]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD FOREIGN KEY([cod_marca])
+REFERENCES [dbo].[PROVEEDOR] ([COD_PROV])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD FOREIGN KEY([cod_usu_cre])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD FOREIGN KEY([cod_usu_val])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD FOREIGN KEY([cod_usu_emp])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[sip_temp_inv]  WITH CHECK ADD FOREIGN KEY([cod_usu])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[SUB_TIPO]  WITH CHECK ADD FOREIGN KEY([cod_tipo])
+REFERENCES [dbo].[TIPO_PRODUCTO] ([CODIGO])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV]  WITH NOCHECK ADD  CONSTRAINT [FK__SUC_PRO_P__COD_S__3CBF0154] FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] CHECK CONSTRAINT [FK__SUC_PRO_P__COD_S__3CBF0154]
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV]  WITH CHECK ADD  CONSTRAINT [pk_ID_PP_123] FOREIGN KEY([ID_FAB])
+REFERENCES [dbo].[PROV_PRO] ([ID_FAB])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] CHECK CONSTRAINT [pk_ID_PP_123]
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD FOREIGN KEY([COD_CIU])
+REFERENCES [dbo].[CIUDAD] ([COD_CIU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD FOREIGN KEY([COD_EMP])
+REFERENCES [dbo].[EMPRESA] ([COD_EMP])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD FOREIGN KEY([cod_usu_val_cre])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD FOREIGN KEY([cod_usu_val])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+GO
+ALTER TABLE [dbo].[USUARIO]  WITH CHECK ADD FOREIGN KEY([COD_CAR])
+REFERENCES [dbo].[CARGO] ([COD_CAR])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[USUARIO]  WITH CHECK ADD FOREIGN KEY([COD_SUC])
+REFERENCES [dbo].[SUCURSAL] ([COD_SUC])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[usuario_banco]  WITH CHECK ADD FOREIGN KEY([cod_banco])
+REFERENCES [dbo].[BANCO] ([cod_BANCO])
+ON UPDATE CASCADE
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[VENTA]  WITH NOCHECK ADD  CONSTRAINT [FK__VENTA__COD_CLI__1BC821DD] FOREIGN KEY([COD_CLI])
+REFERENCES [dbo].[CLIENTE] ([cod_cli])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[VENTA] CHECK CONSTRAINT [FK__VENTA__COD_CLI__1BC821DD]
+GO
+ALTER TABLE [dbo].[VENTA]  WITH NOCHECK ADD  CONSTRAINT [FK__VENTA__COD_USU__1AD3FDA4] FOREIGN KEY([COD_USU])
+REFERENCES [dbo].[USUARIO] ([COD_USU])
+ON UPDATE CASCADE
+GO
+ALTER TABLE [dbo].[VENTA] CHECK CONSTRAINT [FK__VENTA__COD_USU__1AD3FDA4]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([COMPRA_LOCAL]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([CREDITO]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([CREDITO_FOB]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([CREDITO_COBRAR]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([DEV_CREDITO]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([DEVOLUCION]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([DOLAR]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([GASTO]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([TOTAL_SUS]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([TOTAL_BS]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([VENTA]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA]  WITH CHECK ADD CHECK  (([VENTA_DCH]>=(0)))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__COMPR__61516785] CHECK  (([COMPRA_LOCAL] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__COMPR__61516785]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__CREDI__11BF94B6] CHECK  (([CREDITO] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__CREDI__11BF94B6]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__DEV_C__13A7DD28] CHECK  (([DEV_CREDITO] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__DEV_C__13A7DD28]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__DEVOL__5F691F13] CHECK  (([DEVOLUCION] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__DEVOL__5F691F13]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__DOLAR__670A40DB] CHECK  (([DOLAR] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__DOLAR__670A40DB]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__GASTO__5D80D6A1] CHECK  (([GASTO] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__GASTO__5D80D6A1]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__TOTAL__6339AFF7] CHECK  (([TOTAL_SUS] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__TOTAL__6339AFF7]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__TOTAL__6521F869] CHECK  (([TOTAL_BS] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__TOTAL__6521F869]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__VENTA__59B045BD] CHECK  (([VENTA] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__VENTA__59B045BD]
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3]  WITH NOCHECK ADD  CONSTRAINT [CK__CIERRE_CA__VENTA__5B988E2F] CHECK  (([VENTA_DCH] >= 0))
+GO
+ALTER TABLE [dbo].[CIERRE_CAJA3] CHECK CONSTRAINT [CK__CIERRE_CA__VENTA__5B988E2F]
+GO
+ALTER TABLE [dbo].[CLIENTE_CONSIGNACION]  WITH CHECK ADD CHECK  (([tiempo]>=(0)))
+GO
+ALTER TABLE [dbo].[CUENTA_BANCO]  WITH CHECK ADD CHECK  (([TOTAL] >= 0))
+GO
+ALTER TABLE [dbo].[DEPOSITO]  WITH CHECK ADD CHECK  (([MONTO_BS] >= 0))
+GO
+ALTER TABLE [dbo].[DEPOSITO]  WITH CHECK ADD CHECK  (([MONTO_sus] >= 0))
+GO
+ALTER TABLE [dbo].[deposito_ub]  WITH CHECK ADD CHECK  (([monto]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_COMPRA]  WITH CHECK ADD CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__CANTI__5B638405] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__CANTI__5B638405]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__PRECI__00EA0E6F] CHECK  (([PRECIO_CRE] >= (-50)))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__PRECI__00EA0E6F]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__PRECI__01DE32A8] CHECK  (([PRECIO_CRE] >= (-50)))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__PRECI__01DE32A8]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__PRECI__02D256E1] CHECK  (([PRECIO_CRE] >= (-50)))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__PRECI__02D256E1]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__PRECI__5D4BCC77] CHECK  (([PRECIO_CRE] >= 0))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__PRECI__5D4BCC77]
+GO
+ALTER TABLE [dbo].[DET_CREDITO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_CREDI__PRECI__7FF5EA36] CHECK  (([PRECIO_CRE] >= (-50)))
+GO
+ALTER TABLE [dbo].[DET_CREDITO] CHECK CONSTRAINT [CK__DET_CREDI__PRECI__7FF5EA36]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_DEVOL__CANTI__78D3EB5B] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION] CHECK CONSTRAINT [CK__DET_DEVOL__CANTI__78D3EB5B]
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO]  WITH CHECK ADD CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_DEVOLUCION_CREDITO]  WITH CHECK ADD CHECK  (([TOTAL] >= 0))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__CANTI__544C7222] CHECK  (([CANTIDAD]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__CANTI__544C7222]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__PLIS___1D5142F3] CHECK  (([PLIS_BS]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__PLIS___1D5142F3]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__PMAY___2121D3D7] CHECK  (([PMAY_BS]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__PMAY___2121D3D7]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__PMIN___1F398B65] CHECK  (([PMIN_BS]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__PMIN___1F398B65]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__PREC___5634BA94] CHECK  (([PREC_UNIT]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__PREC___5634BA94]
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_IMPOR__TOTAL__581D0306] CHECK  (([TOTAL]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_IMPORTACION] CHECK CONSTRAINT [CK__DET_IMPOR__TOTAL__581D0306]
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_INVEN__CANTI__436BFEE3] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_INVENTARIO] CHECK CONSTRAINT [CK__DET_INVEN__CANTI__436BFEE3]
+GO
+ALTER TABLE [dbo].[DET_REMIE]  WITH CHECK ADD CHECK  (([cant_ctrl]>=(0)))
+GO
+ALTER TABLE [dbo].[DET_REMIE]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_REMIE__CANTI__3429BB53] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_REMIE] CHECK CONSTRAINT [CK__DET_REMIE__CANTI__3429BB53]
+GO
+ALTER TABLE [dbo].[DET_REMIS]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_REMIS__CANTI__2AA05119] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[DET_REMIS] CHECK CONSTRAINT [CK__DET_REMIS__CANTI__2AA05119]
+GO
+ALTER TABLE [dbo].[DET_VENTA]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_VENTA__DOLAR__4AA30C57] CHECK  (([DOLAR] > 0))
+GO
+ALTER TABLE [dbo].[DET_VENTA] CHECK CONSTRAINT [CK__DET_VENTA__DOLAR__4AA30C57]
+GO
+ALTER TABLE [dbo].[DET_VENTA]  WITH CHECK ADD CHECK  (([PLIS_BS] >= 0))
+GO
+ALTER TABLE [dbo].[DET_VENTA]  WITH NOCHECK ADD  CONSTRAINT [CK__DET_VENTA__PREC___48BAC3E5] CHECK  (([PREC_LISTA] > 0))
+GO
+ALTER TABLE [dbo].[DET_VENTA] CHECK CONSTRAINT [CK__DET_VENTA__PREC___48BAC3E5]
+GO
+ALTER TABLE [dbo].[DEVOLUCION_CREDITO]  WITH CHECK ADD CHECK  (([TOTAL] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__F_DOL__230A1C49] CHECK  (([F_DOLAR] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__F_DOL__230A1C49]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__FAC_D__4CAB505A] CHECK  (([FAC_DEP] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__FAC_D__4CAB505A]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__FAC_L__4E9398CC] CHECK  (([FAC_LIS] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__FAC_L__4E9398CC]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__FOB_C__3A8CA01F] CHECK  (([FOB_COM] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__FOB_C__3A8CA01F]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__GIRO___3E5D3103] CHECK  (([GIRO_BANCARIO] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__GIRO___3E5D3103]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__pMANT__49CEE3AF] CHECK  (([pMANTENIMIENTO] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__pMANT__49CEE3AF]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__pTRAN__45FE52CB] CHECK  (([pTRANSPORTE] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__pTRAN__45FE52CB]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__pTRAN__47E69B3D] CHECK  (([pTRANS_INTERNO] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__pTRAN__47E69B3D]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__PUERT__40457975] CHECK  (([PUERTO] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__PUERT__40457975]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__SEG_F__3C74E891] CHECK  (([SEG_FLETE] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__SEG_F__3C74E891]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__TRAMI__44160A59] CHECK  (([TRAMITES_TOT] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__TRAMI__44160A59]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACI__TRANS__422DC1E7] CHECK  (([TRANSPORTE] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACI__TRANS__422DC1E7]
+GO
+ALTER TABLE [dbo].[IMPORTACION]  WITH NOCHECK ADD  CONSTRAINT [CK__IMPORTACION__FOB__37B03374] CHECK  (([FOB] >= 0))
+GO
+ALTER TABLE [dbo].[IMPORTACION] CHECK CONSTRAINT [CK__IMPORTACION__FOB__37B03374]
+GO
+ALTER TABLE [dbo].[Kardex]  WITH CHECK ADD CHECK  (([ENTRADA]>=(0)))
+GO
+ALTER TABLE [dbo].[Kardex]  WITH CHECK ADD CHECK  (([EXISTENCIA]>=(0)))
+GO
+ALTER TABLE [dbo].[Kardex]  WITH CHECK ADD CHECK  (([SALIDA]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__CIF_CB__76969D2E] CHECK  (([CIF_CBBA] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__CIF_CB__76969D2E]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD CHECK  (([CIFF]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD CHECK  (([CIFFSus]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD CHECK  (([p_fob]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PLIS_B__24F264BB] CHECK  (([PLIS_BS] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PLIS_B__24F264BB]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PLIS_P__6EF57B66] CHECK  (([PLIS_PRO] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PLIS_P__6EF57B66]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PMAY_B__28C2F59F] CHECK  (([PMAY_BS] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PMAY_B__28C2F59F]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PMAY_P__70DDC3D8] CHECK  (([PMAY_PRO] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PMAY_P__70DDC3D8]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PMIN_B__26DAAD2D] CHECK  (([PMIN_BS] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PMIN_B__26DAAD2D]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PMIN_P__72C60C4A] CHECK  (([PMIN_PRO] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PMIN_P__72C60C4A]
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD CHECK  (([pOferta]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH CHECK ADD CHECK  (([pOfertaSus]>=(0)))
+GO
+ALTER TABLE [dbo].[PROV_PRO]  WITH NOCHECK ADD  CONSTRAINT [CK__PROV_PRO__PVENDE__74AE54BC] CHECK  (([PVENDEDOR] >= 0))
+GO
+ALTER TABLE [dbo].[PROV_PRO] CHECK CONSTRAINT [CK__PROV_PRO__PVENDE__74AE54BC]
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_IMPORTACION]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_COMPRA]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_REMIS]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_REMIE]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_DEV]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_VENTA]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([CANT_DEFECTO]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([cant_credito]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([cant_inventario]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([cant_devCre]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([PREC_UNITARIO]>=(0)))
+GO
+ALTER TABLE [dbo].[rptKardex]  WITH CHECK ADD CHECK  (([PREC_TOTAL]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_back_order]  WITH CHECK ADD CHECK  (([total_bo]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_bo]  WITH CHECK ADD CHECK  (([prec_bo_act]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_bo]  WITH CHECK ADD CHECK  (([prec_fab_ant]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([cant_preimp]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([cant_val]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([cant_emp]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([plis_bs]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([pmay_bs]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([pmin_bs]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([prec_preimp]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([prec_val]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_det_Pedido]  WITH CHECK ADD CHECK  (([prec_emp]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_dep]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_dolar]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_mant]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_pl]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_transporte]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([fac_transInterno]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([tot_prepedido]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([tot_val]>=(0)))
+GO
+ALTER TABLE [dbo].[sip_Pedido]  WITH CHECK ADD CHECK  (([total_emp]>=(0)))
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV]  WITH NOCHECK ADD  CONSTRAINT [CK__SUC_PRO_P__CANTI__39E294A9] CHECK  (([CANTIDAD] >= 0))
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] CHECK CONSTRAINT [CK__SUC_PRO_P__CANTI__39E294A9]
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV]  WITH NOCHECK ADD  CONSTRAINT [CK__SUC_PRO_P__STOCK__3BCADD1B] CHECK  (([STOCK_MIN] >= 0))
+GO
+ALTER TABLE [dbo].[SUC_PRO_PROV] CHECK CONSTRAINT [CK__SUC_PRO_P__STOCK__3BCADD1B]
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD CHECK  (([desc_CREDITO]>=(0)))
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD CHECK  (([factor_plista]>=(0)))
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD CHECK  (([factor_pmenor]>=(0)))
+GO
+ALTER TABLE [dbo].[SUCURSAL]  WITH CHECK ADD CHECK  (([factor_pmayor]>=(0)))
+GO
+ALTER TABLE [dbo].[USUARIO]  WITH CHECK ADD CHECK  (([sueldo] >= 0 and [sueldo] <= 5000))
+GO
+/****** Objeto: StoredProcedure [dbo].[actualizaImportacionRemisionE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[actualizaImportacionRemisionE] @CodImp varchar(13),@codRemision varchar(13),@cod_ori varchar(5),@cod_des varchar(5) as
+begin
+  insert into remision_e(cod_rem,cod_remi,cod_usu,cod_ori,cod_des,fecha,obs_rem,estado,total)
+  select @codRemision,num_factura,cod_usu,@cod_ori,@cod_des,CURRENT_TIMESTAMP,'IMPORTACION'+' '+COD_IMP+' '+PROVEEDOR+' '+obs,'N',0
+  from importacion
+  WHERE COD_IMP=@CodImp;
+  INSERT INTO DET_REMIE(COD_REM,ID_FAB,COD_FAB,CANTIDAD,CIF_TOTAL)
+  SELECT @codRemision,DI.ID_FAB,P.COD_FAB,DI.CANTIDAD,P.CIF_CBBA*cantidad
+  FROM DET_IMPORTACION DI,PROV_PRO P
+  WHERE DI.ID_FAB=P.ID_FAB AND DI.COD_IMP=@CodImp;
+  UPDATE remision_e SET TOTAL= (SELECT SUM(CIF_TOTAL)FROM DET_REMIE WHERE COD_REM=@codRemision) WHERE COD_REM=@codRemision 
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[actulizaPrecioImportacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[actulizaPrecioImportacion] @pCodImportacion VARCHAR(13) as
+begin
+declare @codPedido int;
+declare @dp int;
+if (select estado from importacion where cod_imp=@pCodImportacion)='N'
+begin	
+	select top 1 @DP=dolarParalelo from EMPRESA WHERE substring(COD_EMP,1,1)=SUBSTRING(@pCodImportacion,1,1)
+	declare dets cursor for
+		select di.ID_FAB,cod_fab,fac_dep*prec_unit as CIFCBBA,prec_lista as PLista,prec_min,prec_may,PLIS_BS,PMIN_BS,PMAY_BS,di.p_Oferta,di.prec_unit,di.ciff,di.p_ofertaSus, di.CIFF_Sus
+		from importacion i,det_importacion di
+		where i.cod_imp=di.cod_imp and i.cod_imp=@pCodImportacion
+		order by cod_FAB
+	declare @ID_FAB INT, @COD_PROD varchar(50),@CifCbba money,@PLista money,@PMin money,@PMay money,@PLista_bs money,@PMin_bs money,@PMay_bs money,@p_oferta money,@p_unit money,@pCiff money, @p_ofertaSus money, @CIFF_Sus money
+	open dets
+	fetch next from dets into @ID_FAB,@COD_PROD, @CifCbba,@PLista,@PMin,@PMay,@PLista_bs,@PMin_bs,@PMay_bs,@p_oferta,@p_unit,@pCiff,@p_ofertaSus,@CIFF_Sus
+while @@FETCH_STATUS = 0
+begin
+	IF @dp=1 
+	begin
+		update prov_pro
+		set plis_pro = @PLista,
+		cif_cbba=@CifCbba,
+		pmay_pro=@PMay,
+		pmin_pro=@PMin,				
+		cod_imp=@pCodImportacion,
+		fecha_actualizada=CURRENT_TIMESTAMP,
+		p_fob=@p_unit,
+		ciff=@pCiff,
+		CIFFSus=@CIFF_Sus,
+		pOfertaSus=@p_ofertaSus
+		where ID_FAB = @ID_FAB
+	end
+	else
+	begin
+		update prov_pro
+		set 
+		cif_cbba=@CifCbba,		
+		plis_BS=@PLista_BS,
+		pmay_BS=@PMay_BS,
+		pmin_BS=@PMin_BS,
+		pOferta=@p_oferta,
+		cod_imp=@pCodImportacion,
+		fecha_actualizada=CURRENT_TIMESTAMP,
+		p_fob=@p_unit,
+		ciff=@pCiff		
+		where ID_FAB = @ID_FAB
+	end	
+	fetch next from dets into @ID_FAB,@COD_PROD, @CifCbba,@PLista,@PMin,@PMay,@PLista_bs,@PMin_bs,@PMay_bs,@p_oferta,@p_unit,@pCiff,@p_ofertaSus,@CIFF_Sus	
+	end
+	close dets
+	deallocate dets
+	select @codPedido=cod_pedido from IMPORTACION where COD_IMP=@pCodImportacion;
+	update sip_Pedido set estado='D' where cod_pedido=@codPedido;
+	update importacion set estado='D' where cod_imp=@pCodImportacion
+	update DET_IMPORTACION set existencia=spp.cantidad
+	from DET_IMPORTACION di
+	inner join IMPORTACION i on di.COD_IMP=i.COD_IMP
+	inner join SUC_PRO_PROV spp on di.ID_FAB=spp.ID_FAB and spp.COD_SUC=i.COD_SUC
+	where di.COD_IMP=@pCodImportacion
+end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[add_ciudad] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[add_ciudad] @codigo varchar(5),@nom_ciu varchar(40),@depto varchar(15) as
+begin
+	insert into CIUDAD (COD_CIU,NOM_CIU,DEPTO)values
+	(@codigo,@nom_ciu,@depto)
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[add_config_producto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[add_config_producto]
+@cod_pro varchar(50),
+@cod_em int,
+@cod_OE varchar(50)
+as
+insert into pro_emp_marca(cod_pro,cod_em,cod_OE)values (@cod_pro,@cod_em,@cod_OE)
+GO
+/****** Objeto: StoredProcedure [dbo].[add_dolar] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[add_dolar] @pdolar money,@pcod_usu varchar(7) as
+begin
+insert into cambio_dolar(fecha,tipo_cambio,cod_usu) values
+						(CURRENT_TIMESTAMP, @pdolar/100,@pcod_usu)					
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[anularDescuento] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[anularDescuento] @cod_cre varchar(13)
+as
+begin
+	if (select estado from credito where cod_cre=@cod_cre)='A' and (select descuento from credito where cod_cre=@cod_cre)<>0
+	begin
+		update credito set saldo=saldo+descuento, descuento=0 where cod_cre=@cod_cre
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[AnularRemisionS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[AnularRemisionS] @pCodRemision VARCHAR(16),@pCodSucursal VARCHAR(5),@pObs varchar(255) as
+begin
+if (select estado from remision_s where cod_rem=@pCodRemision)='DE' or (select estado from remision_s where cod_rem=@pCodRemision)='D' or (select estado from remision_s where cod_rem=@pCodRemision)='T'
+ begin
+	update suc_pro_prov set cantidad=spp.cantidad+dr.cantidad
+	from det_remis dr inner join suc_pro_prov spp on dr.ID_FAB=spp.ID_FAB and spp.cod_suc=@pCodSucursal
+	where cod_rem=@pCodRemision 
+	update remision_s set estado='A',obs_rem=obs_rem +' '+ @pObs where cod_rem=@pCodRemision
+end
+else
+ PRINT 'No realizo la operacion'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[anularVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[anularVenta] @codigo varchar(18),@codSuc varchar(5) as
+begin
+	if (select estado from venta where cod_venta=@codigo)='D'
+		update suc_pro_prov set cantidad=spp.cantidad+dv.cantidad		
+		from det_venta dv  inner join suc_pro_prov spp on dv.cod_fab=spp.cod_fab and cod_suc=@codSuc
+		where cod_venta=@codigo
+		update venta set estado='N' where cod_venta=@codigo
+	end	
+GO
+/****** Objeto: StoredProcedure [dbo].[cierre_caja_Allow] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[cierre_caja_Allow] @cod_suc varchar(5), @pfecha datetime
+as
+begin
+	select top 1 iif(@pfecha>cc.fecha_fin,0,1) allow
+	from CIERRE_CAJA cc
+	where cc.COD_SUC =@cod_suc
+	order by FECHA_FIN desc
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[del_dosificacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[del_dosificacion]
+@nro_autorizacion varchar(20)
+as
+begin
+	delete dosificacion where nro_autorizacion=@nro_autorizacion;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[delLastGiveBack] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[delLastGiveBack] @cod_suc varchar(5),@cod_cre varchar(13)
+as
+begin
+declare @codigo as varchar(50);
+declare @fecha as datetime;
+declare @estado as varchar(2);
+declare @total as money;
+	if ((select count(cod_devc)from DEVOLUCION_CREDITO where COD_CRE=@cod_cre)>0)
+	begin
+		select top 1 @fecha=dc.fecha,@total=dc.total,@codigo=cod_devc,@estado=c.ESTADO
+		from DEVOLUCION_CREDITO dc 
+		inner join credito c on dc.COD_CRE=c.COD_CRE 
+		where dc.cod_cre=@cod_cre
+		order by cod_devc desc;
+		if (@estado ='A')
+		begin
+			if ((select top 1 iif(@fecha>cc.fecha_fin,0,1) allow
+				from CIERRE_CAJA cc
+				where cc.COD_SUC =@cod_suc
+				order by FECHA_FIN desc)=0)
+			begin
+				update SUC_PRO_PROV set CANTIDAD= spp.CANTIDAD - DDC.CANTIDAD 
+				FROM DET_DEVOLUCION_CREDITO DDC
+				inner join SUC_PRO_PROV spp  on spp.COD_FAB =DDC.COD_FAB
+				where spp.COD_SUC =@cod_suc and cod_devc=@codigo;
+	
+				update CREDITO set SALDO = SALDO+dc.total, DevCedito = DevCedito-dc.total
+				from credito c 
+				inner join DEVOLUCION_CREDITO dc on c.COD_CRE =dc.COD_CRE 
+				where dc.COD_DEVC = @codigo;
+
+				delete DEVOLUCION_CREDITO where COD_DEVC=@codigo;
+			end			
+		end		
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[DescargaCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[DescargaCredito] @pCodCredito VARCHAR(18),@gCodSuc varchar(5) as
+begin
+if ((select count(dc.COD_FAB)
+	from DET_CREDITO dc 
+	inner join SUC_PRO_PROV spp on dc.ID_FAB=spp.ID_FAB
+	where spp.COD_SUC=@gCodSuc and dc.COD_CRE=@pCodCredito and dc.CANTIDAD>spp.CANTIDAD)=0)
+Begin
+	if (select SUBSTRING(@gCodSuc,1,1))='1'
+	begin
+		if ((select CREDITO_MAXIMO 
+			from credito c 
+			inner join cliente cl on c.COD_CLI=cl.cod_cli
+			where cod_cre=@pCodCredito)<  (select ISNULL(sum(SALDO),0)
+			from credito c
+			where (ESTADO='A' or ESTADO='N') and COD_CLI in (
+			select COD_CLI
+			from credito 
+			where cod_cre=@pCodCredito)))
+			begin
+				return;
+			end		
+	end
+	if ((select estado from credito where cod_cre=@pCodCredito)='N' or (select estado from credito where cod_cre=@pCodCredito)='T' or( select estado from credito where cod_cre=@pCodCredito)='TC'  or (select estado from credito where cod_cre=@pCodCredito)='AC') and (select CREDITO from SUCURSAL where COD_SUC=@gCodSuc)='0'
+	begin
+		declare @error0 int
+		declare @error1 int
+		declare @dlr money;
+		begin transaction			
+		select top 1 @dlr=tipo_cambio
+		from cambio_dolar_paralelo
+		where cod_emp=SUBSTRING(@gCodSuc, 1, 3)
+		order by fecha desc
+		select @dlr =isnull(@dlr,0)	
+	
+		update DET_CREDITO set p_fob=pp.p_fob, existencia=spp.CANTIDAD
+		from DET_CREDITO dc 
+		inner join PROV_PRO pp on dc.ID_FAB=pp.ID_FAB
+		inner join SUC_PRO_PROV spp on dc.ID_FAB=spp.ID_FAB
+		where  pp.p_fob is not null and dc.cod_cre=@pCodCredito and spp.COD_SUC=@gCodSuc;
+
+		update suc_pro_prov set cantidad=spp.cantidad-dc.cantidad
+		from suc_pro_prov spp 
+		inner join det_credito dc on spp.ID_FAB=dc.ID_FAB and spp.cod_suc=@gCodSuc
+		where cod_cre=@pCodCredito;
+			
+		set @error0=@@error
+			update credito set estado='A',fecha_val =current_timestamp,usuario_val =CURRENT_USER,dolarParalelo=@dlr where cod_cre=@pCodCredito
+			if (select estado from CREDITO WHERE COD_CRE=@pCodCredito)='T'				
+				update PROFORMA set VENDIDO='D' where COD_PROF in(select cod_nota from CREDITO where COD_CRE=@pCodCredito)
+		set @error1=@@error
+		if @error0=0 and @error1=0
+			commit transaction
+		else
+			rollback transaction
+	End
+	else
+		PRINT 'No realizo la operacion, revise el credito maximo del cliente...'
+end
+End
+GO
+/****** Objeto: StoredProcedure [dbo].[descargaDefectuoso] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[descargaDefectuoso] @pCodSucursal VARCHAR(5) as
+begin
+	declare dets cursor for
+		select id_FAB, CANTIDAD
+		from defectuoso
+		where cod_suc= @pCodSucursal AND ESTADO='N'
+		order by cod_FAB
+declare @ID_FAB integer, @CANTIDAD integer
+open dets
+fetch next from dets into @ID_FAB, @CANTIDAD
+while @@FETCH_STATUS = 0
+begin
+	update SUC_PRO_PROV
+	set CANTIDAD = CANTIDAD - @CANTIDAD
+	where ID_FAB = @ID_FAB and cod_suc=@pCodSucursal
+	fetch next from dets into @ID_FAB, @CANTIDAD
+end
+close dets
+deallocate dets
+update defectuoso set estado='D' where cod_suc=@pCodSucursal AND ESTADO='N'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[descargaDevolucion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[descargaDevolucion] @pCodVenta VARCHAR(17),@gCodSuc varchar(5) as
+begin
+if (select estado from venta where cod_venta=@pCodVenta)='D'
+ begin
+declare @error1 int
+begin transaction
+	update suc_pro_prov set cantidad=spp.cantidad+di.cantidad
+	from suc_pro_prov spp inner join det_devolucion di on spp.ID_FAB=di.ID_FAB and spp.cod_suc=@gCodSuc
+	where cod_venta=@pCodVenta
+set @error1=@@error
+if @error1=0
+ commit transaction
+else
+ rollback transaction
+--update venta set total=total-@total where cod_venta=@pCodVenta
+end
+else
+ PRINT 'No realizo la operacion'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[descargaDevolucionCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[descargaDevolucionCredito] @pCodCredito VARCHAR(13),@pCodSuc varchar(5),@pCodDev as integer as
+begin
+if (select estado from credito where cod_cre=@pCodCredito)='A' or (select estado from credito where cod_cre=@pCodCredito)='C'
+begin
+declare @error1 int
+begin transaction
+update suc_pro_prov set cantidad=spp.cantidad+dd.cantidad
+	from suc_pro_prov spp inner join det_devolucion_credito dd on spp.ID_FAB=dd.id_fab 
+	where dd.COD_DEVC=@pCodDev and spp.cod_suc=@pCodSuc
+set @error1=@@error
+if @error1=0
+ commit transaction
+else
+ rollback transaction
+--update venta set total=total-@total where cod_venta=@pCodVenta
+end
+else
+ PRINT 'No realizo la operacion'
+end
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[descargaInventario] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[descargaInventario] @pCodInventario VARCHAR(13),@pCodSuc varchar(5) as
+begin
+if (select estado from inventario where cod_inv=@pCodInventario)=0 
+ begin
+declare @error2 int
+declare @error3 int
+begin transaction
+update suc_pro_prov set cantidad=di.cantidad
+	from suc_pro_prov spp inner join det_inventario di on spp.ID_fab=di.ID_FAB and spp.cod_suc=@pCodSuc
+	where cod_inv=@pCodInventario
+set @error2=@@error
+update inventario set estado=1 where cod_inv=@pCodInventario
+set @error3=@@error
+if @error2=0 and @error3=0
+  commit transaction
+else 
+  rollback transaction
+end
+else
+ PRINT 'No realizo la operacion'
+end
+
+GO
+/****** Objeto: StoredProcedure [dbo].[DescargaRemisionE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[DescargaRemisionE] @pCodRemision VARCHAR(13),@gCodSuc varchar(5) as
+begin
+if (select estado from remision_e where cod_rem=@pCodRemision)='N'
+ begin
+	declare @error0 int
+	declare @codigo varchar(20);
+	begin transaction
+	update DET_REMIE set existencia=spp.cantidad
+	from DET_REMIE dr
+	inner join REMISION_E r on dr.COD_REM=dr.cod_rem
+	inner join SUC_PRO_PROV spp on dr.iD_FAB=spp.ID_FAB and spp.COD_SUC=@gCodSuc
+	where dr.COD_REM=@pCodRemision
+	update suc_pro_prov set cantidad=spp.cantidad+dr.cantidad
+		from suc_pro_prov spp inner join det_remie dr on spp.ID_FAB=dr.id_fab and spp.cod_suc=@gCodSuc
+		where cod_rem=@pCodRemision
+	set @error0=@@error
+	if @error0=0
+	begin
+	 commit transaction
+	 select @codigo=COD_REMI from REMISION_E where COD_REM=@pCodRemision;
+	 update remision_e set estado='D',FECHA_DESCARGA=CURRENT_TIMESTAMP,usuario_descarga=current_user where cod_rem=@pCodRemision
+	 update REMISION_S set ESTADO='DE' where COD_REM=@codigo;
+	end
+	else
+	 rollback transaction
+	end
+else
+ PRINT 'No realizo la operacion'
+end
+
+GO
+/****** Objeto: StoredProcedure [dbo].[DescargaRemisionS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[DescargaRemisionS] @pCodRemision VARCHAR(16),@gCodSuc varchar(5) as
+begin
+if (select estado from remision_S where cod_rem=@pCodRemision)='N'
+ begin
+declare @error0 int
+
+declare @error2 int
+declare @error3 int
+begin transaction
+update suc_pro_prov set cantidad=spp.cantidad-dr.cantidad
+	from det_remis dr inner join suc_pro_prov spp on dr.Id_fab=spp.ID_FAB and spp.cod_suc=@gCodSuc
+	where cod_rem=@pCodRemision
+update DET_REMIS set FOB_TOTAL=pp.p_fob
+from DET_REMIS dr 
+inner join PROV_PRO pp on dr.ID_FAB=pp.ID_FAB
+where dr.COD_REM=@pCodRemision
+set @error0=@@error
+update remision_s set fecha=CURRENT_TIMESTAMP,USUARIO_DESCARGA=CURRENT_USER where cod_rem=@pCodRemision
+set @error2=@@error
+declare @CodigoUno varchar(16)
+declare @codigoDos varchar(16)
+set @error3=0
+if (select cod_pedido from remision_S where cod_rem=@pCodRemision)<>'1'
+ begin
+	select @CodigoUno=cod_pedido,@codigoDos=COD_PEDIDO from remision_s where cod_rem=@pCodRemision	
+	update pedido set estado='D' where cod_pedido=@CodigoUno	
+	set @error3=@@error
+	update codigoBarra set estado='DB'
+	from codigoBarra cb inner join PEDIDO p on cb.cod_documento=p.cod_documento 
+	where p.COD_PEDIDO =@codigoDos and p.cod_documento<>'0'	
+ end
+if @error0=0 and @error2=0 and @error3=0
+ commit transaction
+else
+ rollback transaction
+end
+else
+ PRINT 'No realizo la operacion'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[DescargaVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[DescargaVenta] @pCodVenta VARCHAR(18),@pCodSuc varchar(5) as
+begin
+if (select estado from venta where cod_venta=@pCodVenta)='N'OR ((select tipo_venta from venta where cod_venta=@pCodVenta)='F' and (select estado from venta where cod_venta=@pCodVenta)='E')
+ begin
+ declare @error1 int
+ declare @error3 int
+ declare @error4 int
+ declare @dlr money;
+ begin transaction			
+	select top 1 @dlr=tipo_cambio
+	from cambio_dolar_paralelo
+	where cod_emp=SUBSTRING(@pCodSuc, 1, 3)
+	order by fecha desc
+	select @dlr =isnull(@dlr,0)	
+
+	update DET_VENTA set p_fob=pp.p_fob,existencia=spp.CANTIDAD
+	from DET_VENTA dv 
+	inner join PROV_PRO pp on dv.ID_FAB=pp.ID_FAB
+	inner join SUC_PRO_PROV spp on dv.ID_FAB=spp.ID_FAB
+	where pp.p_fob is not null and dv.cod_venta=@pCodVenta and spp.COD_SUC=@pCodSuc;
+	
+	update suc_pro_prov set cantidad=spp.cantidad-dv.cantidad
+	from det_venta dv inner join suc_pro_prov spp on dv.ID_FAB=spp.ID_FAB 
+	where cod_venta=@pCodVenta and spp.cod_suc=@pCodSuc;
+	
+	set @error1=@@error
+	update venta set estado='D', fecha=CURRENT_TIMESTAMP,dolarParalelo=@dlr  where cod_venta=@pCodVenta
+	set @error3=@@error
+	update proforma set vendido='D' where cod_prof=@pCodVenta
+	set @error4=@@error
+	if @error1=0 and @error3=0 and @error4=0
+	commit transaction
+else
+	rollback transaction
+end
+else
+ PRINT 'No realizo la operacion'
+end
+
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[devolverNota] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[devolverNota] @codProf varchar(18),@cod_usu varchar(7) as
+if (select vendido from proforma where cod_prof=@codProf)='C'
+ begin  
+  update proforma set vendido='T',tipo='N',cod_usu=@cod_usu,fecha_nota=CURRENT_TIMESTAMP  where cod_prof=@codProf;
+ end
+ else
+   PRINT 'No se realizo la operacion';
+GO
+/****** Objeto: StoredProcedure [dbo].[elimiarCodigoBarra] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[elimiarCodigoBarra] @codDocumento varchar(50) AS 
+begin
+if (select estado from codigoBarra where cod_documento=@codDocumento)='N'
+begin
+	delete codigoBarra  where cod_documento=@codDocumento
+end
+else
+	PRINT 'No se realizo la operacion'
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[eliminarInventario] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[eliminarInventario] @pCodigo VARCHAR(10),@pCodSucursal VARCHAR(5) as
+begin
+if (select estado from inventario where cod_inv=@pCodigo)=1
+ begin
+	declare dets cursor for
+		select ID_FAB,cod_FAB, diferencia
+		from det_inventario
+		where cod_inv= @pCodigo
+		order by cod_FAB
+declare @ID_FAB INTEGER,@COD_PROD varchar(50), @CANTIDAD integer
+open dets
+fetch next from dets into @ID_FAB, @COD_PROD, @CANTIDAD
+while @@FETCH_STATUS = 0
+begin
+	update SUC_PRO_PROV
+	set CANTIDAD = @cantidad
+	where ID_FAB = @ID_FAB and cod_suc=@pCodSucursal
+	fetch next from dets into @ID_FAB, @COD_PROD, @CANTIDAD
+end
+close dets
+deallocate dets
+update inventario set estado=0 where cod_inv=@pCodigo
+end
+else
+ PRINT 'No realizo la operacion'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[EliminarRemisionE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[EliminarRemisionE] @pCodRemision VARCHAR(13),@pCodSucursal VARCHAR(5) as
+begin
+if (select estado from remision_e where cod_rem=@pCodRemision)='D'
+ begin
+	declare dets cursor for
+		select cod_FAB, CANTIDAD
+		from det_remie
+		where cod_rem= @pCodRemision
+		order by cod_FAB
+declare @COD_PROD varchar(50), @CANTIDAD integer
+open dets
+fetch next from dets into @COD_PROD, @CANTIDAD
+while @@FETCH_STATUS = 0
+begin
+	update SUC_PRO_PROV
+	set CANTIDAD = CANTIDAD - @CANTIDAD
+	where COD_FAB = @COD_PROD and cod_suc=@pCodSucursal
+	fetch next from dets into @COD_PROD, @CANTIDAD
+end
+close dets
+deallocate dets
+update remision_e set estado='A' where cod_rem=@pCodRemision
+end
+else
+ PRINT 'No realizo la operacion'
+end
+
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaACredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[enviaACredito] @pCodigo varchar(18) as
+if (select count(cod_documento) from ingresoCodigoBarra where cod_documento=@pCodigo)>0  
+begin
+	declare @cant int,@total money
+	insert det_credito(cod_cre,cod_fab,cantidad,precio_cre,descuento)
+	select cod_documento,p.cod_fab,cantidad,preciot,((preciot*100)/(plis_bs*cantidad))-100
+	from ingresoCodigoBarra ib inner join prov_pro p on p.cod_fab=ib.cod_fab
+	where cod_documento=@pCodigo	
+	order by nro
+	select @total=sum(precioT),@cant=count(cod_documento) from ingresoCodigoBarra where cod_documento=@pCodigo
+	update credito set total=@total,saldo=@total,descuento=@total/@cant,estado='N' where cod_cre=@pCodigo
+	delete ingresoCodigoBarra where cod_documento=@pCodigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaAProforma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[enviaAProforma] @pCodigo varchar(18) as
+if (select count(cod_documento) from ingresoCodigoBarra where cod_documento=@pCodigo)>0  
+begin
+	declare @cant int,@total money
+	insert det_proforma(cod_prof,cod_fab,cantidad,precio_venta,desc_Unit,nro)
+	select cod_documento,p.cod_fab,cantidad,preciot,((preciot*100)/(plis_bs*cantidad))-100,nro
+	from ingresoCodigoBarra ib inner join prov_pro p on p.cod_fab=ib.cod_fab
+	where cod_documento=@pCodigo	
+	select @total=sum(precioT),@cant=count(cod_documento) from ingresocodigoBarra where cod_documento=@pCodigo
+	update proforma set total=@total,descuento=@total/@cant where cod_prof=@pCodigo
+	delete ingresoCodigoBarra where cod_documento=@pCodigo	
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaARemisionS] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[enviaARemisionS] @pCodigo varchar(18) as
+if (select count(cod_documento) from ingresoCodigoBarra where cod_documento=@pCodigo)>0  
+begin
+	declare @cant int,@total money
+	insert det_remis(cod_rem,cod_fab,cantidad,cif_total,nro)
+	select cod_documento,p.cod_fab,cantidad,cif_cbba*cantidad,nro
+	from ingresoCodigoBarra ib inner join prov_pro p on p.cod_fab=ib.cod_fab
+	where cod_documento=@pCodigo	
+	order by nro
+	update remision_s set estado='N' where cod_rem=@pCodigo
+	delete ingresoCodigoBarra where cod_documento=@pCodigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaBarraPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[enviaBarraPedido] @codBarra varchar(18), @codPedido varchar(16),@codSucDes varchar(5),@codSucOri varchar(5),@codUsu varchar(10) as
+begin
+if (select estado from codigoBarra where cod_documento=@codBarra)='N'
+begin
+	INSERT INTO [PEDIDO] ([COD_PEDIDO], [ESTADO],[COD_SUC_DES],[COD_SUC_ORI],[COD_USU],[FECHA],[OBS],[FFE],[FECHA_ENVIO],[FECHA_VALIDACION],[OBS_VAL],[FECHA_ELAVORACION],cod_documento)
+	values(@codPedido,'BN',@codSucOri,@codSucDes,@codUsu,CURRENT_TIMESTAMP,'Codigo Barra '+ @codBarra,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'',CURRENT_TIMESTAMP,@codBarra);
+	
+	insert into det_pedido(cod_pedido,cod_fab,cant_solicitado,cant_autorizado,cant_enviado,obs,baja,nro)
+	select @codPedido,cod_fab,cantidad,cantidad,cantidad,'','0',nro
+	from ingresoCodigoBarra
+	where cod_documento=@codBarra
+	order by nro;
+	
+	update codigoBarra set estado='E' where cod_documento=@codBarra;
+end
+else
+	PRINT 'No realizo la operacion'
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaCostoVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[enviaCostoVenta] @pCodigo varchar(18) as
+if (select vendido from proforma where cod_prof=@pCodigo)='N' and (select tipo from proforma where cod_prof=@pCodigo)='I' 
+begin
+update proforma set vendido='E' where cod_prof=@pCodigo;
+
+insert venta(cod_venta,fecha,cod_usu,obs,cod_cli,estado,cod_ini,tipo_venta,total_ini,tipo)
+select cod_prof,fecha,cod_usu,nota,cod_cliente,vendido,cod_ini,tipo,total_ini,'AL CONTADO'
+from proforma 
+where cod_prof=@pCodigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[enviaCredito] @codNota varchar(18),@codiCredito varchar(13),@codSuc varchar(5),@dolar smallmoney as
+declare @cod_cli int
+declare @cod_usu varchar(7)
+begin
+	if (select vendido from proforma where cod_prof=@codNota)='C' and (select tipo_nota from proforma where cod_prof=@codNota)=2
+		BEGIN
+			--averigua datos usuario
+			select @cod_cli=cod_cliente,@cod_usu=cod_usu from proforma where cod_prof=@codNota;
+			--Inserta cabecera
+			INSERT INTO [CREDITO] ([COD_CRE], [COD_SUC], [COD_CLI], [COD_USU], [FEC_INICIO], 
+            [FEC_FIN], [TOTAL], [SALDO], [ESTADO], [SALDO_FAVOR], [OBS], [DOLAR])
+			VALUES (@codNota, @codSuc, @COD_CLI, @COD_USU, CURRENT_TIMESTAMP, DATEADD(DAY, 21, CURRENT_TIMESTAMP), 0, 0, '',0, '', @dolar)
+			--Inserta Detalle
+			insert into DET_CREDITO(COD_CRE,COD_FAB,CANTIDAD,PRECIO_CRE,DESCUENTO,nro_registro,ID_FAB)
+			select @codiCredito, COD_FAB, CANTIDAD, PRECIO_VENTA,DESC_UNIT, NRO, ID_FAB
+			from DET_PROFORMA
+			where COD_PROF=@codNota
+		END
+	ELSE
+		 print 'No se pudo convertir la nota en credito...' 	
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaImportacionSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[enviaImportacionSucursal] @cod_importacion varchar(11), @CodRemiS varchar(18),@codRemiE varchar(18),@cod_ori varchar(5),@cod_des varchar(5) as
+begin
+insert into remision_s(cod_rem,cod_usu,suc_des,suc_ori,fecha,obs_rem,total)
+select @CodRemiS,cod_usu,@cod_des,@cod_ori,CURRENT_TIMESTAMP,'IMPORTACION'+' '+PROVEEDOR+' '+COD_IMP,0
+from importacion
+WHERE COD_IMP=@cod_importacion;
+
+insert into det_remis(cod_rem,id_fab,cod_fab,cantidad,cif_total,nro)
+select @codRemiS,di.ID_FAB,DI.cod_fab,cantidad,cantidad*pp.CIF_CBBA,nro
+from det_importacion di,prov_pro pp
+where DI.cod_imp=@cod_importacion and DI.COD_FAB=PP.COD_FAB ;
+UPDATE remision_s SET TOTAL= (SELECT SUM(CIF_TOTAL)FROM DET_REMIS WHERE COD_REM=@codRemiS) WHERE COD_REM=@codRemiS ;
+
+insert into remision_e(cod_rem,cod_remi,cod_usu,cod_ori,cod_des,fecha,obs_rem,estado,total)
+select @codRemiE,'M-'+RIGHT(@CodRemiS,4),cod_usu,@cod_ori,@cod_des,CURRENT_TIMESTAMP,'IMPORTACION'+' '+PROVEEDOR+' CODIGO '+COD_IMP,'N',0
+from importacion
+WHERE COD_IMP=@cod_importacion;
+
+INSERT INTO DET_REMIE(COD_REM,id_fab,COD_FAB,CANTIDAD,CIF_TOTAL,nro)
+SELECT @codRemiE,di.ID_FAB,P.COD_FAB,DI.CANTIDAD,P.CIF_CBBA*cantidad,nro
+FROM DET_IMPORTACION DI,PROV_PRO P
+WHERE DI.iD_FAB=P.ID_FAB AND DI.COD_IMP=@cod_importacion;
+UPDATE remision_e SET TOTAL= (SELECT SUM(CIF_TOTAL)FROM DET_REMIE WHERE COD_REM=@codRemiE) WHERE COD_REM=@codRemiE;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaNota] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[enviaNota] @codProf varchar(18),@cod_usu varchar(7) as
+if (select vendido from proforma where cod_prof=@codProf)='T'
+ begin  
+  update proforma set vendido='C',tipo='F',cod_usu=@cod_usu, fecha_nota=CURRENT_TIMESTAMP  where cod_prof=@codProf;
+ end
+ else
+   PRINT 'No se realizo la operacion';
+GO
+/****** Objeto: StoredProcedure [dbo].[EnviaPedidoRemision] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[EnviaPedidoRemision] @CodRemision varchar(16),@codPedido varchar(16),@codUsu varchar(10)as
+begin
+	if (select estado from pedido where cod_pedido=@codPedido)='V'
+	begin
+	  INSERT INTO remision_s(cod_rem,cod_usu,SUC_ori,SUC_des,fecha,obs_rem,total,cod_pedido,estado)
+	  select @CodRemision,@codUsu,cod_suc_des,cod_suc_ori,CURRENT_TIMESTAMP,CAST(pedido.Obs as varchar(500))+' '+cast(fecha as varchar(20)),0,@codPedido,'N'
+	  from pedido 
+	  where cod_pedido=@codPedido;
+
+	  INSERT INTO DET_REMIS(COD_REM, id_fab,COD_FAB, CANTIDAD, CIF_TOTAL, obs)
+	  SELECT @CodRemision, dp.ID_FAB,PP.COD_FAB, CANT_autorizado, CANT_autorizado*CIF_CBBA, dp.OBS
+	  FROM DET_PEDIDO DP
+	  inner join PROV_PRO PP on DP.ID_FAB=PP.ID_FAB 
+	  inner join PEDIDO p on dp.COD_PEDIDO=p.cod_pedido
+	  inner join SUC_PRO_PROV spp on spp.id_fab=dp.id_fab
+	  WHERE dp.COD_PEDIDO=@codPedido and DP.CANT_ENVIADO>0 and spp.cantidad>0 and spp.COD_SUC=p.cod_suc_des;      
+	  update pedido set estado='R' where cod_pedido=@codPedido
+	  update codigoBarra set estado='RB'
+	  from codigoBarra cb inner join PEDIDO p on cb.cod_documento=p.cod_documento 
+	  where p.COD_PEDIDO =@codPedido and p.cod_documento<>'0' 
+	end;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaPreVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[enviaPreVenta] @codProf varchar(18),@Dolar smallmoney as
+begin
+if ((select vendido from proforma where cod_prof=@codProf)='N'or((select vendido from proforma where cod_prof=@codProf)='C' and (select tipo from proforma where cod_prof=@codProf)='F'))
+ begin
+declare @error1 int
+declare @error2 int
+declare @error3 int
+begin transaction
+  if (select count(cod_venta) from venta where cod_venta=@codProf)=1
+  begin 
+	update venta set fecha=p.fecha,fecha_envio=p.FECHA,total=p.total,obs=nota,cod_cli=cod_cliente,factura=p.factura,desc_prof=p.desc_prof,tipo_venta='F',estado='E'
+	from venta v inner join proforma p on v.cod_venta=p.cod_prof where p.cod_prof=@codProf
+  end
+  else
+  begin 	
+	insert into venta(cod_venta,fecha,cod_usu,tipo,Total,obs,cod_cli,Factura,DESC_PROF,cod_INI,tipo_venta,estado,fecha_envio,dolarParalelo)
+	select cod_prof,fecha,cod_usu,TIPO_PAGO,total,nota,cod_cliente,Factura,DESC_PROF,COD_INI,'F','E',FECHA,dolarParalelo 
+	from proforma
+	where cod_prof=@codProf AND (VENDIDO='N'or(TIPO='F' AND VENDIDO='C'))
+  end
+set @error1=@@error
+  insert into det_venta(cod_venta,id_fab,cod_fab,cantidad,precio_venta,desc_unit,PREC_LISTA,plis_bs,DOLAR,nro)
+  select cod_prof, DP.ID_FAB,DP.cod_fab, cantidad, precio_venta,desc_unit,1,plis_bs,@DOLAR,Nro
+  from det_proforma DP,PROV_PRO PP
+  where DP.ID_FAB=PP.ID_FAB AND cod_prof=@codProf
+set @error2=@@error
+  update proforma set vendido='E' where cod_prof=@codProf;
+set @error3=@@error
+if @error1=0 and @error2=0 and @error3=0
+  commit transaction
+else
+  rollback transaction
+ end
+ else
+   PRINT 'No realizo la operacion'
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaProfomaCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[enviaProfomaCredito] @codNota varchar(18),@codCredito varchar(13),@codSuc varchar(5),@dolar smallmoney as
+declare @cod_cli int
+declare @cod_usu varchar(7)
+begin
+	if (select vendido from proforma where cod_prof=@codNota)='C' and (select tipo_nota from proforma where cod_prof=@codNota)=2
+		BEGIN
+			--averigua datos usuario
+			select @cod_cli=cod_cliente,@cod_usu=cod_usu from proforma where cod_prof=@codNota;
+			--Inserta cabecera
+			INSERT INTO [CREDITO] ([COD_CRE], [COD_SUC], [COD_CLI], [COD_USU], [FEC_INICIO], 
+            [FEC_FIN], [TOTAL], [SALDO], [ESTADO], [SALDO_FAVOR], [OBS], [DOLAR],[cod_nota])		
+			select @codCredito,@codSuc,COD_CLIENTE,COD_USU,CURRENT_TIMESTAMP,DATEADD(DAY, 21, CURRENT_TIMESTAMP),TOTAL,TOTAL,'T',0,nota+' - '+ CURRENT_USER,@dolar,@codNota
+			from PROFORMA
+			where COD_PROF=@codNota
+			--Inserta Detalle
+			insert into DET_CREDITO(COD_CRE,COD_FAB,CANTIDAD,PRECIO_CRE,DESCUENTO,nro_registro,ID_FAB)
+			select @codCredito, COD_FAB, CANTIDAD, PRECIO_VENTA,DESC_UNIT, NRO, ID_FAB
+			from DET_PROFORMA
+			where COD_PROF=@codNota;
+			update proforma set vendido='E',tipo='F',cod_usu=@cod_usu, fecha_nota=CURRENT_TIMESTAMP  where cod_prof=@codNota;
+		END
+	ELSE
+		 print 'No se pudo convertir la nota en credito...' 	
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaProforma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[enviaProforma] @pCodigo varchar(18),@pObs varchar(255) as
+if (select tipo_venta from venta where cod_venta=@pCodigo)='I' and (select estado from venta where cod_venta=@pCodigo)='E' 
+begin
+update venta set fecha=CURRENT_TIMESTAMP,tipo_venta='F',estado='C',Obs=@pObs where cod_venta=@pCodigo
+update proforma set fecha=CURRENT_TIMESTAMP,tipo='F',vendido='C',nota=@pObs where cod_prof=@pCodigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[enviaRemisionsRemisione] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[enviaRemisionsRemisione] @CodRemis varchar(16),@codRemie varchar(13) as
+begin
+  insert into remision_e(cod_rem,cod_remi,cod_usu,cod_ori,cod_des,fecha,obs_rem,estado,total)
+  select @codRemie,@CodRemis,cod_usu,suc_ori,suc_des,CURRENT_TIMESTAMP,obs_rem,'N',total
+  from remision_s
+  where cod_rem=@CodRemis;
+  INSERT INTO DET_REMIE(COD_REM,ID_FAB,COD_FAB,CANTIDAD,CIF_TOTAL,NRO)
+  select @codRemie,ID_FAB,cod_fab,cantidad,cif_total,nro
+  from det_remis
+  where cod_rem=@CodRemis
+  order by nro;
+  update remision_s set estado='T' where cod_rem=@CodRemis
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[EnviaRemsionEntradaSalida] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[EnviaRemsionEntradaSalida] @CodRemiE varchar(16),@codRemiS varchar(16),@codSucDes varchar(5),@cod_usu varchar(7) as
+begin
+  INSERT INTO remision_s(cod_rem,cod_usu,SUC_ori,SUC_des,fecha,total,estado,obs_rem)
+  select @codRemiS,@cod_usu,cod_des,@codSucDes,CURRENT_TIMESTAMP,0,'N',@CodRemiE+' '+obs_rem
+  from  remision_e
+  where cod_rem=@CodRemiE
+
+  INSERT INTO DET_REMIS(COD_REM, ID_FAB, COD_FAB, CANTIDAD, CIF_TOTAL,nro)
+  SELECT @codRemiS,DR.ID_FAB,PP.COD_FAB,CANTidad,CANTidad*CIF_CBBA,nro
+  FROM DET_remie DR,PROV_PRO PP
+  WHERE DR.ID_FAB=PP.ID_FAB AND COD_rem=@CodRemiE
+  order by nro;
+end;
+
+GO
+/****** Objeto: StoredProcedure [dbo].[EnviaRemsionSalidaEntrada] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[EnviaRemsionSalidaEntrada] @CodRemiE varchar(16),@codRemiS varchar(13),@cod_ori varchar(5),@cod_des varchar(5) as
+begin
+  INSERT INTO remision_e(cod_rem,cod_remi,cod_usu,cod_ori,cod_des,fecha,obs_rem,total)
+  select @CodRemiE,cod_rem,cod_usu,suc_des,suc_ori,fecha,obs_rem,total
+  from remision_s
+  where cod_rem=@codRemiS;
+
+  INSERT INTO DET_REMIE(COD_REM, COD_FAB, CANTIDAD,CIF_TOTAL)
+  SELECT @CodRemiE,COD_FAB,CANTIDAD,CIF_TOTAL
+  FROM DET_REMIS
+  WHERE COD_REM=@CodRemiE
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[EnviaValidadoSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[EnviaValidadoSucursal] @codPedido varchar(16),@codValidar varchar(7) AS 
+begin
+if (select estado from pedido where cod_pedido=@codPedido)='E'
+begin
+update pedido set estado='V',cod_usu_val=@codValidar,fecha_validacion=CURRENT_TIMESTAMP
+where cod_pedido=@codPedido
+update det_pedido set cant_enviado=cant_autorizado 
+where cod_pedido=@codPedido
+update codigoBarra set estado='VB'
+from codigoBarra cb inner join PEDIDO p on cb.cod_documento=p.cod_documento 
+where p.COD_PEDIDO =@codPedido and p.cod_documento<>'0'
+end
+else
+ PRINT 'No se realizo la operacion'
+end;
+
+GO
+/****** Objeto: StoredProcedure [dbo].[EnviaValidar] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[EnviaValidar] @codPedido varchar(16),@codValidar varchar(7),@codUsuario varchar(7) AS 
+begin
+if (select estado from pedido where cod_pedido=@codPedido)='BN' or(select estado from pedido where cod_pedido=@codPedido)='N' or (select estado from pedido where cod_pedido=@codPedido)='M'
+begin
+update pedido set estado='E',cod_usu_val=@codValidar,cod_usu=@codUsuario,FFE=CURRENT_TIMESTAMP
+where cod_pedido=@codPedido
+update det_pedido set cant_autorizado=cant_solicitado 
+where cod_pedido=@codPedido
+update codigoBarra set estado='EB'
+from codigoBarra cb inner join PEDIDO p on cb.cod_documento=p.cod_documento 
+where p.COD_PEDIDO =@codPedido and p.cod_documento<>'0'
+end
+else
+ PRINT 'No se realizo la operacion'
+end;
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[FillReportStatistics] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[FillReportStatistics] @codSuc varchar(5),@codUsu varchar(7)as
+DELETE reporte_venta WHERE cod_usu in(select cod_usu from USUARIO where cod_suc=@codSuc);
+--DELETE reporte_venta WHERE cod_usu =@codUsu; 
+declare dets cursor for
+	select pp.ID_FAB,cantidad
+	from prov_pro pp,suc_pro_prov spp
+	where pp.ID_FAB=spp.ID_FAB and cod_suc=@codSuc--AND cantidad>0
+	ORDER BY COD_PRO
+declare @ID_FAB integer,@CANTIDAD INT
+open dets
+fetch next from dets into @ID_FAB,@CANTIDAD
+while @@FETCH_STATUS = 0
+begin		
+	if (select top 1 count(c.fec_inicio)
+			from DET_CREDITO dc
+			inner join credito c on dc.COD_CRE=c.COD_CRE
+			inner join usuario u on c.COD_USU=u.COD_USU
+			where dc.ID_FAB =@ID_FAB and u.COD_SUC =@codSuc and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+			)>0 and
+			(select top 1 count(v.FECHA)
+			from det_venta dt
+			inner join VENTA v on dt.COD_VENTA=v.COD_VENTA
+			inner join usuario u on v.COD_USU=u.COD_USU 
+			where ID_FAB=@ID_FAB and u.COD_SUC=@codSuc and ESTADO='D'
+			)>0
+	begin
+		if (select top 1 c.fec_inicio
+			from DET_CREDITO dc
+			inner join credito c on dc.COD_CRE=c.COD_CRE
+			inner join usuario u on c.COD_USU=u.COD_USU
+			where dc.ID_FAB =@ID_FAB and u.COD_SUC =@codSuc and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+			order by c.FEC_INICIO desc)>
+			(select top 1 v.FECHA
+			from det_venta dt
+			inner join VENTA v on dt.COD_VENTA=v.COD_VENTA
+			inner join usuario u on v.COD_USU=u.COD_USU 
+			where ID_FAB=@ID_FAB and u.COD_SUC=@codSuc and ESTADO='D'
+			order by v.fecha desc)
+			begin
+				insert reporte_venta(cod_usu,id_fab,cod_fab,tipo,fecha,dia,cantidad)
+				select top 1 @codUsu ,dc.ID_FAB ,dc.COD_FAB, 'C',c.FEC_INICIO fecha,datediff(day,c.FEC_INICIO,getdate()) dia,CANTIDAD
+				from DET_CREDITO dc
+				inner join credito c on dc.COD_CRE=c.COD_CRE
+				inner join usuario u on c.COD_USU=u.COD_USU
+				where dc.ID_FAB =@ID_FAB and u.COD_SUC =@codSuc and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+				--where dc.COD_FAB ='037wn25' and u.COD_SUC ='10106' and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+				order by fec_inicio desc
+			end
+		else
+			begin
+				insert reporte_venta(cod_usu,id_fab,cod_fab,tipo,fecha,dia,cantidad)
+				select top 1 @codUsu,dt.ID_FAB ,dt.COD_FAB,'V',v.FECHA,datediff(day,v.FECHA,getdate()) dia, CANTIDAD 
+				from det_venta dt
+				inner join VENTA v on dt.COD_VENTA=v.COD_VENTA
+				inner join usuario u on v.COD_USU=u.COD_USU 
+				where ID_FAB=@ID_FAB and u.COD_SUC=@codSuc and ESTADO='D'
+				order by FECHA desc		
+			end
+		end
+else		
+	if (select top 1 count(c.fec_inicio)
+		from DET_CREDITO dc
+		inner join credito c on dc.COD_CRE=c.COD_CRE
+		inner join usuario u on c.COD_USU=u.COD_USU
+		where dc.ID_FAB =@ID_FAB and u.COD_SUC =@codSuc and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A'))>0
+		begin
+			insert reporte_venta(cod_usu,id_fab,cod_fab,tipo,fecha,dia,cantidad)
+			select top 1 @codUsu ,dc.ID_FAB, dc.COD_FAB, 'C',c.FEC_INICIO fecha,datediff(day,c.FEC_INICIO,getdate()) dia,CANTIDAD
+			from DET_CREDITO dc
+			inner join credito c on dc.COD_CRE=c.COD_CRE
+			inner join usuario u on c.COD_USU=u.COD_USU
+			where dc.ID_FAB =@ID_FAB and u.COD_SUC =@codSuc and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+			--where dc.COD_FAB ='037wn25' and u.COD_SUC ='10106' and (ESTADO='C' or ESTADO ='CD' or ESTADO ='A')
+			order by fec_inicio desc
+		end	
+	else
+		if (select top 1 count(v.FECHA)
+			from det_venta dt
+			inner join VENTA v on dt.COD_VENTA=v.COD_VENTA
+			inner join usuario u on v.COD_USU=u.COD_USU 
+			where ID_FAB=@ID_FAB and u.COD_SUC=@codSuc and ESTADO='D'
+			)>0
+		  begin
+			insert reporte_venta(cod_usu,id_fab, cod_fab,tipo,fecha,dia,cantidad)
+			select top 1 @codUsu,dt.ID_FAB, dt.COD_FAB,'V',v.FECHA,datediff(day,v.FECHA,getdate()) dia, CANTIDAD 
+			from det_venta dt
+			inner join VENTA v on dt.COD_VENTA=v.COD_VENTA
+			inner join usuario u on v.COD_USU=u.COD_USU 
+			where ID_FAB=@ID_FAB and u.COD_SUC=@codSuc and ESTADO='D'
+			order by FECHA desc	
+		  end	
+		else
+			begin
+				if(select top 1 count(re.fecha)
+				  from det_remie dr 
+				  inner join remision_e re on dr.cod_rem=re.cod_rem
+				  where dr.ID_FAB=@ID_FAB and dr.CANTIDAD >0 and COD_DES=@codSuc and estado ='D')>0 and
+				  (select top 1 count(FEC_INV )
+				  from DET_INVENTARIO di
+				  inner join INVENTARIO i on di.COD_INV =i.COD_INV 
+				  where di.ID_FAB =@ID_FAB and di.CANTIDAD>0 and COD_SUC =@codSuc and ESTADO=1)>0
+				  begin
+					insert reporte_venta(cod_usu,id_fab,cod_fab,tipo,fecha,dia,cantidad)		
+					select top 1 @codUsu,dr.ID_FAB, DR.COD_FAB ,'R',r.fecha,DATEDIFF(day,r.FECHA,GETDATE()) dia,dr.CANTIDAD 
+					from DET_REMIE DR 
+					inner join REMISION_E R on dr.COD_REM=r.COD_REM 
+					inner join USUARIO u on u.COD_USU = r.COD_USU  
+					where dr.ID_FAB =@ID_FAB and dr.cantidad>0  and r.COD_DES=@codSuc and r.estado ='D'
+					order by r.FECHA desc
+				  end
+				else
+					begin
+					if (select top 1 count(re.fecha)
+						from det_remie dr 
+						inner join remision_e re on dr.cod_rem=re.cod_rem
+						where dr.ID_FAB=@ID_FAB and dr.CANTIDAD >0 and COD_DES=@codSuc and estado ='D')>0
+						begin
+							insert reporte_venta(cod_usu,id_fab,cod_fab,tipo,fecha,dia,cantidad)		
+							select top 1 @codUsu,dr.id_fab, DR.COD_FAB ,'R',r.fecha,DATEDIFF(day,r.FECHA,GETDATE()) dia,dr.CANTIDAD 
+							from DET_REMIE DR 
+							inner join REMISION_E R on dr.COD_REM=r.COD_REM 
+							inner join USUARIO u on u.COD_USU = r.COD_USU  
+							where dr.ID_FAB =@ID_FAB and dr.cantidad>0  and r.COD_DES=@codSuc and r.estado ='D'
+							order by r.FECHA desc
+						end
+					else
+						begin
+							insert reporte_venta(cod_usu,id_fab, cod_fab,tipo,fecha,dia,cantidad)
+							select top 1 @codUsu,di.ID_FAB ,di.cod_fab, 'I',i.fec_inv, DATEDIFF(day,i.FEC_INV ,GETDATE()) dia,di.cantidad
+							from DET_INVENTARIO di
+							inner join INVENTARIO i on di.cod_inv=i.COD_INV 
+							inner join USUARIO u on u.COD_USU = i.COD_USU 
+							where di.ID_FAB =@ID_FAB and di.cantidad>0 and  u.cod_suc=@codSuc and i.estado ='true'
+							order by i.FEC_INV desc
+						end
+					end    
+			end		
+	fetch next from dets into @ID_FAB,@CANTIDAD
+end
+close dets
+deallocate dets
+GO
+/****** Objeto: StoredProcedure [dbo].[gen_Lista_flujo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[gen_Lista_flujo] @cod_suc varchar(5),@cod_usu varchar(7),@fecha_busqueda datetime as
+delete from rptKardex;
+declare dets cursor for	
+	select pp.cod_fab,pp.cod_pro,cantidad
+	from prov_pro pp 
+	inner join suc_pro_prov spp on pp.cod_fab=spp.cod_fab	
+	where cod_suc=@cod_usu
+	ORDER BY pp.COD_PRO
+
+declare @COD_FAB varchar(50),@cod_pro varchar(50),@cantidad int
+open dets
+fetch next from dets into @COD_FAB,@cod_pro,@cantidad
+while @@FETCH_STATUS = 0
+begin
+	exec GenFlujoVentas @cod_fab ,@cod_pro,@cantidad,@cod_usu,@cod_suc,@fecha_busqueda;
+	fetch next from dets into @COD_FAB,@cod_pro,@cantidad
+end
+close dets
+deallocate dets
+GO
+/****** Objeto: StoredProcedure [dbo].[gen_ultimaVentaJM] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[gen_ultimaVentaJM]
+as
+GO
+/****** Objeto: StoredProcedure [dbo].[gen_ultimaVentaMax] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[gen_ultimaVentaMax]
+as
+GO
+/****** Objeto: StoredProcedure [dbo].[genCierreCaja] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[genCierreCaja] @pCodSucursal VARCHAR(5), @fecIni datetime,@fecFin datetime,@dolar smallmoney as
+begin
+delete from RPTRESUMEN;
+DELETE FROM RPTCaja;
+INSERT INTO RPTCaja(CATEGORIA,COD_CAT,FECHA, CODIGO, DESCRIPCION, CANTIDAD, TOTAL_BS, TOTAL_SUS,DESCUENTO)
+	SELECT 'VENTAS',1,V.FECHA,DV.COD_fab,P.DESC_PRO,CANTIDAD,PRECIO_VENTA,CAST((PRECIO_VENTA/@DOLAR)AS NUMERIC(5,2)),DESC_UNIT
+	FROM VENTA V, DET_VENTA DV,PRODUCTO P,prov_pro pp
+	WHERE V.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND V.COD_VENTA=DV.COD_VENTA AND V.TIPO='AL CONTADO'AND DV.COD_fab=pp.cod_fab and PP.COD_PRO=P.COD_PRO AND V.FECHA >@fecIni AND V.FECHA<=@fecFin;
+INSERT INTO RPTCaja(CATEGORIA,COD_CAT,FECHA, CODIGO, DESCRIPCION, CANTIDAD, TOTAL_BS, TOTAL_SUS,DESCUENTO)
+	SELECT 'DEPOSITO/CHEQUE',2,V.FECHA,DV.COD_FAB,P.DESC_PRO,CANTIDAD,PRECIO_VENTA,CAST((PRECIO_VENTA/@DOLAR)AS NUMERIC(5,2)),DESC_UNIT
+	FROM VENTA V, DET_VENTA DV,PRODUCTO P, PROV_PRO PP
+	WHERE V.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND V.COD_VENTA=DV.COD_VENTA AND TIPO<>'AL CONTADO'AND DV.COD_fab=pp.cod_fab and PP.COD_PRO=P.COD_PRO AND V.FECHA >@fecIni AND V.FECHA<=@fecFin;
+INSERT INTO RPTCaja(CATEGORIA,COD_CAT,FECHA, CODIGO, DESCRIPCION, CANTIDAD, TOTAL_BS, TOTAL_SUS,DESCUENTO,OBS)
+	SELECT 'DEVOLUCION',5,D.FECHA,DD.COD_FAB,P.DESC_PRO,CANTIDAD, TOTAL,CAST((TOTAL/@DOLAR)AS NUMERIC(5,2)),0,OBS
+	FROM DEVOLUCION D, DET_DEVOLUCION DD,PRODUCTO P, PROV_PRO PP
+	WHERE D.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND D.COD_VENTA=DD.COD_VENTA AND DD.COD_fab=pp.cod_fab and PP.COD_PRO=P.COD_PRO AND D.FECHA > @fecIni AND D.FECHA<=@fecFin;
+INSERT INTO RPTCaja(CATEGORIA,COD_CAT,FECHA, CODIGO, DESCRIPCION, CANTIDAD, TOTAL_BS, TOTAL_SUS,OBS)
+	SELECT 'GASTO',4,FECHA,G.REF_CUENTA,CUENTA,0,MONTO,CAST((MONTO/@DOLAR) AS NUMERIC(5,2)),OBS
+	FROM GASTOS G, PLAN_CUENTAS P
+	WHERE G.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) and G.REF_CUENTA=P.REF_CUENTA AND FECHA >@fecIni AND FECHA <= @fecFin;
+INSERT INTO RPTCaja(CATEGORIA,COD_CAT,FECHA, CODIGO, DESCRIPCION, CANTIDAD, TOTAL_BS, TOTAL_SUS)
+	SELECT 'COMPRA LOCAL',3,CL.FECHA,DC.COD_FAB,P.DESC_PRO,CANTIDAD,PRECIO_U,CAST((PRECIO_U/@DOLAR)AS NUMERIC(5,2))
+	FROM COMPRA_LOCAL CL, DET_COMPRA DC,PRODUCTO P,PROV_PRO PP
+	WHERE CL.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND CL.COD_COM=DC.COD_COM AND DC.COD_fab=pp.cod_fab and PP.COD_PRO=P.COD_PRO  AND CL.FECHA >@fecIni AND CL.FECHA<=@fecFin;
+
+declare @tTotal smallmoney
+
+INSERT INTO  RPTRESUMEN(FECHA_INI,FECHA_FIN,SUCURSAL,DOLAR)
+	SELECT @fecIni,@fecFin,S.NOM_SUC,@DOLAR
+	FROM SUCURSAL S
+        WHERE S.COD_SUC=@pCodSucursal;
+SELECT  @ttotal=isnull(sum(Total),0)
+	FROM VENTA V
+	WHERE V.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND TIPO='AL CONTADO'AND V.FECHA >@fecIni AND V.FECHA<=@fecFin
+update RPTRESUMEN
+	set venta =@TTOTAL;
+
+SELECT  @ttotal=isnull(sum(Total),0)
+	FROM VENTA V
+	WHERE V.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND TIPO<>'AL CONTADO'AND V.FECHA >@fecIni AND V.FECHA<=@fecFin
+ update RPTRESUMEN
+ set venta_DCH =@TTOTAL;
+
+SELECT  @ttotal=isnull(sum(DD.Total),0)
+	FROM DEVOLUCION D,DET_DEVOLUCION DD
+	WHERE D.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND DD.COD_VENTA=D.COD_VENTA AND D.FECHA >@fecIni AND D.FECHA<=@fecFin
+update RPTRESUMEN
+set DEVOLUCIONES =@TTOTAL;
+
+SELECT @ttotal=isnull(SUM(MONTO),0)
+	FROM GASTOS G
+	WHERE G.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) and G.FECHA>@fecIni AND G.FECHA<=@fecFin
+update RPTRESUMEN
+set GASTOS =@TTOTAL;
+
+SELECT @ttotal=SUM(CL.TOTAL)
+	FROM COMPRA_LOCAL CL
+	WHERE CL.cod_usu in(select cod_usu from usuario where cod_suc=@pCodSucursal) AND CL.FECHA > @fecIni AND CL.FECHA<=@fecFin
+update RPTRESUMEN
+set COMPRA_LOCAL =@TTOTAL;
+
+update RPTRESUMEN
+set TOTAL_BS =VENTA-(GASTOS+DEVOLUCIONES);
+
+update RPTRESUMEN
+set TOTAL_SUS =TOTAL_BS/@dolar;
+end
+
+GO
+/****** Objeto: StoredProcedure [dbo].[GeneraRemision_s] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[GeneraRemision_s] @codRemi nvarchar(50),@codEmpresa as nvarchar(3) AS 
+SELECT     ROW_NUMBER() OVER(ORDER BY DET_REMIS.COD_FAB asc) AS NroRow,SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, SUCURSAL_1.NOM_SUC AS SUC_DES, 
+                      REMISION_S.COD_REM, REMISION_S.FECHA, PEDIDO.FECHA AS FEC_PEDIDO, PEDIDO.COD_PEDIDO, DET_REMIS.CANTIDAD, PRODUCTO.UNIDAD, 
+                      PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, PAIS.NOM_PAIS, DET_REMIS.OBS, 
+                      REMISION_S.OBS_REM, USUARIO.NOM_USU, USUARIO.AP_USU, USUARIO_1.NOM_USU AS NOM_REB, USUARIO_1.AP_USU AS AP_REB,cif_cbba,cif_total,DET_REMIS.nro,
+					  isnull(poli,'') poli
+FROM         REMISION_S 
+			 INNER JOIN PEDIDO ON REMISION_S.COD_PEDIDO = PEDIDO.COD_PEDIDO 
+			 INNER JOIN DET_REMIS ON REMISION_S.COD_REM = DET_REMIS.COD_REM 
+			 INNER JOIN USUARIO ON USUARIO.COD_USU = REMISION_S.COD_USU 
+             INNER JOIN SUCURSAL ON SUCURSAL.COD_SUC = REMISION_S.SUC_ORI
+			 INNER JOIN SUCURSAL SUCURSAL_1 ON REMISION_S.SUC_DES = SUCURSAL_1.COD_SUC 
+			 INNER JOIN PROV_PRO ON DET_REMIS.ID_FAB = PROV_PRO.ID_FAB 
+			 INNER JOIN PRODUCTO ON PRODUCTO.ID_PRO = PROV_PRO.ID_PRO
+             INNER JOIN PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV 
+			 INNER JOIN PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS 
+			 INNER JOIN USUARIO USUARIO_1 ON REMISION_S.COD_USU_REB = USUARIO_1.COD_USU
+             left join (select distinct id_fab,'P' as poli
+					from poliza p inner join poliza_producto pp on p.cod_poliza=pp.cod_poliza
+					where cod_emp=@codEmpresa
+					) pol on pol.Id_fab=det_remis.Id_fab
+WHERE     (REMISION_S.COD_REM = @codRemi)
+ORDER BY PROVEEDOR.NOM_PROV,  PRODUCTO.DESC_PRO, PROV_PRO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[GenFlujoVentas] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[GenFlujoVentas] @cod_fab varchar(50),@cod_pro varchar(50),@cantidad int,@cod_usu varchar(7),@COD_SUC VARCHAR(5),@fecha_busqueda datetime as
+declare @fecha_inv datetime
+declare @fecha_ri datetime
+declare @cant_flujo int
+begin
+  --INVENTARIO
+  SELECT top 1 @fecha_inv= isnull(FEC_INV,@fecha_busqueda)
+  FROM INVENTARIO I, DET_INVENTARIO DI
+  WHERE I.COD_INV=DI.COD_INV AND I.COD_SUC=@COD_SUC AND I.ESTADO=1 AND DI.COD_FAB=@cod_fab AND I.FEC_INV>=@fecha_busqueda
+  order by FEC_INV asc;
+
+  SELECT top 1 @fecha_ri=isnull(fecha,@fecha_busqueda)
+  FROM REMISION_E R,DET_REMIE DR,USUARIO U, SUCURSAL S
+  WHERE R.COD_REM=DR.COD_REM AND R.COD_USU=U.COD_USU AND COD_ORI=S.COD_SUC and COD_DES=@COD_SUC AND COD_FAB=@cod_fab AND FECHA>@fecha_busqueda AND ESTADO='D'
+  order by FECHA asc;
+  
+  if @fecha_ri<@fecha_inv
+  begin
+	INSERT INTO rptKardex(COD_USU,FECHA,CODIGO,COD_FAB,cod_pro,DESCRIP,cant_inventario,EXISTENCIA,OBS)    
+	values(@cod_usu,@fecha_ri,'0',@cod_fab,@cod_pro,'Inventario 2',0,@cantidad,'');
+  end
+  else
+	begin
+		INSERT INTO rptKardex(COD_USU,FECHA,CODIGO,COD_FAB,COD_PRO,DESCRIP,cant_inventario,EXISTENCIA,OBS)    
+		SELECT top 1 @cod_usu,FEC_INV,I.COD_INV,DI.COD_FAB,@cod_pro,'INVENTARIO',DI.CANTIDAD,@cantidad,I.OBS
+		FROM INVENTARIO I, DET_INVENTARIO DI
+		WHERE I.COD_INV=DI.COD_INV AND I.COD_SUC=@COD_SUC AND I.ESTADO=1 AND DI.COD_FAB=@cod_fab AND I.FEC_INV>=@fecha_busqueda; 
+		--WHERE I.COD_INV=DI.COD_INV AND I.COD_SUC='00101' AND I.ESTADO=1 AND DI.COD_FAB='2727' AND I.FEC_INV>='01/01/2010';		
+	end	        
+  --REMISION DE INGRESO
+  SELECT @cant_flujo= ISNULL(SUM(CANTIDAD),0)
+  FROM REMISION_E R 
+  inner join DET_REMIE DR on r.cod_rem=dr.COD_REM  
+  WHERE COD_DES=@COD_SUC AND COD_FAB=@cod_fab AND FECHA>@fecha_busqueda AND ESTADO='D';
+  
+  update rptKardex set cant_remie=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+  
+  --venta    
+  SELECT @cant_flujo= isnull(sum(DV.CANTIDAD),0)
+  FROM VENTA V 
+  inner join  DET_VENTA DV on v.cod_venta=dv.cod_venta
+  WHERE V.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC)AND DV.COD_FAB=@cod_fab AND V.FECHA>@FECHA_busqueda AND ESTADO='D';
+  
+  update rptKardex set cant_venta=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+  
+  --Remision de salida    
+  SELECT @cant_flujo=ISNULL(sum(DR.CANTIDAD),0)
+  FROM REMISION_S R 
+  inner join  DET_REMIS DR on r.cod_rem=dr.cod_rem
+  WHERE DR.COD_FAB=@cod_fab AND R.SUC_ORI=@COD_SUC AND R.FECHA>@FECHA_busqueda AND ESTADO='D';
+  
+  update rptKardex set cant_remis=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+  --DEFECTUOSO
+  
+  SELECT  @cant_flujo= isnull(sum(CANTIDAD),0)
+  FROM DEFECTUOSO D
+  WHERE COD_FAB=@cod_fab AND D.COD_SUC=@COD_SUC AND ESTADO='D' AND FECHA>@FECHA_busqueda;
+  
+  update rptKardex set cant_defecto=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+  --DEVOLUCION
+  
+  SELECT @cant_flujo=isnull(sum(DD.CANTIDAD),0)
+  FROM DEVOLUCION D, DET_DEVOLUCION DD, USUARIO U, VENTA V, CLIENTE C
+  WHERE D.COD_VENTA=DD.COD_VENTA AND D.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND D.COD_VENTA=V.COD_VENTA AND V.COD_CLI=C.COD_CLI AND D.COD_USU=U.COD_USU AND DD.COD_FAB=@cod_fab AND D.FECHA>@FECHA_busqueda;
+
+  update rptKardex set cant_dev=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+--CREDITO  
+  SELECT @cant_flujo=ISNULL(sum(DC.CANTIDAD),0)
+  FROM CREDITO CR inner join DET_CREDITO DC on cr.cod_cre=dc.cod_cre
+  WHERE CR.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND DC.COD_FAB=@cod_fab AND CR.FEC_INICIO>@FECHA_busqueda;
+  
+  update rptKardex set cant_credito=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+--devolucion credito  
+  SELECT @cant_flujo=ISNULL(sum(DD.CANTIDAD),0)
+  FROM DEVOLUCION_CREDITO D 
+  inner join DET_DEVOLUCION_CREDITO DD on D.COD_CRE=DD.COD_CRE 
+  WHERE D.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND DD.COD_FAB=@cod_fab AND D.FECHA>@FECHA_busqueda;
+  
+  update rptKardex set cant_devCre=@cant_flujo where cod_fab=@cod_fab and cod_usu=@cod_usu;
+--Fecha Ultima venta
+  
+  --SELECT isnull(fecha,'01/01/2010')
+  select @cant_flujo= COUNT(FECHA)
+  FROM VENTA V 
+  inner join  DET_VENTA DV on v.cod_venta=dv.cod_venta
+  WHERE V.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC='20101')AND DV.COD_FAB='i-0191-28-330/terada' AND V.FECHA>'01/01/2010' AND ESTADO='D';
+  
+  if @cant_flujo>0
+  begin
+	SELECT top 1 @fecha_inv=isnull(fecha,@fecha_busqueda)
+	FROM VENTA V 
+	inner join  DET_VENTA DV on v.cod_venta=dv.cod_venta
+	WHERE V.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC)AND DV.COD_FAB=@cod_fab AND V.FECHA>@FECHA_busqueda AND ESTADO='D'
+	order by fecha desc;
+  end
+  else
+  begin
+	set @fecha_inv=@fecha_busqueda;
+  end    
+  
+  select @cant_flujo=COUNT(FEC_INICIO)
+  FROM CREDITO CR 
+  inner join DET_CREDITO DC on cr.cod_cre=dc.cod_cre
+  WHERE CR.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC='20101') AND DC.COD_FAB='i-0191-28-330/terada' AND CR.FEC_INICIO>'01/01/2010';
+
+  if @cant_flujo>0
+  begin
+	SELECT  top 1 @fecha_ri=isnull(FEC_INICIO,@fecha_busqueda)
+	FROM CREDITO CR 
+	inner join DET_CREDITO DC on cr.cod_cre=dc.cod_cre
+	WHERE CR.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND DC.COD_FAB=@cod_fab AND CR.FEC_INICIO>@FECHA_busqueda
+	order by fec_inicio desc;	
+  end
+  else  
+	begin
+		set @fecha_ri=@fecha_busqueda
+	end
+  if @fecha_inv>=@fecha_ri
+	begin
+		update rptKardex set fecha_ultima_venta=@fecha_inv where cod_fab=@cod_fab and cod_usu=@cod_usu;
+	end	
+  else
+	begin
+		update rptKardex set fecha_ultima_venta=@fecha_ri where cod_fab=@cod_fab and cod_usu=@cod_usu;  
+	end
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[GenKardex] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[GenKardex] @codProducto integer,@cod_usu varchar(7),@COD_SUC VARCHAR(5),@FECHA DATETIME as
+begin
+  DELETE FROM kardex WHERE COD_USU=@cod_usu
+  --INVENTARIO
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,EXISTENCIA,OBS)
+  SELECT @COD_USU,FEC_INV,I.COD_INV,DI.ID_FAB,DI.COD_FAB,'INVENTARIO',0,0,DI.CANTIDAD,I.OBS
+  FROM INVENTARIO I, DET_INVENTARIO DI
+  WHERE I.COD_INV=DI.COD_INV AND I.COD_SUC=@COD_SUC AND DI.ID_FAB=@codProducto AND I.FEC_INV>=@FECHA and estado='1';
+  --venta
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,CLIENTE,USUARIO,OBS)
+  SELECT @COD_USU,V.FECHA,V.COD_VENTA,DV.ID_FAB,DV.COD_FAB,'VENTA',0,DV.CANTIDAD,C.NOM_CLI+' '+C.APE_CLI,NOM_USU+' '+AP_USU,V.OBS
+  FROM VENTA V, DET_VENTA DV,USUARIO U, CLIENTE C
+  WHERE V.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC)AND V.COD_VENTA=DV.COD_VENTA AND V.COD_USU=U.COD_USU AND V.COD_CLI=C.COD_CLI AND DV.ID_FAB=@codProducto AND V.FECHA>@FECHA AND ESTADO='D';
+  --Remision de salida
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,NOM_SUC,USUARIO,OBS)
+  SELECT @COD_USU,R.FECHA,R.COD_REM,DR.ID_FAB,DR.COD_FAB,'REMISION DE SALIDA',0,DR.CANTIDAD,NOM_SUC,NOM_USU+' '+AP_USU,OBS_REM
+  FROM REMISION_S R, DET_REMIS DR, SUCURSAL S, USUARIO U
+  WHERE R.COD_REM=DR.COD_REM AND SUC_DES=S.COD_SUC AND R.COD_USU=U.COD_USU AND DR.ID_FAB=@codProducto AND R.SUC_ORI=@COD_SUC AND R.FECHA>@FECHA AND (ESTADO='D' or ESTADO='DE' or ESTADO='T');
+  --DEFECTUOSO
+  INSERT INTO kardex(COD_USU,FECHA,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,USUARIO,OBS)
+  SELECT @COD_USU,FECHA,D.ID_FAB,D.COD_FAB,'DEFECTUOSO',0,CANTIDAD,NOM_USU+' '+AP_USU,OBS
+  FROM DEFECTUOSO D,USUARIO U
+  WHERE D.COD_USU=U.COD_USU AND D.ID_FAB=@codProducto AND D.COD_SUC=@COD_SUC AND ESTADO='D' AND FECHA>@FECHA
+  --REMISION DE INGRESO.
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,NOM_SUC,USUARIO,OBS)
+  SELECT @COD_USU,IIF(COD_ORI='01000',r.fecha,r.FECHA_DESCARGA),R.COD_REM,DR.ID_FAB,DR.COD_FAB,'REMISION DE INGRESO',CANTIDAD,0,NOM_suc,NOM_USU+' '+AP_USU,R.OBS_REM
+  FROM REMISION_E R,DET_REMIE DR,USUARIO U, SUCURSAL S
+  WHERE R.COD_REM=DR.COD_REM AND R.COD_USU=U.COD_USU AND COD_ORI=S.COD_SUC and COD_DES=@COD_SUC AND ID_FAB=@codProducto AND r.FECHA>@FECHA AND ESTADO='D';
+  --DEVOLUCION
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,CLIENTE,USUARIO,OBS)
+  SELECT @COD_USU,D.FECHA,D.COD_VENTA,DD.ID_FAB,DD.COD_FAB,'DEVOLUCION',DD.CANTIDAD,0,NOM_CLI+' '+APE_CLI,NOM_USU+' '+AP_USU,D.OBS
+  FROM DEVOLUCION D, DET_DEVOLUCION DD, USUARIO U, VENTA V, CLIENTE C
+  WHERE D.COD_VENTA=DD.COD_VENTA AND D.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND D.COD_VENTA=V.COD_VENTA AND V.COD_CLI=C.COD_CLI AND D.COD_USU=U.COD_USU AND DD.ID_FAB=@codProducto AND D.FECHA>@FECHA;
+--CREDITO
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,CLIENTE,USUARIO,OBS)
+  SELECT @COD_USU,CR.FEC_INICIO,CR.COD_CRE,DC.ID_FAB,DC.COD_FAB,'CREDITO',0,DC.CANTIDAD, NOM_CLI+' '+APE_CLI, NOM_USU+' '+AP_USU,cr.estado+'->'+CAST(CR.OBS AS VARCHAR (150))
+  FROM CREDITO CR, DET_CREDITO DC, USUARIO U, CLIENTE C
+  WHERE CR.COD_CRE=DC.COD_CRE AND CR.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND CR.COD_CLI=C.COD_CLI AND CR.COD_USU=U.COD_USU AND DC.ID_FAB=@codProducto AND CR.FEC_INICIO>@FECHA and (cr.estado='A' or cr.estado='C' or cr.estado='DC' or cr.estado='CD' or cr.estado='D');
+--devolucion credito
+  INSERT INTO kardex(COD_USU,FECHA,CODIGO,ID_FAB,COD_FAB,DESCRIPCION,ENTRADA,SALIDA,CLIENTE,USUARIO,OBS)
+  SELECT @COD_USU,D.FECHA,D.COD_DEVC,DD.ID_FAB,DD.COD_FAB,'DEVOLUCION CREDITO',DD.CANTIDAD,0,NOM_CLI+' '+APE_CLI,NOM_USU+' '+AP_USU,D.OBS
+  FROM DEVOLUCION_CREDITO D, DET_DEVOLUCION_CREDITO DD, USUARIO U, credito V, CLIENTE C
+  WHERE D.COD_DEVC=DD.COD_DEVC AND D.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@COD_SUC) AND D.COD_CRE=V.COD_CRE AND V.COD_CLI=C.COD_CLI AND D.COD_USU=U.COD_USU AND DD.ID_FAB=@codProducto AND D.FECHA>@FECHA;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[genRezagado] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[genRezagado] @codProducto varchar(50),@cod_usu varchar(7),@cod_suc varchar(5),@FECHA DATETIME as
+begin  
+  declare @cod1 varchar(50),@fecha1 datetime,@cod2 varchar(50),@fecha2 datetime,@sw bit
+  select @sw=1;  
+  -- inventario  
+	  select top 1 @cod1=i.cod_inv,@fecha1=fec_inv
+	  from inventario i inner join det_inventario di on i.cod_inv=di.cod_inv
+	  where cod_suc=@cod_suc and cod_fab=@codProducto and di.cantidad>0 AND ESTADO =1
+	  order by fec_inv;
+  -- REMISION DE INGRESO.	  
+      SELECT top 1 @cod2=R.COD_REMI,@fecha2=fecha
+      FROM REMISION_E R 
+      inner join DET_REMIE DR on r.cod_rem=dr.cod_rem
+	  WHERE COD_DES=@cod_suc AND COD_FAB=@codProducto AND FECHA>@FECHA AND ESTADO='D'and cantidad>0
+	  order by fecha;   
+  if isdate(@fecha2)=1 and isdate(@fecha1)=1
+  begin
+	if @fecha1>@fecha2
+		begin
+			--REMISION DE INGRESO
+			INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha)        
+			SELECT top 1 DR.COD_FAB,@cod_usu,'REMISION DE INGRESO',COD_REMI,fecha
+			FROM REMISION_E R 
+			inner join DET_REMIE DR on r.cod_rem=dr.cod_rem
+			WHERE COD_DES=@cod_suc AND COD_FAB=@codProducto AND FECHA>@FECHA AND ESTADO='D'						
+		end;
+	else
+		begin
+			-- INVENTARIO
+			INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha)      
+			select top 1 di.cod_fab,@cod_usu,'INVENTARIO',i.cod_inv,fec_inv
+			from inventario i inner join det_inventario di on i.cod_inv=di.cod_inv AND ESTADO=1
+			where cod_suc=@cod_suc and cod_fab=@codProducto						
+		end;
+ end;
+  else
+	begin
+		if isdate(@fecha1)=1
+		begin
+			-- INVENTARIO
+			INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha)      
+			select top 1 di.cod_fab,@cod_usu,'INVENTARIO',i.cod_inv,fec_inv
+			from inventario i inner join det_inventario di on i.cod_inv=di.cod_inv and estado=1
+			where cod_suc=@cod_suc and cod_fab=@codProducto			
+		end;
+		ELSE
+			begin
+				if isdate(@fecha2)=1
+				begin
+					--REMISION DE INGRESO.
+					INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha)        
+					SELECT top 1 DR.COD_FAB,@cod_usu,'REMISION DE INGRESO',R.COD_REMI,fecha
+					FROM REMISION_E R 
+					inner join DET_REMIE DR on r.cod_rem=dr.cod_rem
+					WHERE COD_DES=@cod_suc AND COD_FAB=@codProducto AND FECHA>@FECHA AND ESTADO='D'					
+				end;
+				else
+					select @sw=0;
+			end;
+	end;
+  if @sw=1
+  begin 
+	  --venta
+	INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha,estado)  
+	SELECT DV.COD_FAB,@cod_usu,'VENTA' tipo,V.COD_VENTA,V.FECHA,estado
+	FROM VENTA V 
+	inner join  DET_VENTA DV on v.cod_VENTA=DV.COD_VENTA  
+	inner join prov_pro pp on dv.cod_fab=pp.cod_fab  
+	WHERE V.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@cod_suc)AND DV.COD_FAB=@codProducto AND V.FECHA>@FECHA AND ESTADO='D'
+	order by v.fecha desc
+
+	--CREDITO    
+	INSERT INTO  itemsRezagados(cod_fab,cod_usu,tipo,codigo,fecha,estado)    
+	SELECT DC.COD_FAB,@cod_usu,'CREDITO',CR.COD_CRE,CR.FEC_INICIO,estado
+	FROM CREDITO CR inner join DET_CREDITO DC on CR.COD_CRE=DC.COD_CRE 
+	WHERE CR.COD_USU IN(SELECT COD_USU FROM USUARIO WHERE COD_SUC=@cod_suc) and DC.COD_FAB=@codProducto AND CR.FEC_INICIO>@FECHA and (estado='A'or estado='C')
+	order by cr.FEC_INICIO desc
+  end;  
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[get_dosificacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[get_dosificacion]
+@cod_suc int
+as
+begin
+	select nro_autorizacion,nro_inicio,nro_final,d.fecha,fecha_limite,estado,cod_suc_usu,llave	
+	from dosificacion d inner join suc_usu su on d.cod_suc_usu=su.cod_suc 
+	where su.cod_suc=@cod_suc
+	order by fecha_limite;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[get_sucursal_usuario] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[get_sucursal_usuario]
+@cod_usu int
+as
+set nocount on	
+select su.codigo,s.codigo as cod_suc, nom_suc +' - '+ denominacion as nom_suc
+from Usuario u 
+inner join suc_usu su on su.cod_usu =u.codigo 
+inner join sucursal s on s.codigo = su.cod_suc 
+where u.login =@cod_usu and s.baja=0
+order by nom_suc
+return
+GO
+/****** Objeto: StoredProcedure [dbo].[getCodigoPrePedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[getCodigoPrePedido]
+as
+begin	
+	select max(cod_pedido)codigo from sip_Pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[listaRezagado] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[listaRezagado] @pCodUsu varchar(7),@pCodSuc varchar(5) as
+begin 
+	delete itemsRezagados where cod_usu=@pCodUsu;
+	declare dets cursor for		
+		select cod_fab from suc_pro_prov
+		where cod_suc=@pCodSuc and cantidad>0
+		order by cod_fab
+	declare @COD_PROD varchar(50)
+	open dets
+	fetch next from dets into @COD_PROD
+	while @@FETCH_STATUS = 0
+	begin
+		exec genRezagado @COD_PROD,@pCodUsu,@pCodSuc,'01/01/2000'
+		fetch next from dets into @COD_PROD
+	end
+	close dets
+	deallocate dets	
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[listarSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[listarSucursal]  @login varchar(50) as
+begin
+	select s.cod_suc,s.nom_suc,s.DIR_SUC
+	from SUCURSAL s
+	inner join EMPRESA e on s.COD_EMP=e.COD_EMP
+	where estSuc='0' and e.grupo in (
+	select e.grupo
+	from sucursal s
+	inner join EMPRESA e on s.COD_EMP=e.COD_EMP
+	inner join USUARIO u on s.COD_SUC =u.COD_SUC
+	where estSuc='0' and ALIAS=@login
+	)
+	order by 1
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[listLogProducto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[listLogProducto] @id_pro int, @sw integer
+as
+if @sw=0 
+	select top 30 id,kindActivity,id_pro,codigo,descripcion,fecha,loginUser  
+	from logProducto
+	where id_pro=@id_pro 
+	order by fecha desc
+if @sw=1
+	select id,kindActivity,codigo,descripcion,fecha,loginUser  
+	from logProducto
+	where id_pro=@id_pro 
+	order by fecha desc
+if @sw=2
+	select top 30 lp.id,lp.kindActivity,lp.codigo,lp.descripcion,lp.fecha,lp.loginUser
+	from logProducto lp 
+	where lp.codigo in (Select p.COD_PRO  from producto p where p.COD_EMP =@id_pro)
+	order by lp.codigo, fecha  desc
+if @sw=3	
+	select lp.id,lp.kindActivity,lp.codigo,lp.descripcion,lp.fecha,lp.loginUser
+	from logProducto lp 
+	where lp.codigo in (Select p.COD_PRO  from producto p where p.COD_EMP =@id_pro)
+	order by lp.codigo,fecha  desc
+GO
+/****** Objeto: StoredProcedure [dbo].[listLogProvPro] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[listLogProvPro] @id_fab int, @sw integer
+as
+if @sw=0 
+	select top 30 id,kindActivity,id_fab,barra,cod_fab,cod_pro,comentario,cod_prov,cif_cbba, plis_bs,pmin_bs,pmay_bs,pOferta,p_fob,fecha,loginUser
+	from logProvPro 
+	where id_fab=@id_fab 
+	order by fecha desc
+if @sw=1
+	select id,kindActivity,id_fab,barra,cod_fab,cod_pro,comentario,cod_prov,cif_cbba, plis_bs,pmin_bs,pmay_bs,pOferta,p_fob,fecha,loginUser
+	from logProvPro 
+	where id_fab=@id_fab
+	order by fecha desc
+if @sw=2
+select top 30 id,kindActivity,id_fab,barra,cod_fab,cod_pro,comentario,cod_prov,cif_cbba, plis_bs,pmin_bs,pmay_bs,pOferta,p_fob,fecha,loginUser
+	from logProvPro pp 
+	where pp.cod_pro in (Select p.COD_PRO  from producto p where p.COD_EMP =@id_fab)
+	order by pp.cod_fab, fecha  desc
+if @sw=3	
+select id,kindActivity,id_fab,barra,cod_fab,cod_pro,comentario,cod_prov,cif_cbba, plis_bs,pmin_bs,pmay_bs,pOferta,p_fob,fecha,loginUser
+	from logProvPro pp
+	where pp.cod_pro in (Select p.COD_PRO  from producto p where p.COD_EMP =@id_fab)
+	order by pp.cod_fab,fecha  desc
+GO
+/****** Objeto: StoredProcedure [dbo].[mostrarCreditoSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[mostrarCreditoSucursal] @cod_suc varchar(5) as
+begin
+	select ISNULL(sum(c.SALDO),0) saldo_suc,s.total_credito,NOM_SUC
+	from CREDITO c
+	inner join SUCURSAL s on c.COD_SUC=s.COD_SUC
+	where c.ESTADO='A' and c.COD_SUC=@cod_suc
+	group by s.total_credito,NOM_SUC
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[producto_contar] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[producto_contar]
+@cod_pro varchar(50)
+as
+select COUNT(*)
+from producto 
+where codigo=@cod_pro;
+GO
+/****** Objeto: StoredProcedure [dbo].[quantityYear] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[quantityYear] @id_fab integer,@alias varchar(30)
+as
+begin
+declare @cod_emp varchar(30);
+select @cod_emp=substring( cod_suc,1,3 )
+from usuario u
+where u.alias=@alias
+
+select t1.ID_FAB,t1.gestion,t1.cant,ISNULL(t2.ir/IIF(dbo.countSucYear(@Id_fab,@cod_emp,t2.ir_year)>0,dbo.countSucYear(@Id_fab,@cod_emp,t2.ir_year),1),0) ir
+from (select pp.ID_FAB,sum(di.CANTIDAD) cant,YEAR(i.fecha) gestion
+	from prov_pro pp
+	inner join DET_IMPORTACION di on pp.ID_FAB=di.ID_FAB
+	inner join IMPORTACION i on di.COD_IMP=i.COD_IMP
+	where di.id_fab=@id_fab and i.FECHA>='01/01/2017'
+	group by pp.id_fab, year(i.FECHA)) as t1 left outer join
+	(select sr.id_fab,sum(sr.ir_month_suc)/12 ir, ir_year
+	from sip_ir sr
+	inner join SUCURSAL s on sr.cod_suc=s.cod_suc
+	where  sr.id_fab=@id_fab and ir_year>='2017' and s.cod_emp=@cod_emp
+	group by sr.id_fab,ir_year) as t2 on t1.ID_FAB=t2.id_fab and t1.gestion=t2.ir_year 
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptCIFActual] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER OFF
+GO
+CREATE PROCEDURE [dbo].[rptCIFActual] @codEmp varchar(3),@codSucOri varchar(5)as
+SELECT     EMPRESA.NOM_EMP, SUCURSAL.NOM_SUC, PROVEEDOR.NOM_PROV, PAIS.NOM_PAIS, TIPO_PRODUCTO.DESCRIPCION, PRODUCTO.DESC_PRO, 
+                      PROV_PRO.COD_PRO, PROV_PRO.COD_FAB, SUC_PRO_PROV.CANTIDAD, PRODUCTO.UNIDAD, PROV_PRO.CIF_CBBA
+FROM         EMPRESA INNER JOIN
+                      PRODUCTO ON EMPRESA.COD_EMP = PRODUCTO.COD_EMP INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      PROV_PRO ON PRODUCTO.ID_PRO = PROV_PRO.ID_PRO INNER JOIN
+                      SUC_PRO_PROV ON PROV_PRO.ID_FAB = SUC_PRO_PROV.ID_FAB INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      SUCURSAL ON SUC_PRO_PROV.COD_SUC = SUCURSAL.COD_SUC
+WHERE   SUC_PRO_PROV.COD_SUC = @codSucOri and cantidad>0
+ORDER BY EMPRESA.NOM_EMP, SUCURSAL.NOM_SUC, PROVEEDOR.NOM_PROV, TIPO_PRODUCTO.DESCRIPCION, PROV_PRO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptCIFGeneral] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptCIFGeneral] @mes smallint, @año smallint,@codSucOri varchar(5)as
+SELECT     SUCURSAL.NOM_SUC AS ORIGEN,sum(DET_REMIS.CIF_TOTAL)as suma,SUM(det_remis.fob_total) as suma_fob
+FROM         REMISION_S INNER JOIN
+                      DET_REMIS ON REMISION_S.COD_REM = DET_REMIS.COD_REM INNER JOIN
+                      SUCURSAL ON REMISION_S.SUC_DES = SUCURSAL.COD_SUC INNER JOIN
+                      SUCURSAL SUCURSAL_1 ON REMISION_S.SUC_ORI = SUCURSAL_1.COD_SUC
+where	suc_ori =@codSucOri and month(REMISION_S.FECHA)=@mes and year(REMISION_S.FECHA)=@año and (REMISION_S.estado='D' or REMISION_S.estado='DE' or REMISION_S.ESTADO='T')
+--where	suc_ori ='00000' and month(REMISION_S.FECHA)=4 and year(REMISION_S.FECHA)=2007 
+GROUP BY SUCURSAL.NOM_SUC
+
+GRANT EXECUTE ON rptCIFGeneral TO admin
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptCotizacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptCotizacion] @Codigo varchar(18) AS 
+SELECT     CIUDAD.DEPTO, CIUDAD.NOM_CIU, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, SUCURSAL.COD_CIU, 
+                      SUCURSAL.FAX, CLIENTE.NOM_CLI, CLIENTE.APE_CLI, CLIENTE.RAZON_SOCIAL, CLIENTE.NOM_COLAB, CLIENTE.AP_COLAB, USUARIO.NOM_USU, 
+                      USUARIO.AP_USU, PROFORMA.COD_PROF, PROFORMA.FECHA, PROFORMA.NOTA, PROFORMA.DESCUENTO, CLIENTE.DESCUENTO AS Expr1, 
+                      DET_PROFORMA.CANTIDAD, PRODUCTO.UNIDAD, DET_PROFORMA.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, PAIS.NOM_PAIS, 
+                      DET_PROFORMA.PRECIO_VENTA, EMPRESA.NOM_EMP, TIPO_PRODUCTO.DESCRIPCION
+FROM         PROFORMA INNER JOIN
+                      DET_PROFORMA ON PROFORMA.COD_PROF = DET_PROFORMA.COD_PROF INNER JOIN
+                      PROV_PRO ON DET_PROFORMA.COD_FAB = PROV_PRO.COD_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.COD_PRO = PRODUCTO.COD_PRO INNER JOIN
+                      USUARIO ON PROFORMA.COD_USU = USUARIO.COD_USU INNER JOIN
+                      CLIENTE ON PROFORMA.COD_CLIENTE = CLIENTE.cod_cli INNER JOIN
+                      SUCURSAL ON USUARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      CIUDAD ON SUCURSAL.COD_CIU = CIUDAD.COD_CIU INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      EMPRESA ON SUCURSAL.COD_EMP = EMPRESA.COD_EMP INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO
+WHERE     PROFORMA.COD_PROF = @Codigo
+ORDER BY TIPO_PRODUCTO.DESCRIPCION, PROVEEDOR.NOM_PROV, DET_PROFORMA.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptCreditoClienteMensual] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptCreditoClienteMensual] @cod_suc varchar(5),@fecha datetime
+as
+Begin
+select c.COD_CRE,cl.NOM_CLI,cl.APE_CLI,c.FEC_INICIO,c.FEC_FIN,c.TOTAL,c.SALDO,c.descuento,c.DevCedito, c.OBS,c.ESTADO,pc.N_PAGO,pc.total totalpc,pc.SALDO saldopc,pc.fecha_pago,pc.OBS obspc
+from PAGO_CREDITO pc
+inner join CREDITO c on pc.COD_CRE=c.COD_CRE
+inner join CLIENTE cl on c.COD_CLI=cl.cod_cli
+where c.COD_SUC='10106' and month( pc.fecha )=month(@fecha) and year(pc.fecha)=year(@fecha)
+order by NOM_CLI,APE_CLI, pc.fecha
+End
+GO
+/****** Objeto: StoredProcedure [dbo].[rptDetalleFacturaCIF] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptDetalleFacturaCIF] @mes smallint,@año smallint, @codSucOri varchar(5),@codSucDes varchar(5)as
+SELECT     PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, DET_REMIS.CANTIDAD, PRODUCTO.UNIDAD, DET_REMIS.CIF_TOTAL, DET_REMIS.CIF_TOTAL/NULLIF(DET_REMIS.CANTIDAD,0) AS CIF_UNIT,
+                      REMISION_S.COD_REM, REMISION_S.SUC_DES, REMISION_S.FECHA, REMISION_S.OBS_REM, REMISION_S.TOTAL, SUCURSAL.NOM_SUC destino,S1.NOM_SUC origen,
+                      PROVEEDOR.NOM_PROV, DET_REMIS.FOB_TOTAL,DET_REMIS.FOB_TOTAL/NULLIF(DET_REMIS.CANTIDAD,0) as totalFOB
+FROM         PRODUCTO INNER JOIN
+                      PROV_PRO ON PRODUCTO.ID_PRO = PROV_PRO.ID_PRO INNER JOIN
+                      DET_REMIS ON PROV_PRO.ID_FAB = DET_REMIS.ID_FAB INNER JOIN
+                      REMISION_S ON DET_REMIS.COD_REM = REMISION_S.COD_REM INNER JOIN
+                      SUCURSAL ON REMISION_S.SUC_DES = SUCURSAL.COD_SUC inner join SUCURSAL s1 ON REMISION_S.SUC_ori = S1.COD_SUC  INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+WHERE     REMISION_S.SUC_ORI = @codSucOri and REMISION_S.SUC_DES = @codSucDes and month(REMISION_S.fecha) = @mes and year(REMISION_S.FECHA)=@año and (REMISION_S.estado='D' or REMISION_S.estado='DE' or REMISION_S.ESTADO='T')
+--WHERE     REMISION_S.SUC_ORI = '00000' and REMISION_S.SUC_DES = '00101' and month(REMISION_S.fecha) = 2
+ORDER BY REMISION_S.COD_REM, PRODUCTO.DESC_PRO, PROV_PRO.COD_FAB
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptFacturaSursalCif] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptFacturaSursalCif] @mes smallint, @año smallint, @codSucOri varchar(5),@codSucDes varchar(5)as
+SELECT     REMISION_S.COD_REM, REMISION_S.FECHA,month(REMISION_S.FECHA)as mes,year(REMISION_S.FECHA)as año , SUCURSAL_1.NOM_SUC AS ORIGEN, SUCURSAL.NOM_SUC AS DESTINO, 
+                      REMISION_S.OBS_REM, sum(DET_REMIS.CIF_TOTAL)as suma,SUM(DET_REMIS.FOB_TOTAL)as sumaFob
+FROM         REMISION_S INNER JOIN
+                      DET_REMIS ON REMISION_S.COD_REM = DET_REMIS.COD_REM INNER JOIN
+                      SUCURSAL ON REMISION_S.SUC_DES = SUCURSAL.COD_SUC INNER JOIN
+                      SUCURSAL SUCURSAL_1 ON REMISION_S.SUC_ORI = SUCURSAL_1.COD_SUC
+where	suc_ori =@codSucOri  AND SUC_DES=@codSucDes and month(REMISION_S.FECHA)=@mes and year(REMISION_S.FECHA)=@año and (REMISION_S.estado='D' or REMISION_S.estado='DE' or REMISION_S.ESTADO='T')
+GROUP BY REMISION_S.COD_REM,fecha,SUCURSAL.NOM_SUC,SUCURSAL_1.NOM_SUC,REMISION_S.OBS_REM
+
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptFinal5] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptFinal5] @pCodSuc1 varchar(4),@pCodSuc2 varchar(4),@pCodSuc3 varchar(4),@pCodSuc4 varchar(4),@pCodSuc5 varchar(4),@pCodUsu varchar(6),@pFactor money
+as 
+begin
+select t1.nom_suc suc1,t2.nom_suc suc2,t3.nom_suc suc3,t4.nom_suc suc4,t5.nom_suc5,e.Nom_emp,nit,nombre_factura,codigo,unidad,descripcion,p_costo,@pFactor*p_costo PU,p_venta,c_s1,c_s2,c_s3,c_s4,cod_usu
+from
+(select nom_suc,cod_emp from sucursal
+where cod_suc=@pCodSuc1)t1
+inner join (select nom_suc,cod_emp from sucursal
+where cod_suc=@pCodSuc2) t2 on t1.cod_emp=t2.cod_emp
+inner join (select nom_suc,cod_emp from sucursal
+where cod_suc=@pCodSuc3) t3 on t2.cod_emp=t3.cod_emp
+inner join (select nom_suc,cod_emp from sucursal
+where cod_suc=@pCodSuc4)t4 on t3.cod_emp=t4.cod_emp
+inner join (select nom_suc,cod_emp from sucursal
+where cod_suc=@pCodSuc5)t5 on t4.cod_emp=t5.cod_emp
+inner join empresa e on e.cod_emp=t5.cod_emp
+inner join reporteFinal rf on e.cod_emp=substring(rf.cod_usu,1,2)
+where rf.cod_usu=@pCodUsu
+order by rf.descripcion
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[rptFOBAperturaCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptFOBAperturaCredito] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     CREDITO.COD_CRE, CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.COD_CLI, CLIENTE.NOM_CLI + ' ' + CLIENTE.APE_CLI AS NombreCliente, 
+                      CREDITO.SALDO, PRODUCTO.COD_PRO, DET_CREDITO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, DET_CREDITO.CANTIDAD, 
+                      DET_CREDITO.PRECIO_CRE, DET_CREDITO.DESCUENTO, CREDITO.DOLAR, DET_CREDITO.PRECIO_CRE / CREDITO.DOLAR AS totSus, 
+                      SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, SUCURSAL.FAX,DET_CREDITO.p_fob,DET_CREDITO.p_fob*DET_CREDITO.CANTIDAD as fotTotal
+FROM         CREDITO INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      DET_CREDITO ON CREDITO.COD_CRE = DET_CREDITO.COD_CRE INNER JOIN
+                      PROV_PRO ON DET_CREDITO.COD_FAB = PROV_PRO.COD_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.COD_PRO = PRODUCTO.COD_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN 
+                      PAGO_CREDITO PC ON CREDITO.COD_CRE=PC.COD_CRE
+where PC.fecha_pago BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc AND PC.SALDO=0
+order by cliente.ape_cli,cliente.nom_cli,CREDITO.FEC_INICIO,nom_prov,desc_pro,DET_CREDITO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGasto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGasto] @codSuc varchar(5)as
+select nom_suc,g.fecha,day(g.fecha) dia ,month(g.fecha) mes,year(g.fecha) gestion,cast(day(g.fecha) as varchar(3))+'/'+cast(month(g.fecha) as varchar(3))+'/'+cast(year(g.fecha)as varchar(4)) fechaNew,cuenta,g.obs,monto,tipo_cambio
+from gastos g,plan_cuentas pp, sucursal s,cambio_dolar cd
+where g.ref_cuenta=pp.ref_cuenta and s.cod_suc=g.cod_suc and day(cd.fecha)=day(g.fecha)and month(cd.fecha)=month(g.fecha)and year(cd.fecha)=year(g.fecha)and g.cod_suc=@codSuc
+order by g.fecha desc
+	
+GRANT EXECUTE ON rptGasto TO admin,cajero
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraAperturaCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraAperturaCredito] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     CREDITO.COD_CRE, CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.COD_CLI, CLIENTE.NOM_CLI + ' ' + CLIENTE.APE_CLI AS NombreCliente, 
+                      CREDITO.SALDO, PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, DET_CREDITO.CANTIDAD, 
+                      DET_CREDITO.PRECIO_CRE, DET_CREDITO.DESCUENTO, CREDITO.DOLAR, DET_CREDITO.PRECIO_CRE / CREDITO.DOLAR AS totSus, 
+                      SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, SUCURSAL.FAX
+FROM         CREDITO INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      DET_CREDITO ON CREDITO.COD_CRE = DET_CREDITO.COD_CRE INNER JOIN
+                      PROV_PRO ON DET_CREDITO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC
+where CREDITO.FEC_INICIO BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc and (CREDITO.estado='A' or credito.estado='C'or credito.estado='CD')
+order by cliente.ape_cli,cliente.nom_cli,CREDITO.FEC_INICIO,nom_prov,desc_pro,DET_CREDITO.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraCredito] @codCredito varchar(15) as
+SELECT     CREDITO.COD_CRE, CREDITO.COD_CLI, CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.TOTAL, CREDITO.DOLAR, CREDITO.OBS, 
+                      PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, DET_CREDITO.CANTIDAD, DET_CREDITO.PRECIO_CRE, 
+                      PROVEEDOR.NOM_PROV, USUARIO.NOM_USU + ' ' + USUARIO.AP_USU AS nomUsuario, 
+                      CLIENTE.NOM_CLI + ' ' + CLIENTE.APE_CLI AS nombreCliente, SUCURSAL.NOM_SUC, SUCURSAL.TEL_SUC, SUCURSAL.DIR_SUC, 
+                      SUCURSAL.E_MAIL, SUCURSAL.FAX, PRODUCTO.UNIDAD
+FROM         CREDITO INNER JOIN
+                      DET_CREDITO ON CREDITO.COD_CRE = DET_CREDITO.COD_CRE INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      USUARIO ON CREDITO.COD_USU = USUARIO.COD_USU INNER JOIN
+                      PROV_PRO ON DET_CREDITO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli
+where credito.cod_cre=@codCredito
+order by nom_prov,det_credito.cod_fab
+
+GRANT EXECUTE ON rptGeneraCredito TO admin,cajero,vendedor
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraDetalleMayorGastos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGeneraDetalleMayorGastos] @cod_suc varchar(5),@ref_cuenta int, @fechaIni datetime, @fechaFin datetime
+as
+begin
+select fecha,monto, obs , u.nom_usu +' '+ u.ap_usu Nombre,COD_GASTO,case when DATALENGTH(g.imgNOTA)>0 then IIF(upper(tipo_archivo)='PDF',2,1) else '0'end as SImagen
+from gastos g
+inner join usuario u on g.cod_usu =u.cod_usu
+where g.cod_suc=@cod_suc and fecha >@fechaIni and FECHA<@fechaFin and ref_cuenta=@ref_cuenta
+order by g.fecha		
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraDetallePago] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptGeneraDetallePago] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5)
+as
+begin
+	declare @fei datetime,@fef datetime
+	select @fei=cast(@fechaIni as datetime)
+	select @fef=cast(@fechaFin as datetime)
+
+	select tipo, tventa, isnull(tcredito,0) tcredito
+	from 
+	(select TIPO, SUM(TOTAL) tventa
+	from venta v
+	inner join usuario u on v.cod_usu =u.cod_usu
+	where fecha>@fei AND fecha<@fef and u.cod_suc=@CodSuc AND ESTADO='D'
+	GROUP BY TIPO
+	) as t1
+	full join 
+	(select tipo_pago, sum(total) tcredito
+	from pago_credito pc 
+	inner join usuario u on pc.cod_usu =u.cod_usu
+	where fecha>@fei AND fecha<@fef and u.cod_suc =@CodSuc
+	group by tipo_pago
+	) t2 on t1.tipo=tipo_pago
+	order by tipo
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraDevolucion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraDevolucion] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     DEVOLUCION.FECHA, DEVOLUCION.OBS, CLIENTE.NOM_CLI+' '+cliente.ape_cli as nombreCliente, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, 
+                      DET_DEVOLUCION.CANTIDAD, DET_DEVOLUCION.TOTAL,DET_DEVOLUCION.TOTAL/DV.DOLAR AS TOTSUS
+FROM         DEVOLUCION INNER JOIN
+                      VENTA ON DEVOLUCION.COD_VENTA = VENTA.COD_VENTA inner join usuario u on devolucion.cod_usu=u.cod_usu INNER JOIN
+                      DET_DEVOLUCION ON DEVOLUCION.COD_VENTA = DET_DEVOLUCION.COD_VENTA inner join DET_VENTA DV ON VENTA.COD_VENTA=DV.COD_VENTA AND DET_DEVOLUCION.ID_FAB=DV.ID_FAB INNER JOIN
+                      CLIENTE ON VENTA.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      PROV_PRO ON DET_DEVOLUCION.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+WHERE DEVOLUCION.FECHA BETWEEN @fei AND @feF AND U.COD_SUC=@codSuc
+order by venta.fecha,nom_prov,desc_pro,DET_DEVOLUCION.COD_FAB
+
+GRANT EXECUTE ON rptGeneraDevolucion TO admin,cajero
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraDevolucionCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraDevolucionCredito] @codCre varchar(15) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, DEVOLUCION_CREDITO.FECHA, DEVOLUCION_CREDITO.COD_CRE, 
+                      DEVOLUCION_CREDITO.OBS, CLIENTE.NOM_CLI, CLIENTE.APE_CLI, CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.TOTAL, 
+                      PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, 
+                      DET_DEVOLUCION_CREDITO.CANTIDAD, DET_DEVOLUCION_CREDITO.TOTAL AS SUBTOTAL, CREDITO.SALDO, CREDITO.DevCedito
+FROM         CLIENTE INNER JOIN
+                      DEVOLUCION_CREDITO INNER JOIN
+                      CREDITO ON DEVOLUCION_CREDITO.COD_CRE = CREDITO.COD_CRE ON CLIENTE.cod_cli = CREDITO.COD_CLI INNER JOIN
+                      PROV_PRO INNER JOIN
+                      DET_DEVOLUCION_CREDITO ON PROV_PRO.ID_FAB = DET_DEVOLUCION_CREDITO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO ON 
+                      DEVOLUCION_CREDITO.COD_DEVC = DET_DEVOLUCION_CREDITO.COD_DEVC INNER JOIN
+                      USUARIO ON CREDITO.COD_USU = USUARIO.COD_USU INNER JOIN
+                      SUCURSAL ON USUARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+WHERE     (DEVOLUCION_CREDITO.COD_CRE = @codCre)
+ORDER BY PROVEEDOR.NOM_PROV, DET_DEVOLUCION_CREDITO.COD_FAB
+
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraDevolucionCreditoCC] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraDevolucionCreditoCC] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, DEVOLUCION_CREDITO.FECHA, DEVOLUCION_CREDITO.COD_CRE, 
+                      DEVOLUCION_CREDITO.OBS, CLIENTE.NOM_CLI, CLIENTE.APE_CLI, CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.TOTAL, 
+                      PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, 
+                      DET_DEVOLUCION_CREDITO.CANTIDAD, DET_DEVOLUCION_CREDITO.TOTAL AS SUBTOTAL, CREDITO.SALDO, CREDITO.DevCedito,DEVOLUCION_CREDITO.Tipo
+FROM         CLIENTE INNER JOIN
+                      DEVOLUCION_CREDITO INNER JOIN
+                      CREDITO ON DEVOLUCION_CREDITO.COD_CRE = CREDITO.COD_CRE ON CLIENTE.cod_cli = CREDITO.COD_CLI INNER JOIN
+                      PROV_PRO INNER JOIN
+                      DET_DEVOLUCION_CREDITO ON PROV_PRO.ID_FAB = DET_DEVOLUCION_CREDITO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO ON 
+                      DEVOLUCION_CREDITO.cod_devc = DET_DEVOLUCION_CREDITO.cod_devc INNER JOIN
+                      USUARIO ON CREDITO.COD_USU = USUARIO.COD_USU INNER JOIN
+                      SUCURSAL ON USUARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+WHERE     DEVOLUCION_CREDITO.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc
+order by cliente.ape_cli,cliente.nom_cli,nom_prov,desc_pro,PROV_PRO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraFinal5] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptGeneraFinal5] @pCodSuc1 varchar(9),@pCodSuc2 varchar(9),@pCodSuc3 varchar(9),@pCodSuc4 varchar(9),@pCodSuc5 varchar(9), @pFecha datetime,@pCodUsu varchar(6) as
+begin
+delete reporteFinal where cod_usu=@pCodUsu;
+insert reporteFinal(codigo,unidad,descripcion,p_costo,p_venta,cod_usu)
+select di.cod_pro,unidad,tp.descripcion,precio_cif,precio_venta,@pCodUsu
+from inventario_mensual im 
+inner join det_inventario di on im.cod_inv=di.cod_inv
+inner join producto p on di.cod_pro=p.cod_pro
+inner join tipo_producto tp on tp.cod_tipo=p.cod_tipo
+inner join usuario u on im.cod_usu=u.cod_usu
+inner join sucursal s on u.cod_suc=s.cod_suc
+where s.cod_suc=@pCodSuc1 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0
+union
+select di.cod_pro,unidad,tp.descripcion,precio_cif,precio_venta,@pCodUsu
+from inventario_mensual im 
+inner join det_inventario di on im.cod_inv=di.cod_inv
+inner join producto p on di.cod_pro=p.cod_pro
+inner join tipo_producto tp on tp.cod_tipo=p.cod_tipo
+inner join usuario u on im.cod_usu=u.cod_usu
+inner join sucursal s on u.cod_suc=s.cod_suc
+where s.cod_suc=@pCodSuc2 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0
+union
+select di.cod_pro,unidad,tp.descripcion,precio_cif,precio_venta,@pCodUsu
+from inventario_mensual im 
+inner join det_inventario di on im.cod_inv=di.cod_inv
+inner join producto p on di.cod_pro=p.cod_pro
+inner join tipo_producto tp on tp.cod_tipo=p.cod_tipo
+inner join usuario u on im.cod_usu=u.cod_usu
+inner join sucursal s on u.cod_suc=s.cod_suc
+where s.cod_suc=@pCodSuc3 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0
+union
+select di.cod_pro,unidad,tp.descripcion,precio_cif,precio_venta,@pCodUsu
+from inventario_mensual im 
+inner join det_inventario di on im.cod_inv=di.cod_inv
+inner join producto p on di.cod_pro=p.cod_pro
+inner join tipo_producto tp on tp.cod_tipo=p.cod_tipo
+inner join usuario u on im.cod_usu=u.cod_usu
+inner join sucursal s on u.cod_suc=s.cod_suc
+where s.cod_suc=@pCodSuc4 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0
+union
+select di.cod_pro,unidad,tp.descripcion,precio_cif,precio_venta,@pCodUsu
+from inventario_mensual im 
+inner join det_inventario di on im.cod_inv=di.cod_inv
+inner join producto p on di.cod_pro=p.cod_pro
+inner join tipo_producto tp on tp.cod_tipo=p.cod_tipo
+inner join usuario u on im.cod_usu=u.cod_usu
+inner join sucursal s on u.cod_suc=s.cod_suc
+where s.cod_suc=@pCodSuc5 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0;
+update reporteFinal set c_s1=di.cantidad
+from det_inventario di 
+inner join reporteFinal rf on di.cod_pro=rf.codigo
+inner join inventario_mensual im on im.cod_inv=di.cod_inv
+inner join usuario u on im.cod_usu=u.cod_usu
+where cod_suc=@pCodSuc1 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0 and rf.cod_usu=@pCodUsu;
+update reporteFinal set c_s2=di.cantidad
+from det_inventario di 
+inner join reporteFinal rf on di.cod_pro=rf.codigo
+inner join inventario_mensual im on im.cod_inv=di.cod_inv
+inner join usuario u on im.cod_usu=u.cod_usu
+where cod_suc=@pCodSuc2 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0 and rf.cod_usu=@pCodUsu;
+update reporteFinal set c_s3=di.cantidad
+from det_inventario di 
+inner join reporteFinal rf on di.cod_pro=rf.codigo
+inner join inventario_mensual im on im.cod_inv=di.cod_inv
+inner join usuario u on im.cod_usu=u.cod_usu
+where cod_suc=@pCodSuc3 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0 and rf.cod_usu=@pCodUsu;
+update reporteFinal set c_s4=di.cantidad
+from det_inventario di 
+inner join reporteFinal rf on di.cod_pro=rf.codigo
+inner join inventario_mensual im on im.cod_inv=di.cod_inv
+inner join usuario u on im.cod_usu=u.cod_usu
+where cod_suc=@pCodSuc4 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0 and rf.cod_usu=@pCodUsu;
+end
+update reporteFinal set c_s5=di.cantidad
+from det_inventario di 
+inner join reporteFinal rf on di.cod_pro=rf.codigo
+inner join inventario_mensual im on im.cod_inv=di.cod_inv
+inner join usuario u on im.cod_usu=u.cod_usu
+where cod_suc=@pCodSuc5 and year(fecha)=year(@pFecha)and month(fecha)=12 and estado='D' and di.cantidad>0 and rf.cod_usu=@pCodUsu;
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraGastos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraGastos] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT distinct cod_gasto,cast(convert(varchar(10),gastos.FECHA,3)as smalldatetime) as Fecha , GASTOS.REF_CUENTA, PLAN_CUENTAS.CUENTA, GASTOS.OBS, GASTOS.MONTO,GASTOS.MONTO/CAMBIO_DOLAR.TIPO_CAMBIO as ToTSUS,CAMBIO_DOLAR.TIPO_CAMBIO,gastos.FECHA
+FROM         GASTOS INNER JOIN
+                      CAMBIO_DOLAR ON convert(varchar(10),GASTOS.FECHA,3) = convert(varchar(10),CAMBIO_DOLAR.FECHA,3) INNER JOIN
+                      PLAN_CUENTAS ON GASTOS.REF_CUENTA = PLAN_CUENTAS.REF_CUENTA
+where gastos.FECHA BETWEEN @fei AND @feF AND gastos.COD_SUC=@codSuc
+order by gastos.FECHA,GASTOS.REF_CUENTA
+
+GRANT EXECUTE ON rptGeneraGastos TO admin,cajero
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraGastosIMG] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraGastosIMG] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT cod_gasto,cast(convert(varchar(10),gastos.FECHA,3)as smalldatetime) as Fecha , GASTOS.REF_CUENTA, PLAN_CUENTAS.CUENTA, GASTOS.OBS, GASTOS.MONTO,GASTOS.MONTO/CAMBIO_DOLAR.TIPO_CAMBIO as ToTSUS,CAMBIO_DOLAR.TIPO_CAMBIO,gastos.FECHA, imgNOTA
+FROM         GASTOS INNER JOIN
+                      CAMBIO_DOLAR ON convert(varchar(10),GASTOS.FECHA,3) = convert(varchar(10),CAMBIO_DOLAR.FECHA,3) INNER JOIN
+                      PLAN_CUENTAS ON GASTOS.REF_CUENTA = PLAN_CUENTAS.REF_CUENTA
+where gastos.FECHA BETWEEN @fei AND @feF AND gastos.COD_SUC=@codSuc
+order by gastos.FECHA,GASTOS.REF_CUENTA
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraImportacionCosto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraImportacionCosto] @codImportacion varchar(15) as
+SELECT     IMPORTACION.COD_IMP, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, SUCURSAL.COD_CIU, 
+                      SUCURSAL.FAX, IMPORTACION.NUM_FACTURA, IMPORTACION.PROVEEDOR, IMPORTACION.FECHA, IMPORTACION.FOB, 
+                      IMPORTACION.pTRANSPORTE, IMPORTACION.pTRANS_INTERNO, IMPORTACION.pMANTENIMIENTO, IMPORTACION.FAC_DEP, 
+                      IMPORTACION.FAC_LIS, IMPORTACION.OBS, IMPORTACION.cOD_JM, PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, 
+                      DET_IMPORTACION.CANTIDAD, PRODUCTO.UNIDAD, PROVEEDOR.NOM_PROV, DET_IMPORTACION.PREC_UNIT
+FROM         IMPORTACION INNER JOIN
+                      DET_IMPORTACION ON IMPORTACION.COD_IMP = DET_IMPORTACION.COD_IMP INNER JOIN
+                      PROV_PRO ON DET_IMPORTACION.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      SUCURSAL ON IMPORTACION.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+where importacion.cod_imp=@codImportacion
+order by nro,nom_prov,desc_pro,det_importacion.cod_fab
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraImportacionNuevo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraImportacionNuevo] @codImportacion varchar(15),@codSuc varchar(5) as
+SELECT     IMPORTACION.COD_IMP, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.FAX, SUCURSAL.E_MAIL, 
+                      IMPORTACION.cOD_JM, IMPORTACION.NUM_FACTURA, IMPORTACION.PROVEEDOR, PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, 
+                      PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, PRODUCTO.UNIDAD, DET_IMPORTACION.CANTIDAD, IMPORTACION.FAC_DEP, 
+                      IMPORTACION.FAC_LIS, DET_IMPORTACION.PREC_UNIT, DET_IMPORTACION.PREC_LISTA, PAIS.NOM_PAIS, DET_IMPORTACION.plis_bs, DET_IMPORTACION.pmin_bs, DET_IMPORTACION.pmay_bs,ppp.CANTIDAD existencia,PROV_PRO.COMENTARIO
+FROM         IMPORTACION INNER JOIN
+                      DET_IMPORTACION ON IMPORTACION.COD_IMP = DET_IMPORTACION.COD_IMP INNER JOIN
+                      PROV_PRO ON DET_IMPORTACION.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      SUCURSAL ON IMPORTACION.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS inner join
+                      suc_pro_prov ppp on PROV_PRO.ID_FAB=ppp.ID_FAB
+where importacion.cod_imp=@codImportacion and ppp.COD_SUC=@codSuc
+order by nro,nom_prov,desc_pro,det_importacion.cod_fab
+
+GRANT EXECUTE ON rptGeneraImportacionNuevo TO admin
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraListaExistenciaTodo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraListaExistenciaTodo] @gCodSuc varchar(15) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, CIUDAD.NOM_CIU, CIUDAD.DEPTO, SUCURSAL.COD_SUC, 
+                      PROVEEDOR.NOM_PROV, PAIS.NOM_PAIS, PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, SUC_PRO_PROV.CANTIDAD, 
+                      PRODUCTO.UNIDAD
+FROM         PRODUCTO INNER JOIN
+                      PROV_PRO ON PRODUCTO.ID_PRO = PROV_PRO.ID_PRO INNER JOIN
+                      SUC_PRO_PROV ON PROV_PRO.ID_FAB = SUC_PRO_PROV.ID_FAB INNER JOIN
+                      SUCURSAL ON SUC_PRO_PROV.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      CIUDAD ON SUCURSAL.COD_CIU = CIUDAD.COD_CIU INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO
+WHERE     (SUC_PRO_PROV.COD_SUC = @GCodSuc) AND (SUC_PRO_PROV.CANTIDAD <> 0)
+ORDER BY PROVEEDOR.NOM_PROV, TIPO_PRODUCTO.DESCRIPCION, PROV_PRO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraListaPago] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraListaPago] @nPago varchar(15) as
+select n_Pago, fecha,total, saldo 
+from pago_credito
+where cod_Cre=@nPago
+order by fecha
+
+GRANT EXECUTE ON rptGeneraListaPago TO admin,cajero
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraMayorCreditos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGeneraMayorCreditos] @cod_cli int
+as
+begin
+	SELECT COD_CRE AS CODIGO,TOTAL,SALDO,FEC_INICIO AS FECHA,'APERTURA CREDITO' AS DETALLE, 'E' as tipo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	WHERE COD_CLI =@cod_cli AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD')
+	union
+	SELECT PC.N_PAGO AS CODIGO, PC.TOTAL, PC.SALDO,PC.FECHA,'ABONO CREDITO' AS DETALLE,'I' as tipo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C
+	INNER JOIN PAGO_CREDITO PC ON C.COD_CRE=PC.COD_CRE
+	WHERE C.COD_CLI =@cod_cli AND (C.ESTADO='A' OR C.ESTADO='C' OR C.ESTADO='CD')
+	union
+	SELECT COD_CRE AS CODIGO,descuento,SALDO,fecha_desc AS FECHA,'DESCUENTO CREDITO' AS DETALLE, 'E' as tipo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	WHERE COD_CLI =@cod_cli AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD')
+	union
+	SELECT c.COD_CRE AS CODIGO,dc.total,c.SALDO,dc.fecha,'DEVOLUCION CREDITO' as detalle,'I' as tipo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	inner join DEVOLUCION_CREDITO dc on c.COD_CRE=dc.COD_CRE
+	WHERE COD_CLI =@cod_cli AND (ESTADO='D')
+	ORDER BY fecha
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraMayorCreditosxid] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGeneraMayorCreditosxid] @cod_cre varchar(13)
+as
+begin 
+SELECT COD_CRE AS CODIGO,TOTAL,c.SALDO,FEC_INICIO AS FECHA,'APERTURA CREDITO' AS DETALLE, 'E' as tipo,TOTAL debe,0 haber,0 saldo,cast(c.obs as varchar(1000)) obs
+FROM CREDITO C 
+WHERE c.cod_cre=@cod_cre AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD' OR ESTADO='D')
+union
+SELECT PC.N_PAGO AS CODIGO, PC.TOTAL, PC.SALDO,PC.FECHA,'ABONO CREDITO' AS DETALLE,'I' as tipo,0 debe, pc.total haber,0 saldo,cast(c.obs as varchar(1000)) obs
+FROM CREDITO C
+INNER JOIN PAGO_CREDITO PC ON C.COD_CRE=PC.COD_CRE
+WHERE c.cod_cre=@cod_cre AND (C.ESTADO='A' OR C.ESTADO='C' OR C.ESTADO='CD')
+union
+SELECT COD_CRE AS CODIGO,descuento,SALDO,fecha_desc AS FECHA,'DESCUENTO CREDITO' AS DETALLE, 'I' as tipo,0 debe,descuento haber,0 saldo,cast(c.obs as varchar(1000)) obs
+FROM CREDITO C 
+WHERE c.cod_cre=@cod_cre AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD') and descuento>0
+union
+SELECT c.COD_CRE AS CODIGO,dc.total,c.SALDO,dc.fecha,'DEVOLUCION CREDITO' as detalle,'I' as tipo,0 debe, dc.total haber,0 saldo,cast(c.obs as varchar(1000)) obs
+FROM CREDITO C 
+inner join DEVOLUCION_CREDITO dc on c.COD_CRE=dc.COD_CRE
+WHERE c.cod_cre=@cod_cre AND (ESTADO='C' or estado='A' or estado='CD' or estado='D')
+ORDER BY fecha
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraMayorGastos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptGeneraMayorGastos] @cod_suc varchar(5), @cod_emp varchar(3),@fechaIni datetime, @fechaFin datetime,@sw int
+as
+begin
+if @sw=1
+	begin
+		select g.REF_CUENTA,cuenta,sum(MONTO) Total from GASTOS g 
+		inner join PLAN_CUENTAS pc on g.REF_CUENTA= pc.REF_CUENTA
+		inner join SUCURSAL s on s.COD_SUC=g.COD_SUC
+		where cod_emp=@cod_emp and fecha >@fechaIni and FECHA<@fechaFin
+		group by g.REF_CUENTA,cuenta
+		order by REF_CUENTA
+	end
+else
+	begin
+		select g.REF_CUENTA,cuenta,sum(MONTO) Total from GASTOS g 
+		inner join PLAN_CUENTAS pc on g.REF_CUENTA= pc.REF_CUENTA
+		where COD_SUC=@cod_suc and fecha >@fechaIni and FECHA<@fechaFin
+		group by g.REF_CUENTA,cuenta
+		order by REF_CUENTA
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraPago] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraPago] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     PAGO_CREDITO.FECHA, CLIENTE.NOM_CLI+' '+CLIENTE.APE_CLI as nomCliente, PAGO_CREDITO.COD_CRE, PAGO_CREDITO.N_PAGO, PAGO_CREDITO.TOTAL,PAGO_CREDITO.TOTAL/NULLIF(tipo_cambio,0) as TotSus, (credito.descuento*100)/NULLIF(CREDITO.TOTAL,0) as porcentaje,credito.descuento, 
+                      PAGO_CREDITO.SALDO, CREDITO.TOTAL AS CreTotal, CREDITO.OBS,PAGO_CREDITO.tipo_pago
+FROM         PAGO_CREDITO INNER JOIN
+                      CREDITO ON PAGO_CREDITO.COD_CRE = CREDITO.COD_CRE INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      CAMBIO_DOLAR ON convert(varchar(8),PAGO_CREDITO.FECHA,3) = convert(Varchar(8),CAMBIO_DOLAR.FECHA,3)
+where PAGO_CREDITO.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc
+order by cliente.ape_cli,cliente.nom_cli,CREDITO.FEC_INICIO
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraPagoCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraPagoCredito] @nPago varchar(15) as
+SELECT     PAGO_CREDITO.COD_CRE, PAGO_CREDITO.N_PAGO, PAGO_CREDITO.TOTAL, PAGO_CREDITO.SALDO, PAGO_CREDITO.FECHA, PAGO_CREDITO.OBS, 
+                      CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.TOTAL AS TOTALCRE, CLIENTE.NOM_CLI +' '+ cliente.APE_cli as nomCliente, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, 
+                      SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL,CREDITO.DOLAR
+FROM         PAGO_CREDITO INNER JOIN
+                      CREDITO ON PAGO_CREDITO.COD_CRE = CREDITO.COD_CRE INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC
+where PAGO_CREDITO.N_PAGO=@nPago
+order by fecha
+
+GRANT EXECUTE ON rptGeneraPagoCredito TO admin,cajero
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraRemisionSalidaCIF] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraRemisionSalidaCIF] @codSucursal varchar(20),@fecha varchar(20)as
+declare @fech datetime
+select @fech=cast(@fecha as datetime)
+SELECT     PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, DET_REMIS.CANTIDAD, PRODUCTO.UNIDAD, DET_REMIS.CIF_TOTAL, 
+                      REMISION_S.COD_REM, REMISION_S.SUC_DES, REMISION_S.FECHA, REMISION_S.OBS_REM, REMISION_S.TOTAL, SUCURSAL.NOM_SUC, 
+                      PROVEEDOR.NOM_PROV
+FROM         PRODUCTO INNER JOIN
+                      PROV_PRO ON PRODUCTO.COD_PRO = PROV_PRO.COD_PRO INNER JOIN
+                      DET_REMIS ON PROV_PRO.COD_FAB = DET_REMIS.COD_FAB INNER JOIN
+                      REMISION_S ON DET_REMIS.COD_REM = REMISION_S.COD_REM INNER JOIN
+                      SUCURSAL ON REMISION_S.SUC_DES = SUCURSAL.COD_SUC INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV
+WHERE     REMISION_S.SUC_ORI = @codSucursal and REMISION_S.fecha >= @fech
+ORDER BY REMISION_S.COD_REM, PRODUCTO.DESC_PRO, PROV_PRO.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraRemisionSalidaResumenCIF] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraRemisionSalidaResumenCIF] @fecha varchar(15) as
+declare @fech datetime
+select @fech=cast(@fecha as datetime)
+SELECT     REMISION_S.COD_REM, cast(convert(varchar(8),REMISION_S.FECHA,3)as smalldatetime) as fecha,month(REMISION_S.FECHA)as mes,year(REMISION_S.FECHA)as año , SUCURSAL.NOM_SUC AS DESTINO, SUCURSAL_1.NOM_SUC AS ORIGEN, 
+                      REMISION_S.OBS_REM, sum(DET_REMIS.CIF_TOTAL)as suma
+FROM         REMISION_S INNER JOIN
+                      DET_REMIS ON REMISION_S.COD_REM = DET_REMIS.COD_REM INNER JOIN
+                      SUCURSAL ON REMISION_S.SUC_DES = SUCURSAL.COD_SUC INNER JOIN
+                      SUCURSAL SUCURSAL_1 ON REMISION_S.SUC_ORI = SUCURSAL_1.COD_SUC
+where	suc_ori like '000%'and REMISION_S.FECHA>@fech and SUCURSAL.estSuc='0' and SUCURSAL_1.estSuc='0'
+GROUP BY REMISION_S.COD_REM,fecha,SUCURSAL.NOM_SUC,SUCURSAL_1.NOM_SUC,REMISION_S.OBS_REM
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGenerarMayorCliente] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGenerarMayorCliente] @cod_cli int, @fecha_ini datetime, @fecha_fin datetime
+as
+begin
+	declare @saldo money;
+
+	set @saldo=0;
+	
+	select @saldo=dbo.rptGeneraMayorSaldo(@fecha_ini,@cod_cli);
+
+	select '' as codigo,@saldo as total,0 as saldo,@fecha_ini as FECHA,'REGISTRO BALANCE INICIAL' AS DETALLE,'E' AS TIPO,@saldo debe,0 haber,@saldo saldo,'' obs
+	union
+	SELECT COD_CRE AS CODIGO,TOTAL,SALDO,FEC_INICIO AS FECHA,'APERTURA CREDITO' AS DETALLE, 'E' as tipo,TOTAL debe,0 haber,total+@saldo saldo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	WHERE COD_CLI =@cod_cli and fec_inicio between @fecha_ini and @fecha_fin  AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD' OR ESTADO='D')
+	union
+	SELECT PC.N_PAGO AS CODIGO, PC.TOTAL, PC.SALDO,PC.FECHA,'ABONO CREDITO' AS DETALLE,'I' as tipo,0 debe, pc.total haber,0 saldo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C
+	INNER JOIN PAGO_CREDITO PC ON C.COD_CRE=PC.COD_CRE
+	WHERE COD_CLI=@cod_cli and pc.fecha between @fecha_ini and @fecha_fin AND (C.ESTADO='A' OR C.ESTADO='C' OR C.ESTADO='CD')
+	union
+	SELECT COD_CRE AS CODIGO,descuento,SALDO,fecha_desc AS FECHA,'DESCUENTO CREDITO' AS DETALLE, 'I' as tipo,0 debe,descuento haber,0 saldo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	WHERE cod_cli=@cod_cli and fecha_desc between @fecha_ini and @fecha_fin AND (ESTADO='A' OR ESTADO='C' OR ESTADO='CD') and descuento>0
+	union
+	SELECT c.COD_CRE AS CODIGO,dc.total,c.SALDO,dc.fecha,'DEVOLUCION CREDITO' as detalle,'I' as tipo,0 debe, dc.total haber,0 saldo,cast(c.obs as varchar(1000)) obs
+	FROM CREDITO C 
+	inner join DEVOLUCION_CREDITO dc on c.COD_CRE=dc.COD_CRE
+	WHERE cod_cli=@cod_cli and dc.fecha between @fecha_ini and @fecha_fin AND (ESTADO='C' or estado='A' or estado='CD' or estado='D')
+	ORDER BY fecha
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraSaldo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGeneraSaldo] @cod_suc varchar(5), @fechaIni varchar(30),@fechaFin varchar(30),@cod_cc varchar(5)
+as
+begin
+declare @fef datetime
+declare @fei datetime
+declare @cod int
+declare @pVenta money
+declare @pPago money
+declare @pSaldocc money
+declare @pDevolucion money
+declare @pDevCredito money
+declare @pGasto money
+declare @pTotal money
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+select @cod=cast(@cod_cc as int)
+	if @cod=0
+	  begin
+		 --exec @pVenta=dbo.rptSPResumenVenta @fei,@fef,@cod_suc
+		 SELECT @pVenta = isnull(sum(DET_VENTA.PRECIO_VENTA),0)
+			FROM        venta inner join DET_VENTA ON VENTA.COD_VENTA = DET_VENTA.COD_VENTA INNER JOIN
+                      USUARIO ON VENTA.COD_USU = USUARIO.COD_USU
+			WHERE FECHA BETWEEN @fei AND @feF AND USUARIO.COD_SUC=@cod_suc and estado='D'
+		 
+			SELECT @pPago= isnull(sum(PAGO_CREDITO.TOTAL),0)
+			FROM         PAGO_CREDITO INNER JOIN
+								  CREDITO ON PAGO_CREDITO.COD_CRE = CREDITO.COD_CRE                       
+			where PAGO_CREDITO.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@cod_suc
+
+			SELECT top 1 @pSaldocc=saldo 
+			FROM CIERRE_CAJA
+			where COD_SUC = @cod_suc
+			order by fecha_fin desc				
+		 
+		 SELECT      @pDevolucion=isnull(sum(DET_DEVOLUCION.TOTAL),0)
+			FROM         DEVOLUCION INNER JOIN
+                      VENTA ON DEVOLUCION.COD_VENTA = VENTA.COD_VENTA inner join usuario u on devolucion.cod_usu=u.cod_usu INNER JOIN
+                      DET_DEVOLUCION ON DEVOLUCION.COD_VENTA = DET_DEVOLUCION.COD_VENTA 
+			WHERE DEVOLUCION.FECHA BETWEEN @fei AND @feF AND U.COD_SUC=@cod_suc
+
+		select @pDevCredito=isnull(sum(ddc.total),0) 
+			from devolucion_credito dc 
+			inner join  det_devolucion_credito ddc on  dc.cod_cre=ddc.cod_cre 
+			WHERE dc.tipo=1 and FECHA BETWEEN @fei AND @feF and cod_usu in (select cod_usu from usuario where cod_suc=@cod_suc)
+		
+			SELECT  @pGasto=  isnull(sum(GASTOS.MONTO),0)
+			FROM      GASTOS 
+			where gastos.FECHA BETWEEN @fei AND @feF AND gastos.COD_SUC=@cod_Suc		 
+
+		 set @pTotal=(@pVenta+@pPago+@pSaldocc)-(@pDevolucion+@pDevCredito+@pGasto)		 
+
+		 SELECT top 1 cod_cc, 'Cierre de caja del ' + CONVERT(varchar,@fef,3)  + ' al ' + CONVERT(varchar,CURRENT_TIMESTAMP ,3) as obs,@pTotal saldo,fecha_asiento,saldo saldo_anterior
+		 FROM CIERRE_CAJA
+		 where COD_SUC = @cod_suc
+		 order by fecha_fin desc				
+	  end
+	else
+		SELECT cod_cc, OBS, saldo_anterior,fecha_asiento,saldo
+		FROM CIERRE_CAJA
+		where COD_SUC = @cod_suc and cod_cc=@cod
+		order by fecha_fin desc
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGeneraVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptGeneraVenta] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT      VENTA.COD_VENTA ,  convert(varchar(10),format(fecha,'dd/MM/yyyy'),3) fecha , VENTA.TIPO , VENTA.FACTURA , PROV_PRO.COD_FAB , PRODUCTO.COD_PRO,
+                      DET_VENTA.CANTIDAD , DET_VENTA.PRECIO_VENTA , DET_VENTA.DOLAR , DET_VENTA.DESC_UNIT , 
+                      PRODUCTO.DESC_PRO, USUARIO.NOM_USU, USUARIO.AP_USU ,
+                      USUARIO.COD_SUC,nom_prov,OBS,DET_VENTA.p_fob,DET_VENTA.p_fob*DET_VENTA.CANTIDAD as TotFOB
+FROM         VENTA INNER JOIN
+                      DET_VENTA ON VENTA.COD_VENTA = DET_VENTA.COD_VENTA INNER JOIN
+                      USUARIO ON VENTA.COD_USU = USUARIO.COD_USU INNER JOIN
+                      PROV_PRO ON DET_VENTA.ID_FAB = PROV_PRO.ID_FAB inner join proveedor pv on PROV_PRO.cod_prov=pv.cod_prov INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO 
+WHERE FECHA BETWEEN @fei AND @feF AND USUARIO.COD_SUC=@codSuc and venta.estado='D'
+order by det_venta.cod_venta,venta.fecha,nom_prov,desc_pro,DET_VENTA.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGenSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptGenSucursal] @pCodSucursal VARCHAR(5),@fecIni varchar(30),@fecFin varchar(30),@pVentas varchar(15),@pDevolucion varchar(15),@pGasto varchar(15),@pCompra varchar(15),@pPago varchar(15),@pIngreso varchar(15),@pEgreso varchar(15),@pNeto varchar(15),@pDolar varchar(15),@pVentasSus varchar(15),@pDevolucionSus varchar(15),@pGastoSus varchar(15),@pCompraSus varchar(15),@pPagoSus varchar(15),@pNetoSus varchar(15),@pIngresoSus varchar(15),@pEgresoSus varchar(15) as SELECT     SUCURSAL.COD_SUC, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, CIUDAD_1.NOM_CIU, CIUDAD_1.DEPTO, EMPRESA.NOM_EMP, EMPRESA.LOGO, SUCURSAL.E_MAIL, SUCURSAL.FAX FROM SUCURSAL INNER JOIN CIUDAD CIUDAD_1 ON SUCURSAL.COD_CIU = CIUDAD_1.COD_CIU INNER JOIN EMPRESA ON SUCURSAL.COD_EMP = EMPRESA.COD_EMP WHERE COD_SUC=@pCodSucursal 
+GO
+/****** Objeto: StoredProcedure [dbo].[rptGenSucursalGastos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptGenSucursalGastos] @pCodSucursal VARCHAR(5),@fecIni varchar(30),@fecFin varchar(30),@pDolar varchar(15) as
+SELECT     SUCURSAL.COD_SUC, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, CIUDAD_1.NOM_CIU, CIUDAD_1.DEPTO, 
+                      EMPRESA.NOM_EMP, EMPRESA.LOGO, SUCURSAL.E_MAIL, SUCURSAL.FAX
+FROM         SUCURSAL INNER JOIN
+                      CIUDAD CIUDAD_1 ON SUCURSAL.COD_CIU = CIUDAD_1.COD_CIU INNER JOIN
+                      EMPRESA ON SUCURSAL.COD_EMP = EMPRESA.COD_EMP
+WHERE COD_SUC=@pCodSucursal
+GO
+/****** Objeto: StoredProcedure [dbo].[rptImportacionSucursalResumen] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptImportacionSucursalResumen] @pCodSuc varchar(5),@pGestion int as
+select nom_suc,proveedor,sum(total) Total
+from importacion i inner join det_importacion di on i.cod_imp=di.cod_imp inner join sucursal s on i.cod_suc=s.cod_suc
+where year(fecha)=@pGestion and i.cod_suc =@pCodSuc and s.estSuc='0'
+group by nom_suc,proveedor
+order by proveedor
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventario] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptInventario] @codUsu varchar(7),@fecI datetime,@fecF datetime as
+declare @cod_emp varchar(3)
+declare @cant_total int
+declare @cant_compra int
+declare @cant_venta int
+begin
+delete sip_temp_inv where cod_usu=@codUsu
+select @cod_emp= s.COD_EMP 
+from USUARIO u
+inner join SUCURSAL s on u.COD_SUC=s.COD_SUC
+where u.COD_USU=@codUsu
+
+insert into sip_temp_inv (id_fab,cod_usu,cod_pro,cod_fab,nom_prov,desc_pro,p_CIF)
+select ID_FAB,@codUsu,p.COD_PRO,pp.COD_FAB,pv.NOM_PROV,p.DESC_PRO,pp.CIF_CBBA
+from producto p
+inner join prov_pro pp on p.id_pro=pp.id_pro
+inner join proveedor pv on pp.cod_prov=pv.cod_prov
+where p.cod_emp=@cod_emp
+	declare dets cursor for
+		select pp.ID_FAB
+		from PROV_PRO pp
+		inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+		where p.COD_EMP=@cod_emp
+	declare @id_fab int
+	open dets
+	fetch next from dets into @id_fab
+	while @@FETCH_STATUS = 0
+	begin
+		select @cant_total=sum(isnull(dbo.cantidadKardexFecha('2015-01-01',@id_fab,s.COD_SUC ,@feci),0))
+		from SUCURSAL s
+		where s.COD_EMP=@cod_emp;	
+
+		select @cant_compra= isnull( iif(len(sum(di.cantidad))=0,0,sum(di.cantidad)),0)
+		from IMPORTACION i
+		inner join DET_IMPORTACION di on i.cod_imp=di.cod_imp
+		where di.id_fab=@id_fab and fecha between @fecI and @fecF			
+
+		select @cant_venta= isnull( iif(len(sum(dv.cantidad))=0,0,sum(dv.cantidad)),0)
+		from VENTA v
+		inner join DET_VENTA dv on v.COD_VENTA=dv.COD_VENTA
+		where dv.ID_FAB=@id_fab and FECHA between @fecI and @fecF
+
+		select @cant_venta= @cant_venta+ isnull( iif(len(sum(dc.cantidad))=0,0,sum(dc.cantidad)),0)
+		from CREDITO c
+		inner join DET_CREDITO dc on c.COD_CRE=dc.COD_CRE
+		where ID_FAB=@id_fab and FEC_INICIO between @fecI and @fecF and (c.ESTADO='A' or c.ESTADO='CD' or c.ESTADO='C')
+		
+		--select @id_fab,@cant_total,@cant_compra,@cant_venta
+		update sip_temp_inv set cant_ini=@cant_total, cant_compra=@cant_compra,cant_venta=@cant_venta where id_fab=@id_fab and cod_usu=@codUsu
+
+		fetch next from dets into @id_fab
+	end
+	close dets
+	deallocate dets
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventarioGeneral] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptInventarioGeneral] @codInv varchar(13) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, INVENTARIO.COD_INV, INVENTARIO.FEC_INV, 
+                      TIPO_PRODUCTO_1.DESCRIPCION, PROVEEDOR_1.NOM_PROV, DET_INVENTARIO.cantidad,DET_INVENTARIO.DIFERENCIA, PRODUCTO.UNIDAD,cif ,DET_INVENTARIO.ID_FAB,PROV_PRO.COD_FAB, det_inventario.obs, 
+                      PROV_PRO.COD_PRO, PROVEEDOR.NOM_PROV+':'+nom_pais AS Marca, PRODUCTO.DESC_PRO,PROV_PRO.barra
+FROM         INVENTARIO INNER JOIN
+                      DET_INVENTARIO ON INVENTARIO.COD_INV = DET_INVENTARIO.COD_INV INNER JOIN
+                      SUCURSAL ON INVENTARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROV_PRO ON DET_INVENTARIO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      TIPO_PRODUCTO AS TIPO_PRODUCTO_1 ON INVENTARIO.codigo = TIPO_PRODUCTO_1.CODIGO INNER JOIN
+                      PROVEEDOR AS PROVEEDOR_1 ON INVENTARIO.cod_prov = PROVEEDOR_1.COD_PROV inner join PAIS 
+		on PROVEEDOR.cod_pais=pais.cod_pais 
+WHERE INVENTARIO.COD_INV = @codInv and (diferencia<>0 or det_inventario.cantidad<>0)
+ORDER BY PROVEEDOR.NOM_PROV,PRODUCTO.desc_pro, DET_INVENTARIO.COD_FAB, TIPO_PRODUCTO.DESCRIPCION
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventarioGeneralAmort] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptInventarioGeneralAmort] @Codigo varchar(13) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, INVENTARIO.COD_INV, INVENTARIO.FEC_INV, 
+                      TIPO_PRODUCTO_1.DESCRIPCION, PROVEEDOR_1.NOM_PROV, DET_INVENTARIO.cantidad,DET_INVENTARIO.DIFERENCIA, PRODUCTO.UNIDAD,cif ,DET_INVENTARIO.ID_FAB,DET_INVENTARIO.COD_FAB, det_inventario.obs, 
+                      PROV_PRO.COD_PRO, PROVEEDOR.NOM_PROV+':'+nom_pais AS Marca, PRODUCTO.DESC_PRO
+FROM         INVENTARIO INNER JOIN
+                      DET_INVENTARIO ON INVENTARIO.COD_INV = DET_INVENTARIO.COD_INV INNER JOIN
+                      SUCURSAL ON INVENTARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROV_PRO ON DET_INVENTARIO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      TIPO_PRODUCTO AS TIPO_PRODUCTO_1 ON INVENTARIO.codigo = TIPO_PRODUCTO_1.CODIGO INNER JOIN
+                      PROVEEDOR AS PROVEEDOR_1 ON INVENTARIO.cod_prov = PROVEEDOR_1.COD_PROV inner join 
+					  PAIS on PROVEEDOR.cod_pais=pais.cod_pais 
+WHERE INVENTARIO.COD_INV = @Codigo and (diferencia<>0 or det_inventario.cantidad<>0)
+ORDER BY PROVEEDOR.NOM_PROV, TIPO_PRODUCTO.DESCRIPCION,DET_INVENTARIO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventarioGeneralDec] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptInventarioGeneralDec] @codInv varchar(13) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, INVENTARIO.COD_INV, INVENTARIO.FEC_INV, 
+                      TIPO_PRODUCTO_1.DESCRIPCION, PROVEEDOR_1.NOM_PROV, DET_INVENTARIO.cantidad,DET_INVENTARIO.DIFERENCIA, PRODUCTO.UNIDAD,cif ,DET_INVENTARIO.ID_FAB,PROV_PRO.COD_FAB, det_inventario.obs, 
+                      PROV_PRO.COD_PRO, PROVEEDOR.NOM_PROV AS Marca, PRODUCTO.DESC_PRO
+FROM         INVENTARIO INNER JOIN
+                      DET_INVENTARIO ON INVENTARIO.COD_INV = DET_INVENTARIO.COD_INV INNER JOIN
+                      SUCURSAL ON INVENTARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROV_PRO ON DET_INVENTARIO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      TIPO_PRODUCTO AS TIPO_PRODUCTO_1 ON INVENTARIO.codigo = TIPO_PRODUCTO_1.CODIGO INNER JOIN
+                      PROVEEDOR AS PROVEEDOR_1 ON INVENTARIO.cod_prov = PROVEEDOR_1.COD_PROV
+WHERE INVENTARIO.COD_INV = @codInv  and (diferencia<>0 or det_inventario.cantidad<>0)
+ORDER BY (cantidad-diferencia)*cif
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventarioMarca] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptInventarioMarca] @codInv varchar(13) as
+select di.cod_inv,nom_suc,fec_inv,nom_prov,sum((cantidad-diferencia)*cif) total
+from det_inventario di, prov_pro pp, proveedor pv ,inventario i,sucursal s
+where di.Id_fab=pp.Id_fab and pp.cod_prov=pv.cod_prov and i.cod_inv=di.cod_inv and  i.cod_suc=s.cod_suc and di.COD_INV = @codInv
+group by di.cod_inv,nom_suc,fec_inv,nom_prov
+ORDER BY sum((cantidad-diferencia)*cif)
+GO
+/****** Objeto: StoredProcedure [dbo].[rptInventarioTipo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptInventarioTipo] @codInv varchar(13) as
+SELECT     SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, INVENTARIO.COD_INV, INVENTARIO.FEC_INV, 
+                      TIPO_PRODUCTO.DESCRIPCION, PROVEEDOR.NOM_PROV, DET_INVENTARIO.cantidad,DET_INVENTARIO.DIFERENCIA, PRODUCTO.UNIDAD,cif ,PROV_PRO.COD_FAB, det_inventario.obs, 
+                      PROV_PRO.COD_PRO, PROVEEDOR.NOM_PROV+':'+nom_pais AS Marca, PRODUCTO.DESC_PRO,nom_marca
+FROM         INVENTARIO INNER JOIN
+                      DET_INVENTARIO ON INVENTARIO.COD_INV = DET_INVENTARIO.COD_INV INNER JOIN
+                      SUCURSAL ON INVENTARIO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      PROV_PRO ON DET_INVENTARIO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      TIPO_PRODUCTO AS TIPO_PRODUCTO_1 ON INVENTARIO.codigo = TIPO_PRODUCTO_1.CODIGO INNER JOIN
+                      PROVEEDOR AS PROVEEDOR_1 ON INVENTARIO.cod_prov = PROVEEDOR_1.COD_PROV inner join PAIS 
+		on PROVEEDOR.cod_pais=pais.cod_pais inner join modelo md on producto.cod_mod=md.cod_modelo inner join
+		marca m on md.cod_marca=m.cod_marca
+WHERE INVENTARIO.COD_INV = @codInv
+ORDER BY TIPO_PRODUCTO.DESCRIPCION,PROVEEDOR.NOM_PROV,nom_marca,DET_INVENTARIO.COD_FAB
+GO
+/****** Objeto: StoredProcedure [dbo].[rptListadePrecios] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptListadePrecios] @gCodSuc varchar(15) as
+SELECT DISTINCT 
+                      SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC, SUCURSAL.E_MAIL, CIUDAD.NOM_CIU, CIUDAD.DEPTO, SUCURSAL.COD_SUC, 
+                      PROVEEDOR.NOM_PROV, PAIS.NOM_PAIS, PRODUCTO.COD_PRO, PROV_PRO.COD_FAB, PRODUCTO.DESC_PRO, SUC_PRO_PROV.CANTIDAD, 
+                      PRODUCTO.UNIDAD, PROV_PRO.PLIS_PRO, PROV_PRO.PMAY_PRO, PROV_PRO.PMIN_PRO, PROV_PRO.PLIS_BS, PROV_PRO.PMIN_BS, 
+                      PROV_PRO.PMAY_BS, TIPO_PRODUCTO.DESCRIPCION, prov_pro.comentario
+FROM         PRODUCTO INNER JOIN
+                      PROV_PRO ON PRODUCTO.COD_PRO = PROV_PRO.COD_PRO INNER JOIN
+                      SUC_PRO_PROV ON PROV_PRO.COD_FAB = SUC_PRO_PROV.COD_FAB INNER JOIN
+                      SUCURSAL ON SUC_PRO_PROV.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      CIUDAD ON SUCURSAL.COD_CIU = CIUDAD.COD_CIU INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO
+WHERE     SUC_PRO_PROV.COD_SUC =@gCodSuc and SUC_PRO_PROV.cantidad>0
+ORDER BY PROVEEDOR.NOM_PROV, TIPO_PRODUCTO.DESCRIPCION, PROV_PRO.COD_FAB;
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptNotaSalida] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptNotaSalida] @CodProf varchar(18) AS 
+select i.nro, i.cantidad,i.cod_fab,p.DESC_PRO,pf.COD_PROF, c.cod_cli,c.NOM_CLI,c.APE_CLI,s.NOM_SUC,u.NOM_USU,u.AP_USU 
+from PRODUCTO p 
+inner join PROV_PRO pp on p.COD_PRO=pp.COD_PRO
+inner join ingresoCodigoBarra i on pp.COD_FAB = i.cod_fab 
+inner join PROFORMA pf on i.cod_documento=pf.COD_PROF
+inner join CLIENTE c on pf.COD_CLIENTE = c.cod_cli 
+inner join usuario u on pf.COD_USU=u.COD_USU 
+inner join SUCURSAL s on s.COD_SUC = u.COD_SUC
+where pf.COD_PROF =@codProf
+order by i.nro 
+GO
+/****** Objeto: StoredProcedure [dbo].[rptNotaSalidaPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptNotaSalidaPedido] @CodDocumento varchar(18) AS 
+select i.nro, i.cantidad,i.cod_fab,p.DESC_PRO,cb.cod_documento,s.NOM_SUC,u.NOM_USU + ' ' + u.AP_USU nombre_usuario,u2.nom_usu + ' ' + u2.ap_usu nombre_entrega, NOM_PROV
+from PRODUCTO p 
+inner join PROV_PRO pp on p.COD_PRO=pp.COD_PRO
+INNER JOIN PROVEEDOR PV	ON PP.COD_PROV=PV.COD_PROV
+inner join ingresoCodigoBarra i on pp.COD_FAB = i.cod_fab 
+inner join codigoBarra cb on i.cod_documento=cb.cod_documento
+inner join usuario u on cb.cod_interesado=u.cod_usu
+inner join usuario u2 on cb.cod_usu=u2.cod_usu
+inner join SUCURSAL s on s.COD_SUC = suc_des
+where cb.cod_documento =@codDocumento
+order by i.nro 
+GO
+/****** Objeto: StoredProcedure [dbo].[rptPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptPedido] @CodPedido varchar(16),@CODSUC VARCHAR(5) AS 
+SELECT     PEDIDO.COD_PEDIDO, PEDIDO.FECHA, SUCURSAL.NOM_SUC, PEDIDO.MEDIO_PEDIDO, prov_pro.COD_FAB, PRODUCTO.DESC_PRO, 
+                      PROVEEDOR.NOM_PROV,tipo_pedido ,PAIS.NOM_PAIS, SUC_PRO_PROV.CANTIDAD, DET_PEDIDO.CANT_SOLICITADO, DET_PEDIDO.CANT_AUTORIZADO, 
+                      PRODUCTO.UNIDAD, DET_PEDIDO.OBS,PEDIDO.OBS obsPedido,nom_cli,ape_cli,direccion_tienda,fono,antecedente,FFE,FECHA_VALIDACION
+FROM         PEDIDO INNER JOIN
+                      DET_PEDIDO ON PEDIDO.COD_PEDIDO = DET_PEDIDO.COD_PEDIDO INNER JOIN
+                      PROV_PRO ON DET_PEDIDO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      SUC_PRO_PROV ON PROV_PRO.ID_FAB = SUC_PRO_PROV.ID_FAB INNER JOIN
+                      SUCURSAL ON PEDIDO.COD_SUC_ORI = SUCURSAL.COD_SUC INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO
+                      inner join cliente on pedido.cod_cli=cliente.cod_cli
+WHERE     (PEDIDO.COD_PEDIDO = @codPedido AND SUC_PRO_PROV.COD_SUC=@CODSUC)and DET_PEDIDO.CANT_AUTORIZADO<>0 and SUC_PRO_PROV.CANTIDAD>0
+ORDER BY PROVEEDOR.NOM_PROV,PRODUCTO.DESC_PRO, PROV_PRO.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptPedidoRealizado] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptPedidoRealizado] @codigo varchar(16)as
+select cod_pedido,suc_ori,suc_des,ID_FAB,cod_fab,cant_solicitado,existencia,cant_des,nom_prov,desc_pro,cant_autorizado,cant_enviado,nom_usu,ap_usu
+from vpedido
+where cod_pedido=@codigo
+GO
+/****** Objeto: StoredProcedure [dbo].[rptProforma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptProforma] @codigo varchar(18) as
+SELECT     PROFORMA.cod_prof, PROFORMA.COD_CLIente, PROFORMA.fecha, PROFORMA.total, PROFORMA.nota, 
+                      PRODUCTO.COD_PRO, DET_PROFORMA.COD_FAB, PRODUCTO.DESC_PRO, DET_PROFORMA.CANTIDAD, DET_PROFORMA.precio_venta, 
+                      PROVEEDOR.NOM_PROV,nro, USUARIO.NOM_USU + ' ' + USUARIO.AP_USU AS nomUsuario, 
+                      CLIENTE.NOM_CLI + ' ' + CLIENTE.APE_CLI AS nombreCliente, SUCURSAL.NOM_SUC, SUCURSAL.TEL_SUC, SUCURSAL.DIR_SUC, 
+                      SUCURSAL.E_MAIL, SUCURSAL.FAX, PRODUCTO.UNIDAD
+FROM         PROFORMA INNER JOIN
+                      DET_PROFORMA ON PROFORMA.COD_prof = DET_PROFORMA.COD_prof INNER JOIN                      					
+                      USUARIO ON PROFORMA.COD_USU = USUARIO.COD_USU INNER JOIN
+					sucursal ON SUCURSAL.COD_SUC=SUBSTRING(PROFORMA.COD_USU,1,5) inner join
+                      PROV_PRO ON det_proforma.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      CLIENTE ON PROFORMA.COD_CLIente = CLIENTE.cod_cli					
+where PROFORMA.cod_prof=@codigo
+order by nro,det_proforma.cod_fab
+GO
+/****** Objeto: StoredProcedure [dbo].[rptRemision_E] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptRemision_E] @codRem varchar(13) as
+SELECT     REMISION_E.FECHA, REMISION_E.OBS_REM, REMISION_E.COD_REM, DET_REMIE.CANTIDAD, PRODUCTO.UNIDAD, PROV_PRO.COD_FAB, 
+                      PRODUCTO.COD_PRO, PRODUCTO.DESC_PRO, PROVEEDOR.NOM_PROV, PAIS.COD_PAIS, USUARIO.NOM_USU, USUARIO.AP_USU, 
+                      TIPO_PRODUCTO.DESCRIPCION, PAIS.NOM_PAIS, SUCURSAL.NOM_SUC, SUCURSAL_1.NOM_SUC AS SucDestino,DET_REMIE.nro,DET_REMIE.CIF_TOTAL
+FROM         REMISION_E INNER JOIN
+                      DET_REMIE ON REMISION_E.COD_REM = DET_REMIE.COD_REM INNER JOIN
+                      PROV_PRO ON DET_REMIE.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      PAIS ON PROVEEDOR.COD_PAIS = PAIS.COD_PAIS INNER JOIN
+                      USUARIO ON REMISION_E.COD_USU = USUARIO.COD_USU INNER JOIN
+                      TIPO_PRODUCTO ON PRODUCTO.CODIGO = TIPO_PRODUCTO.CODIGO INNER JOIN
+                      SUCURSAL ON REMISION_E.COD_ORI = SUCURSAL.COD_SUC INNER JOIN
+                      SUCURSAL SUCURSAL_1 ON REMISION_E.COD_DES = SUCURSAL_1.COD_SUC
+WHERE remision_e.cod_rem=@codRem 
+ORDER BY PROVEEDOR.NOM_PROV, PRODUCTO.DESC_PRO ,DET_REMIe.COD_FAB
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenCIFActual] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenCIFActual] @indiceSucursal varchar(5)as
+  select nom_suc,sum(cantidad*cast(cif_cbba as money))
+  from suc_pro_prov spp,sucursal s,prov_pro pp
+  where spp.cod_suc=s.cod_suc and spp.ID_FAB=pp.ID_FAB and substring(cod_emp,1,1)=@indiceSucursal and s.estSuc='0'
+  group by nom_suc 
+  order by 1
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenCIFMarca] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[rptResumenCIFMarca] @codSuc varchar(5) as
+select sum(spp.CANTIDAD*cast(pp.CIF_CBBA as money))Total , NOM_PROV  
+from SUC_PRO_PROV spp 
+inner join PROV_PRO pp on spp.ID_FAB =pp.ID_FAB
+inner join PROVEEDOR p on pp.COD_PROV=p.COD_PROV
+where COD_SUC =@codSuc and spp.CANTIDAD>0
+group by NOM_PROV
+order by Total DESC
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenCIFMensual] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenCIFMensual] @pFecha datetime,@pGrupo varchar(1) as
+select fecha,g.cod_suc,nom_suc,grupo,total 
+from graficoresumenCif g inner join sucursal s on g.cod_suc=s.cod_suc
+where grupo=@pGrupo and fecha=@pFecha and estSuc='0'
+order by s.cod_suc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenCreditoCliente] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[rptResumenCreditoCliente] @codigo varchar(15) as
+SELECT     CLIENTE.NOM_CLI, CLIENTE.APE_CLI, CLIENTE.FONO, min(CREDITO.FEC_FIN)fechaFin,sum(CREDITO.total)total ,sum(CREDITO.SALDO)Saldo, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, 
+                      SUCURSAL.TEL_SUC
+FROM         CREDITO INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC
+where CREDITO.cod_suc=@codigo and estado ='A'
+group by CLIENTE.NOM_CLI, CLIENTE.APE_CLI, CLIENTE.FONO, SUCURSAL.NOM_SUC, SUCURSAL.DIR_SUC, SUCURSAL.TEL_SUC
+order by nom_cli
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenFOBPago] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenFOBPago] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     isnull(sum(DC.P_FOB*DC.CANTIDAD),0) totPago
+FROM PAGO_CREDITO 
+INNER JOIN CREDITO ON PAGO_CREDITO.COD_CRE = CREDITO.COD_CRE                       
+INNER JOIN DET_CREDITO DC ON CREDITO.COD_CRE=DC.COD_CRE
+where PAGO_CREDITO.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc AND PAGO_CREDITO.SALDO=0
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenGasto] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenGasto] @codSuc varchar(5)as
+select nom_suc,month(g.fecha) mes,year(g.fecha) gestion,cast(month(g.fecha) as varchar(2))+'/'+cast(year(g.fecha)as varchar(4)) fecha,G.REF_CUENTA,cuenta,sum(monto)totalBs,SUM(monto/tipo_cambio)TOTAL
+from gastos g,plan_cuentas pp, sucursal s,cambio_dolar cd
+where g.ref_cuenta=pp.ref_cuenta and s.cod_suc=g.cod_suc and day(cd.fecha)=day(g.fecha)and month(cd.fecha)=month(g.fecha)and year(cd.fecha)=year(g.fecha)and g.cod_suc=@codSuc
+group by nom_suc,month(g.fecha), year(g.fecha),cast(month(g.fecha) as varchar(2))+'/'+cast(year(g.fecha)as varchar(4)),G.REF_CUENTA,cuenta
+order by year(g.fecha), month(g.fecha) desc
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenGastos] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenGastos] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT    isnull(sum(GASTOS.MONTO),0) TotGasto
+FROM      GASTOS 
+where gastos.FECHA BETWEEN @fei AND @feF AND gastos.COD_SUC=@codSuc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenGastosSus] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenGastosSus] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT    isnull(sum(g.MONTO/tipo_cambio),0) TotGasto
+FROM      GASTOS g inner join cambio_dolar cd on day(g.fecha)=day(cd.fecha) and month(g.fecha)=month(cd.fecha) and year(g.fecha)=year(cd.fecha)
+where g.FECHA BETWEEN @fei AND @feF AND g.COD_SUC=@codSuc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenPago] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenPago] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT     isnull(sum(PAGO_CREDITO.TOTAL),0) totPago
+FROM         PAGO_CREDITO INNER JOIN
+                      CREDITO ON PAGO_CREDITO.COD_CRE = CREDITO.COD_CRE                       
+where PAGO_CREDITO.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc
+
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenPagoSus] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenPagoSus] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime 
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime) 
+select @fef=cast(@fechaFin as datetime) 
+SELECT    isnull(sum(c.TOTAL/tipo_cambio),0) totPago 
+FROM      PAGO_CREDITO c 
+INNER JOIN CREDITO ON c.COD_CRE = CREDITO.COD_CRE 
+inner join cambio_dolar cd on day(c.fecha)=day(cd.fecha) and month(c.fecha)=month(cd.fecha) and year(c.fecha)=year(cd.fecha) 
+where c.FECHA BETWEEN @fei AND @feF AND CREDITO.COD_SUC=@codSuc 
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenSaldocc] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenSaldocc] @fechaFin varchar(30),@CodSuc varchar(5),@cod_cc varchar(5) AS 
+declare @vc int
+declare @vce varchar(5)
+declare @fef datetime
+select @fef=cast(@fechaFin as datetime)
+select @vc=cast(@cod_cc as int)
+select @vce=COD_EMP from SUCURSAL where cod_suc=@CodSuc
+if (select habilitarSaldo from EMPRESA 
+where COD_EMP=@vce)=1
+	begin
+		if @vc=0
+			SELECT top 1 saldo totSaldo
+			FROM CIERRE_CAJA
+			where COD_SUC = @CodSuc
+			order by fecha_fin desc				
+		else
+			SELECT saldo_anterior totSaldo
+			FROM CIERRE_CAJA
+			where COD_SUC = @CodSuc and cod_cc=@vc
+			order by fecha_fin desc
+	end
+else
+	begin 
+		select 0 totSaldo
+	end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptResumenSaldoccSus] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptResumenSaldoccSus] @fechaFin varchar(30),@CodSuc varchar(5),@cod_cc varchar(5) AS 
+declare @vc int
+declare @vce varchar(5)
+declare @fef datetime
+declare @dolarA money
+select @fef=cast(@fechaFin as datetime)
+select @vc=cast(@cod_cc as int)
+select @vce=COD_EMP from SUCURSAL where cod_suc=@CodSuc
+
+select @dolarA=tipo_cambio from cambio_dolar 
+where month(fecha)=month(current_timestamp) and day(fecha)=day(current_timestamp) and year(fecha)=year(current_timestamp)
+
+if (select habilitarSaldo from EMPRESA 
+where COD_EMP=@vce)=1
+	begin
+		if @vc=0
+			SELECT top 1 saldo/@dolarA totSaldo
+			FROM CIERRE_CAJA
+			where COD_SUC = @CodSuc
+			order by fecha_fin desc				
+		else
+			SELECT saldo_anterior/dolar totSaldo
+			FROM CIERRE_CAJA
+			where COD_SUC = @CodSuc and cod_cc=@vc
+			order by fecha_fin desc
+	end
+else
+	begin 
+		select 0 totSaldo
+	end
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSeguimientoCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSeguimientoCredito] @Codigo varchar(15) as
+SELECT     CREDITO.COD_CRE, CREDITO.COD_CLI, CREDITO.estado,CREDITO.FEC_INICIO, CREDITO.FEC_FIN, CREDITO.TOTAL,CREDITO.saldo,CREDITO.DevCedito,CREDITO.DOLAR, CREDITO.OBS, 
+                      PRODUCTO.COD_PRO, DET_CREDITO.COD_FAB, PRODUCTO.DESC_PRO, DET_CREDITO.CANTIDAD, DET_CREDITO.PRECIO_CRE, 
+                      PROVEEDOR.NOM_PROV, USUARIO.NOM_USU + ' ' + USUARIO.AP_USU AS nomUsuario, 
+                      CLIENTE.NOM_CLI + ' ' + CLIENTE.APE_CLI AS nombreCliente,direccion_tienda,fono, SUCURSAL.NOM_SUC, SUCURSAL.TEL_SUC, SUCURSAL.DIR_SUC, 
+                      SUCURSAL.E_MAIL, SUCURSAL.FAX, PRODUCTO.UNIDAD
+FROM         CREDITO INNER JOIN
+                      DET_CREDITO ON CREDITO.COD_CRE = DET_CREDITO.COD_CRE INNER JOIN
+                      SUCURSAL ON CREDITO.COD_SUC = SUCURSAL.COD_SUC INNER JOIN
+                      USUARIO ON CREDITO.COD_USU = USUARIO.COD_USU INNER JOIN
+                      PROV_PRO ON DET_CREDITO.ID_FAB = PROV_PRO.ID_FAB INNER JOIN
+                      PRODUCTO ON PROV_PRO.ID_PRO = PRODUCTO.ID_PRO INNER JOIN
+                      PROVEEDOR ON PROV_PRO.COD_PROV = PROVEEDOR.COD_PROV INNER JOIN
+                      CLIENTE ON CREDITO.COD_CLI = CLIENTE.cod_cli
+where credito.cod_cli=@codigo and (credito.estado='A')
+order by credito.cod_cre,det_credito.cod_fab
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPFOBResumenCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPFOBResumenCredito] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+select isnull(SUM(dc.p_fob *dc.CANTIDAD),0) TotFobCredito
+	from CREDITO c 
+	inner join det_credito dc on c.COD_CRE=dc.COD_CRE
+	inner join PAGO_CREDITO pc on c.COD_CRE=pc.COD_CRE
+	inner join USUARIO u on u.COD_USU=c.COD_USU
+	where pc.SALDO =0 and fecha_pago between @fechaIni and @fechaFin and u.COD_SUC=@CodSuc
+	
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPFOBResumenVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPFOBResumenVenta] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT      isnull(sum(DET_VENTA.p_fob * det_venta.cantidad),0) TotVenta
+FROM venta inner join DET_VENTA ON VENTA.COD_VENTA = DET_VENTA.COD_VENTA INNER JOIN
+                      USUARIO ON VENTA.COD_USU = USUARIO.COD_USU
+WHERE FECHA BETWEEN @fei AND @feF AND USUARIO.COD_SUC=@codSuc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenDevCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenDevCredito] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+select isnull(sum(ddc.total),0) 
+from devolucion_credito dc 
+inner join  det_devolucion_credito ddc on  dc.cod_cre=ddc.cod_cre 
+WHERE dc.tipo=1 and FECHA BETWEEN @fei AND @feF and cod_usu in (select cod_usu from usuario where cod_suc=@codSuc)
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenDevolucion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenDevolucion] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT       isnull(sum(DET_DEVOLUCION.TOTAL),0) TOTDevolucion
+FROM         DEVOLUCION INNER JOIN
+                      VENTA ON DEVOLUCION.COD_VENTA = VENTA.COD_VENTA inner join usuario u on devolucion.cod_usu=u.cod_usu INNER JOIN
+                      DET_DEVOLUCION ON DEVOLUCION.COD_VENTA = DET_DEVOLUCION.COD_VENTA 
+WHERE DEVOLUCION.FECHA BETWEEN @fei AND @feF AND U.COD_SUC=@codSuc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenDevolucionSus] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenDevolucionSus] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime 
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime) 
+select @fef=cast(@fechaFin as datetime) 
+SELECT isnull(sum(DET_DEVOLUCION.TOTAL/tipo_cambio),0) TOTDevolucion 
+FROM DEVOLUCION INNER JOIN VENTA ON DEVOLUCION.COD_VENTA = VENTA.COD_VENTA 
+inner join usuario u on devolucion.cod_usu=u.cod_usu 
+INNER JOIN DET_DEVOLUCION ON DEVOLUCION.COD_VENTA = DET_DEVOLUCION.COD_VENTA 
+inner join cambio_dolar cd on day(cd.fecha)=day(devolucion.fecha) and month(cd.fecha)=month(devolucion.fecha) and year(cd.fecha)=year(devolucion.fecha) 
+WHERE DEVOLUCION.FECHA BETWEEN @fei AND @feF AND U.COD_SUC=@codSuc 
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenSaldo] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenSaldo] @CodSuc varchar(5) AS 
+select isnull(SUM(SALDO),0)saldo
+from credito
+where cod_suc=@CodSuc
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenVenta] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenVenta] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+SELECT      isnull(sum(DET_VENTA.PRECIO_VENTA),0) TotVenta
+FROM        venta inner join DET_VENTA ON VENTA.COD_VENTA = DET_VENTA.COD_VENTA INNER JOIN
+                      USUARIO ON VENTA.COD_USU = USUARIO.COD_USU
+WHERE FECHA BETWEEN @fei AND @feF AND USUARIO.COD_SUC=@codSuc and estado='D'
+GO
+/****** Objeto: StoredProcedure [dbo].[rptSPResumenVentaSus] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[rptSPResumenVentaSus] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime 
+set dateformat dmy
+select @fei=cast(@fechaIni as datetime) 
+select @fef=cast(@fechaFin as datetime) 
+SELECT   isnull(sum(DET_VENTA.PRECIO_VENTA/dolar),0) TotVenta 
+FROM      venta inner join DET_VENTA ON VENTA.COD_VENTA = DET_VENTA.COD_VENTA INNER JOIN USUARIO ON VENTA.COD_USU = USUARIO.COD_USU 
+WHERE FECHA BETWEEN @fei AND @feF AND USUARIO.COD_SUC=@codSuc and estado='D'
+GO
+/****** Objeto: StoredProcedure [dbo].[sfwIsUser] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sfwIsUser] @user varchar(30)
+as
+begin
+	select count(cod_usu)nro from usuario where alias=@user 
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipCreateListPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipCreateListPedido] @cod_pedido int, @cod_prov varchar(6),@alias varchar(30),@top integer
+as
+begin 
+	declare @codEmp varchar(3);
+	select @codEmp= s.COD_EMP 
+	from USUARIO u
+	inner join SUCURSAL s on u.COD_SUC =s.COD_SUC 
+	where u.ALIAS =@alias;
+	if (select estado from sip_Pedido where @cod_pedido=cod_pedido)='N'
+	  begin		
+		if @cod_prov<>'001601'
+		  begin			
+			delete from sip_fill_det_pedido where cod_pedido= @cod_pedido and estado='N';
+
+			insert into sip_fill_det_pedido (alias,cod_pedido,estado,tipo,nro,cod_pro,id_fab, cod_fab,descripcion,p_fob,exist_total,ir)
+			select @alias,@cod_pedido,'N','dp',RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia,round(isnull(DBO.ir_montnew(pp.id_fab,CURRENT_TIMESTAMP,@codEmp,@top),0)*6,0)
+			from prov_pro pp
+			inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+			inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+			where cod_prov=@cod_prov
+			group by pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,p.DESC_PRO,pp.p_fob
+			order by p.DESC_PRO;
+		  end
+		else
+		  begin
+			update sip_fill_det_pedido set nro=t1.nro,exist_total=t1.existencia,ir=t1.ir
+			from sip_fill_det_pedido sdp
+			inner join (select sdp1.cod_pedido, RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia,round(isnull(DBO.ir_montnew(pp.id_fab,CURRENT_TIMESTAMP,@codEmp,@top),0)*6,0) ir
+			from prov_pro pp
+			inner join sip_fill_det_pedido sdp1 on sdp1.id_fab=pp.id_fab
+			inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+			inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+			where sdp1.cod_pedido=@cod_pedido
+			group by sdp1.cod_pedido,pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,p.DESC_PRO,pp.p_fob) t1 on sdp.cod_pedido=t1.cod_pedido
+			where sdp.cod_pedido=@cod_pedido
+		  end;
+	  end
+end 
+GO
+/****** Objeto: StoredProcedure [dbo].[sipCreateListPedido2] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipCreateListPedido2] @cod_pedido int, @cod_prov varchar(6),@alias varchar(30),@top integer
+as
+begin 
+	declare @codProv varchar(6);
+	declare @codEmp varchar(3);
+	select @codEmp= s.COD_EMP 
+	from USUARIO u
+	inner join SUCURSAL s on u.COD_SUC =s.COD_SUC 
+	where u.ALIAS =@alias;
+	if (select estado from sip_Pedido where @cod_pedido=cod_pedido)='N'
+	  begin		
+		select @codProv=cod_marca from sip_Pedido where @cod_pedido=cod_pedido
+
+		if @codProv<>'001601'
+		  begin			
+			delete from sip_fill_det_pedido where cod_pedido= @cod_pedido and estado='N';
+
+			insert into sip_fill_det_pedido (alias,cod_pedido,estado,tipo,nro,cod_pro,id_fab, cod_fab,descripcion,p_fob,exist_total,ir)
+			select @alias,@cod_pedido,'N','dp',RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia,round(isnull(DBO.sipAvgIR(@alias,pp.id_fab,@top),0)*6,0)
+			from prov_pro pp
+			inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+			inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+			where cod_prov=@codProv
+			group by pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,p.DESC_PRO,pp.p_fob
+			order by p.DESC_PRO;
+		  end
+		else
+		  begin
+			update sip_fill_det_pedido set nro=t1.nro,exist_total=t1.existencia,ir=t1.ir
+			from sip_fill_det_pedido sdp
+			inner join (select sdp1.cod_pedido, RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia,round(isnull(DBO.sipAVGIR(@alias,pp.id_fab,@top),0)*6,0) ir
+			from prov_pro pp
+			inner join sip_fill_det_pedido sdp1 on sdp1.id_fab=pp.id_fab
+			inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+			inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+			where sdp1.cod_pedido=@cod_pedido
+			group by sdp1.cod_pedido,pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,p.DESC_PRO,pp.p_fob) t1 on sdp.cod_pedido=t1.cod_pedido and sdp.id_fab=t1.id_fab
+			where sdp.cod_pedido=@cod_pedido
+		  end;
+	  end
+end 
+GO
+/****** Objeto: StoredProcedure [dbo].[sipDeleteDetBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipDeleteDetBO] @cod_pedido int, @cod_fab varchar(50)
+as
+begin
+	if (select top 1 estado from sip_fill_det_pedido where cod_pedido=@cod_pedido)='V' 
+	begin 
+		delete sip_det_bo where COD_FAB=@cod_fab and cod_pedido=@cod_pedido				
+	end;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sipDelPrePedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipDelPrePedido] @cod_pedido int
+as
+begin
+	if(select estado from sip_Pedido where cod_pedido=@cod_pedido)='N'
+	begin
+		delete from sip_Pedido where cod_pedido=@cod_pedido; 
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipEnviaImportacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipEnviaImportacion] @alias varchar(50), @codPedido int, @fTransporte money,@fTrans_interno money, @fMantenimiento money,@fac_dep money,@fac_lis money,@f_dolar money
+as
+declare @sCodImp as varchar(50);
+declare @sCodSuc as varchar(20);
+declare @sCodUsu as varchar(20);
+begin
+if (select estado from sip_Pedido where cod_pedido=@codPedido)='V'
+begin
+	update sip_pedido set fac_transporte=@fTransporte, fac_transInterno=@fTrans_interno, fac_mant=@fMantenimiento,fac_dep=@fac_dep,fac_pl=@fac_lis,fac_dolar=@f_dolar, Estado='I'
+	where cod_pedido=@codPedido
+	select @sCodImp=dbo.fnGeneraCodigoImp (@alias);
+
+	select @sCodSuc=u.COD_SUC,@sCodUsu=u.COD_USU
+	from USUARIO u
+	where u.ALIAS=@alias
+
+	-- Crear Importacion
+	insert IMPORTACION(cod_imp,NUM_FACTURA,PROVEEDOR,cOD_prov,COD_USU,COD_SUC,cod_pedido,FECHA,FOB,pTRANSPORTE,pTRANS_INTERNO,pMANTENIMIENTO,ESTADO,FAC_DEP,FAC_LIS,OBS,F_DOLAR)
+	select @sCodImp,nro_factura,fp.descripcion + ' - ' + pv.NOM_PROV,cod_marca,@sCodUsu,@sCodSuc,cod_pedido,CURRENT_TIMESTAMP,total_emp,@fTransporte,@fTrans_interno,@fMantenimiento,'N',@fac_dep,@fac_lis,'',@f_dolar
+	from sip_pedido si inner join PROVEEDOR pv on si.cod_marca =pv.COD_PROV
+	inner join sip_firma_proveedor fp on pv.cod_firma=fp.cod_firma
+	where cod_pedido=@codPedido
+
+	-- LLenar detalle de Importacion con detalle Pedido SIP
+	INSERT det_importacion(cod_imp,COD_FAB,CANTIDAD,PREC_UNIT,TOTAL,nro,PLIS_BS,PMIN_BS,PMAY_BS,cant_verificado,p_oferta,existencia)
+	select @sCodImp, sfdp.cod_fab,cant_factura ,prec_fac,tot_fac,nro,round( prec_fac *@fac_dep*@fac_lis*@f_dolar,0) Prec_list,round( (prec_fac *@fac_dep*@fac_lis*@f_dolar)*0.8,0) prec_min,round( (prec_fac *@fac_dep*@fac_lis*@f_dolar)*0.7,0) prec_may,0,round( (prec_fac *@fac_dep*@fac_lis*@f_dolar)*0.7,0) p_oferta,spp.CANTIDAD
+	from sip_fill_det_pedido sfdp inner join SUC_PRO_PROV spp on sfdp.cod_fab=spp.COD_FAB
+	where spp.COD_SUC=@sCodSuc and cod_pedido=@codPedido and cant_factura >0
+
+	-- Llenar detalle Importacion con detalle back order SIP
+	INSERT det_importacion(cod_imp,COD_FAB,CANTIDAD,PREC_UNIT,TOTAL,nro,PLIS_BS,PMIN_BS,PMAY_BS,cant_verificado,p_oferta,existencia)
+	select @sCodImp, sdb.cod_fab,sdb.cantidad,prec_bo_act, sdb.cantidad*prec_bo_act Total,ROW_NUMBER() OVER (ORDER BY sdb.cod_fab), round(prec_bo_act*@fac_dep*@fac_lis*@f_dolar,0) Prec_list,round((prec_bo_act *@fac_dep*@fac_lis*@f_dolar)*0.8,0) prec_min,round( (prec_bo_act*@fac_dep*@fac_lis*@f_dolar)*0.7,0) prec_may,0,round( (prec_bo_act*@fac_dep*@fac_lis*@f_dolar)*0.7,0) p_oferta,spp.CANTIDAD
+	from sip_det_bo sdb inner join SUC_PRO_PROV spp on sdb.cod_fab=spp.COD_FAB
+	where spp.COD_SUC=@sCodSuc and cod_pedido=@codPedido
+end
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sipEstClienteCompra] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipEstClienteCompra] @sucursal varchar(5),@cod_cli varchar(6), @year int
+as 
+begin
+select top 10  c.NOM_CLI,c.APE_CLI ,sum(dc.PRECIO_CRE)TOTAL,pv.NOM_PROV 
+from cliente c
+inner join credito cr on c.cod_cli =cr.COD_CLI 
+inner join DET_CREDITO dc on cr.COD_CRE=dc.COD_CRE
+inner join PROV_PRO pp on pp.ID_FAB =dc.ID_FAB 
+inner join PROVEEDOR pv  on pp.COD_PROV=pv.COD_PROV 
+where c.cod_cli=@cod_cli and c.COD_SUC =@sucursal and year(cr.FEC_INICIO)=@year and (cr.estado='CD' or cr.estado='C' or cr.estado='A')
+group by nom_cli,APE_CLI,pv.nom_prov
+order by sum(dc.PRECIO_CRE) desc
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipEstClienteMarca] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipEstClienteMarca] @CodCliente int,@codSucursal varchar(5),@cod_usu varchar(7),@year int
+as
+begin
+select nom_cli,APE_CLI,sum(crd.PRECIO_CRE)TOTAL ,pv.NOM_PROV 
+from cliente c
+inner join credito cr on c.cod_cli=cr.COD_CLI 
+inner join DET_CREDITO crd on cr.COD_CRE=crd.COD_CRE 
+inner join PROV_PRO pp on pp.ID_FAB =crd.ID_FAB 
+inner join PROVEEDOR pv on pp.COD_PROV=pv.COD_PROV 
+inner join sucursal s on c.cod_suc=s.cod_suc
+where c.cod_suc=@codSucursal and c.baja=0 and year(cr.FEC_INICIO)=@year and c.cod_cli=@CodCliente and (cr.estado='CD' or cr.estado='C' or cr.estado='A')
+group by nom_cli,APE_CLI, pv.nom_prov
+order by pv.NOM_PROV 
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipEstMarcaCliente] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipEstMarcaCliente] @codSucursal varchar(5),@cod_prov varchar(6),@year int
+as
+begin
+select nom_cli,APE_CLI,sum(crd.PRECIO_CRE)TOTAL ,pv.NOM_PROV 
+from cliente c
+inner join credito cr on c.cod_cli=cr.COD_CLI 
+inner join DET_CREDITO crd on cr.COD_CRE=crd.COD_CRE 
+inner join PROV_PRO pp on pp.COD_FAB =crd.COD_FAB 
+inner join PROVEEDOR pv on pp.COD_PROV=pv.COD_PROV 
+inner join sucursal s on c.cod_suc=s.cod_suc
+where c.cod_suc=@codSucursal and c.baja=0 and year(cr.FEC_INICIO)=@year and PV.COD_PROV=@cod_prov and (cr.estado='CD' or cr.estado='C' or cr.estado='A')
+group by nom_cli,APE_CLI, pv.nom_prov
+order by pv.NOM_PROV
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipInsertBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipInsertBO] @cod_Pedido varchar(6),@obs_bo varchar(250),@alias varchar(30)
+as
+declare @cod_usu varchar(7)
+begin
+	if (select isnull(count(*),0) from sip_back_order where cod_pedido=@cod_pedido)=0
+	begin
+		select @cod_usu= cod_usu 
+		from USUARIO
+		where ALIAS=@alias;
+		insert sip_back_order(cod_pedido,cod_usu,fecha,obs,estado,total_bo)
+		values(@cod_Pedido,@cod_usu,CURRENT_TIMESTAMP ,@obs_bo,'N',0);	
+	end;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sipInsertDetBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipInsertDetBO] @cod_pedido int, @cod_pedido_ori int, @cod_fab varchar(50), @prec_bo_act money, @prec_fab_ant money, @obs varchar(250),@cantidad int
+as
+begin
+	if (select isnull(count(*),0) from sip_det_bo where cod_fab=@cod_fab and cod_pedido=@cod_pedido)=0
+	begin
+		insert sip_det_bo(cod_pedido,cod_pedido_ori,cod_fab,prec_bo_act,prec_fab_ant,obs,cantidad)
+		values (@cod_pedido,@cod_pedido_ori,@cod_fab,@prec_bo_act,@prec_fab_ant,@obs,@cantidad);
+	end;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sipInsertPrePedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipInsertPrePedido] @cod_marca varchar(6),@obs_cre varchar(250),@alias varchar(30),@nroImp int
+as
+declare @cod_usu varchar(7)
+begin
+	select @cod_usu= cod_usu 
+	from USUARIO
+	where ALIAS=@alias;
+	insert sip_Pedido(cod_marca,obs_cre,cod_usu_cre,cod_usu_val,cod_usu_emp,timesImport)
+	values(@cod_marca,@obs_cre,@cod_usu,@cod_usu,@cod_usu,@nroImp);	
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistadoCreateListPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[siplistadoCreateListPedido] @cod_pedido int
+as
+begin
+declare @name varchar(30);
+	declare @codigo varchar(3);
+	
+	select  top 1 @name=Alias 
+	from sip_fill_det_pedido
+	where cod_pedido=@cod_pedido;
+
+	select @codigo=s.COD_EMP  
+	from USUARIO u
+	inner join SUCURSAL s on s.COD_SUC =u.COD_SUC  
+	where ALIAS =@name;
+	
+	select @cod_pedido cod_pedido,Nro,p.cod_pro,pp.id_fab,pp.cod_fab,nom_prov,p.desc_pro, sf.p_fob,plis_bs,pmin_bs,pmay_bs,cant_pedido,prec_total,prec_val,tot_val,back_order,cant_transito,exist_total,obs_cre,obs_val,cant_val, CAST(IR AS NUMERIC) IR
+	from sip_fill_det_pedido sf
+	inner join PROV_PRO pp on sf.id_fab=pp.ID_FAB
+	inner join producto p on pp.id_pro=p.id_pro
+	inner join proveedor pv on pp.cod_prov=pv.cod_prov
+	where sf.cod_pedido=@cod_pedido and tipo='dp'	
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistadoDetPair] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[siplistadoDetPair] @cod_pedido int
+as
+begin
+	select @cod_pedido cod_pedido,Nro,cod_pro,cod_fab,descripcion, p_fob,prec_val,prec_fac,cant_factura,prec_total,tot_fac,back_order,new_back_order,cant_transito,exist_total,obs_factura,obs_val,cant_val
+	from sip_fill_det_pedido
+	where cod_pedido=@cod_pedido and tipo='dp'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListaIRImportacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListaIRImportacion] @alias varchar(50),@id_fab int, @top int
+as
+begin
+	select nom_suc,COD_IMP,NUM_FACTURA, proveedor,fecha,IR
+	from 
+	(select top (@top) nom_suc,i.COD_IMP,NUM_FACTURA, proveedor,cast(i.fecha as date) fecha,cast( dbo.sipIRimportacion(i.cod_imp,di.id_fab,@alias)*6 as numeric) IR	
+	from importacion i 
+	inner join det_importacion di on i.cod_imp=di.cod_imp
+	inner join SUCURSAL s on i.COD_SUC =s.cod_suc
+	where di.id_fab=@id_fab
+	order by i.fecha desc)t
+	order by fecha asc
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListaSucursal] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListaSucursal] @alias varchar(30)
+as
+begin
+select cod_suc, NOM_SUC 
+from SUCURSAL
+where COD_EMP  in 
+(select s.COD_EMP   from SUCURSAL s
+inner join USUARIO u on s.COD_SUC =u.COD_SUC 
+where u.ALIAS = @alias)
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[siplistBO] @cod_pedido varchar(30)
+as
+begin
+	select cod_pedido, sbo.cod_usu,u.NOM_USU + ' '+u.AP_USU Nombre_completo, fecha, obs, estado,total_bo
+	from sip_back_order sbo 
+	inner join USUARIO u on sbo.cod_usu=u.COD_USU
+	where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistDetBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[siplistDetBO] @cod_pedido varchar(30)
+as
+begin
+	select cod_pedido, cod_pedido_ori,sdbo.cod_fab,pv.NOM_PROV,p.DESC_PRO,cantidad,prec_bo_act,cantidad*prec_bo_act stotal,prec_fab_ant,obs
+	from sip_det_bo sdbo 
+	inner join PROV_PRO pp on sdbo.cod_fab=pp.COD_FAB
+	inner join PRODUCTO p on pp.COD_PRO=p.COD_PRO
+	inner join PROVEEDOR pv on pp.COD_PROV=pv.COD_PROV
+	where sdbo.cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistFoundDetPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[siplistFoundDetPedido] @cod_pedido int, @data varchar(50)
+as
+begin
+	select @cod_pedido cod_pedido,Nro,sf.cod_pro,sf.id_fab,pp.cod_fab,nom_prov,p.desc_pro, sf.p_fob,cant_pedido,prec_total,prec_val,tot_val,back_order,cant_transito,exist_total,obs_cre,obs_val,cant_val, IR
+	from sip_fill_det_pedido sf
+	inner join PROV_PRO pp on sf.id_fab=pp.ID_FAB
+	inner join producto p on pp.id_pro=p.id_pro
+	inner join proveedor pv on pp.cod_prov=pv.cod_prov
+	where sf.cod_pedido=@cod_pedido and tipo='dp' and (p.cod_pro LIKE '%' + LTRIM(RTRIM(@data)) + '%' or pp.cod_fab LIKE '%' + LTRIM(RTRIM(@data)) + '%' or p.desc_pro LIKE '%' + LTRIM(RTRIM(@data)) + '%')	
+	order by p.desc_pro,cod_fab 
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListFoundProduct] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListFoundProduct] @name varchar(50), @dato varchar(150)
+as
+begin
+	declare @codigo varchar(3);
+	
+	select @codigo=s.COD_EMP  
+	from USUARIO u
+	inner join SUCURSAL s on s.COD_SUC =u.COD_SUC  
+	where ALIAS =@name;
+
+	select top 450 RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab,nom_prov, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia
+	from prov_pro pp
+	inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+	inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+	inner join proveedor pv on pv.cod_prov=pp.cod_prov
+	where p.cod_emp=@codigo and (pp.cod_fab like CONCAT('%',@dato,'%') or p.cod_pro like CONCAT('%',@dato,'%') or p.desc_pro like CONCAT('%',@dato,'%')  )
+	group by pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,nom_prov,p.DESC_PRO,pp.p_fob
+	order by p.DESC_PRO
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListOtherSameProduct] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListOtherSameProduct] @cod_pedido int, @id_fab int,@alias varchar(30)
+as
+begin
+	delete from sip_fill_det_pedido where Alias= @alias and tipo='dprs'
+	insert into sip_fill_det_pedido (alias,cod_pedido,estado,tipo,nro,cod_pro,id_fab,cod_fab,Marca,descripcion,p_fob,exist_total)
+	select @alias,@cod_pedido,'N','dprs',RANK() OVER(ORDER BY pp.cod_fab) nro, pp.COD_PRO,pp.id_fab, pp.cod_fab,sfp.descripcion+'-'+pv.NOM_PROV marca,p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia
+	from prov_pro pp
+	inner join PRODUCTO p on pp.id_PRO=p.id_PRO
+	inner join SUC_PRO_PROV spp on pp.id_FAB=spp.id_FAB
+	inner join proveedor pv on pv.cod_prov=pp.COD_PROV
+	inner join sip_firma_proveedor sfp on pv.cod_firma=sfp.cod_firma
+	where pp.id_PRO in (select id_pro from PROV_PRO where ID_FAB=@id_fab) and pp.ID_FAB<>@Id_fab
+	group by p.id_pro, pp.COD_PRO,pp.id_fab, pp.COD_FAB,sfp.descripcion+'-'+pv.NOM_PROV,p.DESC_PRO,pp.p_fob
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListPair] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListPair] @Alias varchar(30)
+as
+begin
+	SELECT cod_pedido, cod_marca,f.descripcion+'-'+ pv.NOM_PROV nombre, fecha_creacion,fecha_emp ,cod_usu_emp,estado,total_emp,obs_emp,ALIAS,nro_factura
+	FROM sip_pedido sp 
+	inner join USUARIO u on sp.cod_usu_cre=u.COD_USU
+	inner join PROVEEDOR pv on sp.cod_marca=pv.COD_PROV
+	inner join sip_firma_proveedor f on f.cod_firma=pv.cod_firma		
+	where u.ALIAS=@Alias and sp.estado='V' or sp.estado='I'
+	order by fecha_creacion desc		
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListSameProduct] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListSameProduct] @alias varchar(30)
+as
+begin	
+	select cod_pedido,Nro,cod_pro,cod_fab,MARCA,descripcion, p_fob,cant_pedido,prec_total,back_order,cant_transito,exist_total
+	from sip_fill_det_pedido
+	where alias=@alias and tipo='dprs'	
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[siplistSearchDetBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[siplistSearchDetBO] @alias varchar(50), @cod_pedido varchar(30),@dato varchar(120), @sw int
+as
+declare @cod_suc varchar(5)
+begin
+select @cod_suc= cod_usu 
+		from USUARIO
+		where ALIAS=@alias;
+if @sw=0
+begin
+	select sfdp.cod_pedido,fecha_creacion,sfdp.cod_fab,pp.COD_PRO,pv.NOM_PROV,p.DESC_PRO,new_back_order,tot_fac,prec_fac
+	from sip_fill_det_pedido sfdp
+	inner join PROV_PRO pp on sfdp.cod_fab=pp.COD_FAB
+	inner join PRODUCTO p on pp.COD_PRO=p.COD_PRO
+	inner join PROVEEDOR pv on pp.COD_PROV=pv.COD_PROV
+	inner join sip_pedido sp on sp.cod_pedido=sfdp.cod_pedido
+	inner join USUARIO u on sp.cod_usu_emp=u.COD_USU
+	where sfdp.cod_pedido<>@cod_pedido and sfdp.new_back_order>0 and u.COD_SUC=@cod_suc and (sfdp.cod_fab like '%'+ @dato + '%' or pp.COD_PRO like '%'+ @dato + '%' or p.DESC_PRO like '%'+ @dato + '%')
+	order by fecha_creacion,DESC_PRO,NOM_PROV,pp.COD_FAB
+end
+else
+begin
+	select top 200 '105' cod_pedido,CURRENT_TIMESTAMP fecha_creacion,pp.COD_FAB,pp.COD_PRO, pv.NOM_PROV, p.DESC_PRO,1 new_back_order, pp.p_fob tot_fac,pp.p_fob prec_fac
+	from PROV_PRO pp 
+	inner join PRODUCTO p on pp.COD_PRO=p.COD_PRO
+	inner join PROVEEDOR pv on pp.COD_PROV=pv.COD_PROV
+	inner join SUCURSAL s on p.COD_EMP=s.COD_EMP
+	inner join USUARIO u on s.COD_SUC=u.COD_SUC
+	--where u.ALIAS=@alias and pp.BAJA='N'
+	where u.ALIAS=@alias and pp.BAJA='N' and (pp.cod_fab like '%'+ @dato + '%' or pp.COD_PRO like '%'+ @dato + '%' or p.DESC_PRO like '%'+ @dato + '%')
+	order by DESC_PRO, NOM_PROV, pp.COD_FAB
+end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipListValidate] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipListValidate] @Alias varchar(30)
+as
+begin
+	SELECT cod_pedido, cod_marca,f.descripcion+'-'+ pv.NOM_PROV nombre, fecha_creacion,fecha_val,cod_usu_cre,estado,tot_val,obs_val,ALIAS 
+	FROM sip_pedido sp 
+	inner join USUARIO u on sp.cod_usu_cre=u.COD_USU
+	inner join PROVEEDOR pv on sp.cod_marca=pv.COD_PROV
+	inner join sip_firma_proveedor f on f.cod_firma=pv.cod_firma		
+	where u.ALIAS=@Alias and u.validar=1 and sp.estado='E'
+	order by fecha_creacion desc		
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipLoadPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipLoadPedido] @cod_pedido int
+as
+begin
+	select cod_pedido, cod_marca, fp.descripcion +'-'+ pv.NOM_PROV nombre,obs_cre,obs_val,obs_emp,estado,nro_factura,timesImport
+	from sip_pedido	sp 
+	inner join PROVEEDOR pv on sp.cod_marca=pv.COD_PROV
+	inner join sip_firma_proveedor fp on pv.cod_firma=fp.cod_firma
+	where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSaveDetPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipSaveDetPedido] @cod_pedido int, @id_fab int,@alias varchar(30),@top int
+as
+begin
+	declare @codEmp varchar(3);
+	select @codEmp= s.COD_EMP 
+	from USUARIO u
+	inner join SUCURSAL s on u.COD_SUC =s.COD_SUC 
+	where u.ALIAS =@alias;
+	if (select estado from sip_Pedido where @cod_pedido=cod_pedido)='N'		
+		
+		insert into sip_fill_det_pedido (alias,cod_pedido,estado,tipo,nro,cod_pro,id_fab, cod_fab,descripcion,p_fob,exist_total,ir)
+		select @alias,@cod_pedido,'N','dp',RANK() OVER(ORDER BY p.desc_pro) nro, pp.COD_PRO,pp.ID_FAB ,pp.cod_fab, p.DESC_PRO,pp.p_fob,sum(spp.cantidad)existencia,0
+		from prov_pro pp
+		inner join PRODUCTO p on pp.ID_PRO=p.ID_PRO
+		inner join SUC_PRO_PROV spp on pp.ID_FAB=spp.ID_FAB
+		where pp.id_fab=@id_fab
+		group by pp.COD_PRO,pp.ID_FAB,pp.COD_FAB,p.DESC_PRO,pp.p_fob
+		order by p.DESC_PRO
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSendPrePtoValidate] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipSendPrePtoValidate] @cod_pedido int
+as
+declare @total money
+begin
+	if (select estado from sip_Pedido where cod_pedido=@cod_pedido)='N'
+	begin
+		delete from sip_det_Pedido where cod_pedido=@cod_pedido
+		update sip_fill_det_pedido set obs_val=Obs_cre, cant_val=cant_pedido,prec_val=p_fob, estado='E' where cod_pedido=@cod_pedido
+		insert into sip_det_Pedido(cod_pedido,cod_fab,cant_preimp,cant_val,prec_preimp,prec_val,obs_preimp,obs_val)
+		select cod_pedido,cod_fab,cant_pedido,cant_pedido,p_fob,p_fob,Obs_cre,Obs_cre
+		from sip_fill_det_pedido
+		where cod_pedido=@cod_pedido and tipo='dp'
+		select @total= sum(cant_val*p_fob)from sip_fill_det_pedido
+		where cod_pedido=@cod_pedido and tipo='dp'
+		update sip_Pedido set estado='E',fecha_envio=CURRENT_TIMESTAMP, tot_prepedido=@total,tot_val=@total,obs_val=obs_cre where cod_pedido=@cod_pedido
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSendtoPair] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipSendtoPair] @cod_pedido int
+as
+declare @total money
+begin
+	if (select estado from sip_Pedido where cod_pedido=@cod_pedido)='E'
+	begin		
+		update sip_fill_det_pedido set obs_factura=obs_val,prec_fac=prec_val,tot_fac=tot_val, cant_factura=cant_val,estado='V' where cod_pedido=@cod_pedido  and tipo='dp'
+		update sip_det_Pedido set cant_emp=sfdp.cant_val,obs_emp=sfdp.obs_val,prec_emp=sfdp.prec_val 		
+		from sip_det_Pedido sdp 
+		inner join sip_fill_det_pedido sfdp on sfdp.cod_pedido=sdp.cod_pedido
+		where sfdp.cod_pedido=@cod_pedido and sfdp.tipo='dp'
+		
+		select @total= sum(cant_val*p_fob)from sip_fill_det_pedido
+		where cod_pedido=@cod_pedido and tipo='dp'
+		update sip_Pedido set estado='V',fecha_emp=CURRENT_TIMESTAMP, tot_prepedido=@total,total_emp=@total, obs_emp=obs_val where cod_pedido=@cod_pedido
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSpAccesoSistema] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create PROCEDURE [dbo].[sipSpAccesoSistema] @prmUser varchar(50), @prmPass varchar(50)
+AS
+	BEGIN	
+		SELECT DISTINCT COD_USU,NOM_USU,u.AP_USU,u.ALIAS,U.CONTRASEÑA,U.validar,U.COD_SUC,S.COD_EMP, NOM_SUC,NOM_EMP, DESC_CAR,INI,u.fecha_cambio,c.prioridad,s.ccb,s.virtual,s.credito,s.cc, ver_oferta
+		FROM USUARIO U, SUCURSAL S,EMPRESA E,cargo c
+		WHERE U.COD_SUC=S.COD_SUC AND U.COD_CAR=C.COD_CAR and S.COD_EMP=E.COD_EMP and baja='0' AND ALIAS=@prmUser
+	END
+
+GRANT ALL ON sipSpAccesoSistema TO CAJERO,ADMIN
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSPListaCliente] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipSPListaCliente] @cod_suc varchar(5)
+as
+begin
+	select cod_cli,nom_cli,ape_cli
+	from CLIENTE
+	where COD_SUC =@cod_suc and baja ='0'
+	order by APE_CLI  
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSPListaFirma] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipSPListaFirma] @prmUser varchar(30)
+as
+begin
+	select fp.descripcion+'-'+pv.NOM_PROV as descripcion , pv.NOM_PROV,pv.COD_PROV
+	from sip_firma_proveedor fp 
+	inner join PROVEEDOR pv on fp.cod_firma=pv.cod_firma
+	where nom_prov='VARIOS' OR pv.COD_EMP in (
+	select e.COD_EMP 
+	from USUARIO u
+	inner join SUCURSAL s on u.COD_SUC=s.COD_SUC
+	inner join EMPRESA e on s.COD_EMP=e.COD_EMP
+	where u.ALIAS=@prmUser
+	)
+	order by fp.descripcion,NOM_PROV
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipSpListaPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[sipSpListaPedido] @prmUser varchar(30)
+as
+	begin
+		SELECT cod_pedido, cod_marca,f.descripcion+'-'+ pv.NOM_PROV nombre, fecha_creacion,fecha_envio,cod_usu_cre,estado,tot_prepedido,obs_cre,ALIAS,timesImport
+		FROM sip_pedido sp 
+		inner join USUARIO u on sp.cod_usu_cre=u.COD_USU
+		inner join PROVEEDOR pv on sp.cod_marca=pv.COD_PROV
+		inner join sip_firma_proveedor f on f.cod_firma=pv.cod_firma
+		where u.ALIAS=@prmUser
+		order by fecha_creacion desc	
+	end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdateBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipUpdateBO] @cod_pedido varchar(30), @obs varchar(250),@estado varchar(2)
+as
+begin
+	update sip_back_order set obs=@obs, estado=@estado where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdateDetBO] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipUpdateDetBO] @cod_pedido int, @cod_fab varchar(50), @prec_bo_act money,@obs varchar(250),@cantidad int
+as
+begin
+	if (select top 1 estado from sip_fill_det_pedido where cod_pedido=@cod_pedido)='V' 
+	begin 
+		update sip_det_bo set cantidad=@cantidad, prec_bo_act=@prec_bo_act, obs=@obs
+		where COD_FAB=@cod_fab and cod_pedido=@cod_pedido				
+	end;
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdateDetPair] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipUpdateDetPair] @cod_pedido int, @cod_fab varchar(50), @cantidad int, @obs varchar(250),@precio money
+as
+begin
+	update sip_fill_det_pedido set cant_factura=@cantidad,prec_fac=@precio, obs_factura=@obs,tot_fac=@cantidad*@precio, new_back_order= cant_val-@cantidad  
+	where cod_pedido=@cod_pedido and cod_fab=@cod_fab and estado='V'and tipo='dp'
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdateDetPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipUpdateDetPedido] @cod_pedido int, @id_fab int, @cant_pedido int, @obs varchar(250)
+as
+begin
+	declare @totPedido money;
+	set @totPedido=0;
+
+	update sip_fill_det_pedido set cant_pedido=@cant_pedido, Obs_cre=@obs,prec_total=@cant_pedido*p_fob 
+	where cod_pedido=@cod_pedido and id_fab=@id_fab and estado='N'and tipo='dp';
+
+	select @totPedido=isnull(sum(prec_total),0)
+	from sip_fill_det_pedido sf
+	where cod_pedido=@cod_pedido;
+
+	update sip_pedido set tot_prepedido=@totPedido where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdateDetValPedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipUpdateDetValPedido] @cod_pedido int, @cod_fab varchar(50), @cant_pedido int, @obs varchar(250)
+as
+begin
+	update sip_fill_det_pedido set cant_val=@cant_pedido, obs_val=@obs,tot_val=@cant_pedido*p_fob 
+	where cod_pedido=@cod_pedido and cod_fab=@cod_fab and estado='N'and tipo='dp'	
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdatePedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sipUpdatePedido] @cod_pedido int,@nro_factura varchar(6),@obs varchar(250),@nroImp integer
+as
+begin
+	update sip_pedido set nro_factura=@nro_factura,obs_cre=@obs,timesImport =@nroImp where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sipUpdatePrePedido] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sipUpdatePrePedido] @cod_pedido int,@cod_marca varchar(6),@obs varchar(250),@nroImp int
+as
+begin
+	update sip_pedido set cod_marca=@cod_marca,obs_cre=@obs, timesImport=@nroImp  where cod_pedido=@cod_pedido
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[sp_insert_autoPro] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sp_insert_autoPro] @id_auto int, @id_pro int
+as
+begin
+	insert into n_auto_pro(id_auto,id_pro)values
+	(@id_auto,@id_pro)
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[SP_INSERT_DOLARP] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SP_INSERT_DOLARP] @COD_USU VARCHAR(7),@COD_EMP VARCHAR(3),@TIPO_CAMBIO MONEY AS
+BEGIN
+	IF (select count(*)
+		from cambio_dolar_paralelo
+		where cod_emp=@cod_emp and FORMAT(GETDATE(), 'dd/MM/yyyy', 'en-us')=fecha
+		)=0
+	BEGIN
+		INSERT INTO CAMBIO_DOLAR_PARALELO(TIPO_CAMBIO,COD_EMP,COD_USU)VALUES
+		(@TIPO_CAMBIO,@COD_EMP,@COD_USU)
+	END	
+END;
+GO
+/****** Objeto: StoredProcedure [dbo].[sp_producto_del] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sp_producto_del] @id_pro int
+as
+begin
+	delete producto where ID_pro=@id_pro
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sp_producto_ini] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sp_producto_ini] @cod_emp varchar(3)
+as
+declare @codigo int
+begin
+insert producto (cod_emp,codigo,desc_pro)
+values(@cod_emp, 1,'vacio');
+SET @codigo=SCOPE_IDENTITY();
+select DESC_PRO,COD_EMP,COD_MOD,CODIGO, ID_PRO from producto where id_pro=@codigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sp_prov_pro_del] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[sp_prov_pro_del] @id_fab int
+as
+begin
+	delete PROV_PRO where ID_FAB=@id_fab 
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[sp_prov_pro_ini] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE procedure [dbo].[sp_prov_pro_ini] @ID_PRO int, @COD_PRO VARCHAR(50)
+as
+declare @codigo int
+begin
+insert prov_pro(cod_prov,id_pro,COD_PRO,COD_FAB,imgBarra,ENVASE)
+values('000001',@ID_PRO,@COD_PRO,'01',0x,0x);
+SET @codigo=SCOPE_IDENTITY();
+select id_fab,cod_prov,ID_PRO,COD_PRO from prov_pro where id_fab=@codigo
+end;
+GO
+/****** Objeto: StoredProcedure [dbo].[SP_UPDATE_PRICE] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SP_UPDATE_PRICE] @COD_SUC VARCHAR(5),@DOLAR MONEY AS
+BEGIN
+
+	select ceiling(PP.PLIS_PRO*@DOLAR), ceiling(PP.PMAY_PRO*@DOLAR), ceiling(PP.PMIN_PRO*@DOLAR), CEILING(PP.pOferta*@DOLAR),ceiling(pp.CIFF*@DOLAR)
+	FROM PROV_PRO PP
+	INNER JOIN SUC_PRO_PROV SPP ON PP.ID_FAB=SPP.ID_FAB
+	WHERE SPP.COD_SUC= @COD_SUC
+
+	--UPDATE PROV_PRO SET PLIS_BS=ceiling(PP.PLIS_PRO*@DOLAR), PMAY_BS= ceiling(PP.PMAY_PRO*@DOLAR), PMIN_BS=ceiling(PP.PMIN_PRO*@DOLAR), pOferta =CEILING (PP.pOferta*@DOLAR),CIFF=ceiling(pp.CIFF*@DOLAR)
+	--FROM PROV_PRO PP
+	--INNER JOIN SUC_PRO_PROV SPP ON PP.ID_FAB=SPP.ID_FAB
+	---WHERE SPP.COD_SUC= @COD_SUC
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[spCheckAll] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[spCheckAll] @pCodRemision varchar(13),@pSw integer as
+begin
+if (select estado from REMISION_E where COD_REM=@pCodRemision)='N'
+begin
+	update DET_REMIE set cant_ctrl=iif(@pSw=1,CANTIDAD,0), fecha=CURRENT_TIMESTAMP,ok=iif (@pSw=1,1,0)  where COD_REM=@pCodRemision
+end
+else
+	begin
+	PRINT 'No realizo la operacion'
+	end
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[spCIFIzumiCBBA] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[spCIFIzumiCBBA] @CodRemision varchar(16),@cod_suc varchar(10) as
+begin
+if (select estado from remision_s where cod_rem=@CodRemision)='N'
+begin
+  declare dets cursor for
+  SELECT     PROV_PRO.COD_FAB, (p_inc* PROV_PRO.CIF_CBBA*cantidad)total
+  FROM         TIPO_PRODUCTO INNER JOIN
+                      PRODUCTO ON TIPO_PRODUCTO.CODIGO = PRODUCTO.CODIGO INNER JOIN
+                      PROV_PRO ON PRODUCTO.COD_PRO = PROV_PRO.COD_PRO INNER JOIN
+                      DET_REMIS ON PROV_PRO.COD_FAB = DET_REMIS.COD_FAB
+  where cod_suc=@cod_suc and cod_rem=@CodRemision
+  declare @COD_PROD varchar(50),@CIF MONEY
+  open dets
+  fetch next from dets into @COD_PROD,@CIF
+  while @@FETCH_STATUS = 0
+  begin
+	update DET_REMIS
+	set  cif_total= @CIF
+	where COD_FAB = @COD_PROD and COD_REM=@CodRemision
+	fetch next from dets into @COD_PROD,@CIF
+  end
+  close dets
+  deallocate dets
+end
+else
+ PRINT 'No se realizo la operacion'
+end
+
+GO
+/****** Objeto: StoredProcedure [dbo].[SPFOBCredito] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[SPFOBCredito] @fechaIni varchar(30),@fechaFin varchar(30),@CodSuc varchar(5) AS 
+declare @fei datetime,@fef datetime
+select @fei=cast(@fechaIni as datetime)
+select @fef=cast(@fechaFin as datetime)
+select p.cod_pro,dc.COD_FAB,p.DESC_PRO, pv.NOM_PROV ,dc.CANTIDAD, dc.p_fob ,isnull(dc.p_fob *dc.CANTIDAD,0) subTotal,dc.descuento,NOM_USU
+	from CREDITO c 
+	inner join det_credito dc on c.COD_CRE=dc.COD_CRE
+	inner join PROV_PRO pp on dc.COD_FAB=pp.COD_FAB
+	inner join PRODUCTO p on pp.COD_PRO = p.COD_PRO 
+	inner join PROVEEDOR pv on pp.COD_PROV = pv.COD_PROV 
+	inner join PAGO_CREDITO pc on c.COD_CRE=pc.COD_CRE
+	inner join USUARIO u on u.COD_USU=c.COD_USU
+	where pc.SALDO =0 and fecha_pago between @fechaIni and @fechaFin and u.COD_SUC=@CodSuc
+order by fecha_pago desc
+GO
+/****** Objeto: StoredProcedure [dbo].[spListaCierreCajaFOB] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[spListaCierreCajaFOB] @cod_suc varchar(5)
+as
+select top 100 fecha_ini,fecha_fin,VENTA,venta_dch, credito_fob,u.NOM_USU + ' ' + u.AP_USU nombre_usuario,cod_cc,cc.COD_SUC
+from CIERRE_CAJA cc inner join USUARIO u on cc.COD_USU=u.COD_USU
+where cc.COD_SUC=@cod_suc
+order by cod_cc desc;
+GO
+/****** Objeto: StoredProcedure [dbo].[spListaRemisionSalida] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create procedure [dbo].[spListaRemisionSalida] @cod_suc varchar(5)
+as
+select top 30 r.COD_REM, r.FECHA, s.NOM_SUC,ulv.NOM_USU+ ' ' + ulv.AP_USU elavorado, urb.NOM_USU+' '+ urb.AP_USU revisado, r.ESTADO, r.COD_PEDIDO,r.OBS_REM, r.USUARIO_DESCARGA
+from REMISION_S r 
+inner join SUCURSAL s on r.SUC_DES=s.COD_SUC
+inner join USUARIO ulv on r.Cod_USU=ulv.COD_USU
+inner join USUARIO urb on r.COD_USU_REB=urb.COD_USU
+where r.SUC_ORI=@cod_suc
+order by r.FECHA desc
+GO
+/****** Objeto: StoredProcedure [dbo].[spPsw] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE PROCEDURE [dbo].[spPsw] @pNewPsw varchar(50),@pOldPsw varchar(50) AS 
+exec sp_password @pOldPsw,@pNewPsw;
+GO
+/****** Objeto: StoredProcedure [dbo].[update_ciudad] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[update_ciudad] @codigo varchar(5),@nom_ciu varchar(40),@depto varchar(15) as
+begin
+	update CIUDAD set NOM_CIU=@nom_ciu,DEPTO=@depto where COD_CIU =@codigo
+end
+GO
+/****** Objeto: StoredProcedure [dbo].[update_dosificacion] Fecha de script: 09/05/2026 23:26:24 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create procedure [dbo].[update_dosificacion]
+@nro_autorizacion varchar(20),
+@nro_inicio varchar(20),
+@nro_final varchar(20),
+@fecha datetime,
+@fecha_limite datetime,
+@estado varchar(1),
+@cod_suc_usu int,
+@llave varchar(250)
+as
+begin
+	update dosificacion set nro_autorizacion=@nro_autorizacion,nro_inicio=@nro_inicio,nro_final=@nro_final,fecha=@fecha,fecha_limite=@fecha_limite,estado=@estado,cod_suc_usu=@cod_suc_usu,llave=@llave 
+	where nro_autorizacion=@nro_autorizacion;
+	update talonario_factura set nro_autorizacion=@nro_autorizacion,nro_inicio=@nro_inicio,nro_final=@nro_final,fecha=@fecha,fecha_limite=@fecha_limite,estado=@estado,cod_suc_usu=@cod_suc_usu,llave=@llave 
+	where nro_autorizacion=@nro_autorizacion;
+end;
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_DiagramPane1', @value=N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
+Begin DesignProperties = 
+   Begin PaneConfigurations = 
+      Begin PaneConfiguration = 0
+         NumPanes = 4
+         Configuration = "(H (1[40] 4[20] 2[20] 3) )"
+      End
+      Begin PaneConfiguration = 1
+         NumPanes = 3
+         Configuration = "(H (1 [50] 4 [25] 3))"
+      End
+      Begin PaneConfiguration = 2
+         NumPanes = 3
+         Configuration = "(H (1 [50] 2 [25] 3))"
+      End
+      Begin PaneConfiguration = 3
+         NumPanes = 3
+         Configuration = "(H (4[30] 2[40] 3) )"
+      End
+      Begin PaneConfiguration = 4
+         NumPanes = 2
+         Configuration = "(H (1 [56] 3))"
+      End
+      Begin PaneConfiguration = 5
+         NumPanes = 2
+         Configuration = "(H (2[66] 3) )"
+      End
+      Begin PaneConfiguration = 6
+         NumPanes = 2
+         Configuration = "(H (4 [50] 3))"
+      End
+      Begin PaneConfiguration = 7
+         NumPanes = 1
+         Configuration = "(V (3))"
+      End
+      Begin PaneConfiguration = 8
+         NumPanes = 3
+         Configuration = "(H (1[56] 4[18] 2) )"
+      End
+      Begin PaneConfiguration = 9
+         NumPanes = 2
+         Configuration = "(H (1 [75] 4))"
+      End
+      Begin PaneConfiguration = 10
+         NumPanes = 2
+         Configuration = "(H (1[66] 2) )"
+      End
+      Begin PaneConfiguration = 11
+         NumPanes = 2
+         Configuration = "(H (4 [60] 2))"
+      End
+      Begin PaneConfiguration = 12
+         NumPanes = 1
+         Configuration = "(H (1) )"
+      End
+      Begin PaneConfiguration = 13
+         NumPanes = 1
+         Configuration = "(V (4))"
+      End
+      Begin PaneConfiguration = 14
+         NumPanes = 1
+         Configuration = "(V (2))"
+      End
+      ActivePaneConfig = 3
+   End
+   Begin DiagramPane = 
+      PaneHidden = 
+      Begin Origin = 
+         Top = -120
+         Left = 0
+      End
+      Begin Tables = 
+         Begin Table = "p"
+            Begin Extent = 
+               Top = 7
+               Left = 48
+               Bottom = 170
+               Right = 297
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "dp"
+            Begin Extent = 
+               Top = 175
+               Left = 48
+               Bottom = 338
+               Right = 280
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "spp1"
+            Begin Extent = 
+               Top = 343
+               Left = 48
+               Bottom = 506
+               Right = 248
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "spp2"
+            Begin Extent = 
+               Top = 511
+               Left = 48
+               Bottom = 674
+               Right = 248
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "pp"
+            Begin Extent = 
+               Top = 679
+               Left = 48
+               Bottom = 842
+               Right = 292
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "pv"
+            Begin Extent = 
+               Top = 847
+               Left = 48
+               Bottom = 1010
+               Right = 242
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "pt"
+            Begin Extent = 
+               Top = 1015
+               Left = 48
+               Bottom = 1178
+               Right = 242
+            End
+            DisplayFlags = 280
+       ' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'VIEW',@level1name=N'vPedido'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_DiagramPane2', @value=N'     TopColumn = 0
+         End
+         Begin Table = "s"
+            Begin Extent = 
+               Top = 1183
+               Left = 48
+               Bottom = 1346
+               Right = 247
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "s2"
+            Begin Extent = 
+               Top = 1351
+               Left = 48
+               Bottom = 1514
+               Right = 247
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "u"
+            Begin Extent = 
+               Top = 1519
+               Left = 48
+               Bottom = 1682
+               Right = 242
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+      End
+   End
+   Begin SQLPane = 
+   End
+   Begin DataPane = 
+      Begin ParameterDefaults = ""
+      End
+      Begin ColumnWidths = 16
+         Width = 284
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+         Width = 1200
+      End
+   End
+   Begin CriteriaPane = 
+      Begin ColumnWidths = 11
+         Column = 1440
+         Alias = 900
+         Table = 1170
+         Output = 720
+         Append = 1400
+         NewValue = 1170
+         SortType = 1350
+         SortOrder = 1410
+         GroupBy = 1350
+         Filter = 1350
+         Or = 1350
+         Or = 1350
+         Or = 1350
+      End
+   End
+End
+' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'VIEW',@level1name=N'vPedido'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_DiagramPaneCount', @value=2 , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'VIEW',@level1name=N'vPedido'
+GO
