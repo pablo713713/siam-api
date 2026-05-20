@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Producto } from './entities/producto.entity';
 import { SearchProductoDto } from './dto/search-producto.dto';
 import { HistorialIngresoDto } from './dto/ingreso.dto';
+import { StockSucursalDto } from './dto/stock.dto';
 
 @Injectable()
 export class ProductosService {
@@ -71,5 +72,31 @@ export class ProductosService {
     historial.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
     return historial;
+  }
+
+  async getStockSucursal(id: number): Promise<StockSucursalDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const stock = await this.dataSource.createQueryBuilder()
+      .select('suc.COD_SUC', 'codSucursal')
+      .addSelect('suc.NOM_SUC', 'nombreSucursal')
+      .addSelect('spp.CANTIDAD', 'stockFisico')
+      .addSelect('spp.cantidad_virtual', 'inventarioVirtual')
+      .from('SUC_PRO_PROV', 'spp')
+      .innerJoin('SUCURSAL', 'suc', 'suc.COD_SUC = spp.COD_SUC')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = spp.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .orderBy('suc.NOM_SUC', 'ASC')
+      .getRawMany();
+
+    return stock.map(item => ({
+      codSucursal: item.codSucursal,
+      nombreSucursal: item.nombreSucursal,
+      stockFisico: Number(item.stockFisico || 0),
+      inventarioVirtual: Number(item.inventarioVirtual || 0),
+    }));
   }
 }

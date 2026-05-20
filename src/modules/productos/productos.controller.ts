@@ -15,4 +15,9 @@ export class ProductosController {
   async getIngresos(@Param('id', ParseIntPipe) id: number) {
     return this.productosService.getHistorialIngresos(id);
   }
+
+  @Get(':id/stock')
+  async getStock(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.getStockSucursal(id);
+  }
 }
