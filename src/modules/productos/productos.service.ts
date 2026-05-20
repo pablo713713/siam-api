@@ -1,14 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Producto } from './entities/producto.entity';
 import { SearchProductoDto } from './dto/search-producto.dto';
+import { HistorialIngresoDto } from './dto/ingreso.dto';
+import { StockSucursalDto } from './dto/stock.dto';
+import { HistorialSalidaDto } from './dto/salida.dto';
+import { KardexDto } from './dto/kardex.dto';
 
 @Injectable()
 export class ProductosService {
   constructor(
     @InjectRepository(Producto)
     private readonly productoRepository: Repository<Producto>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async search(searchDto: SearchProductoDto) {
@@ -27,6 +32,169 @@ export class ProductosService {
     return {
       data: items,
       limit: take,
+    };
+  }
+
+  async getHistorialIngresos(id: number): Promise<HistorialIngresoDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const importaciones = await this.dataSource.createQueryBuilder()
+      .select('i.FECHA', 'fecha')
+      .addSelect("'IMPORTACION'", 'tipo')
+      .addSelect('di.CANTIDAD', 'cantidad')
+      .addSelect('i.COD_IMP', 'referencia')
+      .from('DET_IMPORTACION', 'di')
+      .innerJoin('IMPORTACION', 'i', 'i.COD_IMP = di.COD_IMP')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = di.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .getRawMany();
+
+    const inventarios = await this.dataSource.createQueryBuilder()
+      .select('inv.FEC_INV', 'fecha')
+      .addSelect("'INVENTARIO'", 'tipo')
+      .addSelect('dinv.DIFERENCIA', 'cantidad')
+      .addSelect('inv.COD_INV', 'referencia')
+      .from('DET_INVENTARIO', 'dinv')
+      .innerJoin('INVENTARIO', 'inv', 'inv.COD_INV = dinv.COD_INV')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = dinv.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .andWhere('dinv.DIFERENCIA > 0')
+      .getRawMany();
+
+    const historial = [...importaciones, ...inventarios].map(item => ({
+      fecha: item.fecha,
+      tipo: item.tipo as 'IMPORTACION' | 'INVENTARIO',
+      cantidad: Number(item.cantidad),
+      referencia: item.referencia,
+    }));
+
+    historial.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    return historial;
+  }
+
+  async getStockSucursal(id: number): Promise<StockSucursalDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const stock = await this.dataSource.createQueryBuilder()
+      .select('suc.COD_SUC', 'codSucursal')
+      .addSelect('suc.NOM_SUC', 'nombreSucursal')
+      .addSelect('spp.CANTIDAD', 'stockFisico')
+      .addSelect('spp.cantidad_virtual', 'inventarioVirtual')
+      .from('SUC_PRO_PROV', 'spp')
+      .innerJoin('SUCURSAL', 'suc', 'suc.COD_SUC = spp.COD_SUC')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = spp.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .orderBy('suc.NOM_SUC', 'ASC')
+      .getRawMany();
+
+    return stock.map(item => ({
+      codSucursal: item.codSucursal,
+      nombreSucursal: item.nombreSucursal,
+      stockFisico: Number(item.stockFisico || 0),
+      inventarioVirtual: Number(item.inventarioVirtual || 0),
+    }));
+  }
+
+  async getHistorialSalidas(id: number): Promise<HistorialSalidaDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const ventas = await this.dataSource.createQueryBuilder()
+      .select('v.FECHA', 'fecha')
+      .addSelect("'VENTA'", 'tipo')
+      .addSelect('dv.CANTIDAD', 'cantidad')
+      .addSelect('v.COD_VENTA', 'referencia')
+      .from('DET_VENTA', 'dv')
+      .innerJoin('VENTA', 'v', 'v.COD_VENTA = dv.COD_VENTA')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = dv.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .getRawMany();
+
+    const creditos = await this.dataSource.createQueryBuilder()
+      .select('c.FEC_INICIO', 'fecha')
+      .addSelect("'CREDITO'", 'tipo')
+      .addSelect('dc.CANTIDAD', 'cantidad')
+      .addSelect('c.COD_CRE', 'referencia')
+      .from('DET_CREDITO', 'dc')
+      .innerJoin('CREDITO', 'c', 'c.COD_CRE = dc.COD_CRE')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = dc.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .getRawMany();
+
+    const pedidos = await this.dataSource.createQueryBuilder()
+      .select('p.FECHA', 'fecha')
+      .addSelect("'PEDIDO'", 'tipo')
+      .addSelect('dp.CANT_ENVIADO', 'cantidad')
+      .addSelect('p.COD_PEDIDO', 'referencia')
+      .from('DET_PEDIDO', 'dp')
+      .innerJoin('PEDIDO', 'p', 'p.COD_PEDIDO = dp.COD_PEDIDO')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = dp.ID_FAB')
+      .where('pp.ID_PRO = :id', { id })
+      .andWhere('dp.CANT_ENVIADO > 0')
+      .getRawMany();
+
+    const historial = [...ventas, ...creditos, ...pedidos].map(item => ({
+      fecha: item.fecha,
+      tipo: item.tipo as 'VENTA' | 'CREDITO' | 'PEDIDO',
+      cantidad: Number(item.cantidad || 0),
+      referencia: item.referencia,
+    }));
+
+    historial.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    return historial;
+  }
+
+  async getKardex(id: number): Promise<KardexDto> {
+    const stock = await this.getStockSucursal(id);
+    const ingresos = await this.getHistorialIngresos(id);
+    const salidas = await this.getHistorialSalidas(id);
+
+    const totalStockFisico = stock.reduce((sum, s) => sum + s.stockFisico, 0);
+    const totalInventarioVirtual = stock.reduce((sum, s) => sum + s.inventarioVirtual, 0);
+
+    const movimientos = [
+      ...ingresos.map(i => ({ ...i, tipoOperacion: 'INGRESO' as const })),
+      ...salidas.map(s => ({ ...s, tipoOperacion: 'SALIDA' as const }))
+    ];
+
+    movimientos.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+    let saldoActual = totalStockFisico;
+    
+    const historialKardex = movimientos.map(mov => {
+      const saldoEnEseMomento = saldoActual;
+      
+      if (mov.tipoOperacion === 'INGRESO') {
+        saldoActual -= mov.cantidad;
+      } else {
+        saldoActual += mov.cantidad;
+      }
+
+      return {
+        fecha: mov.fecha,
+        tipoOperacion: mov.tipoOperacion,
+        origen: mov.tipo,
+        cantidad: mov.cantidad,
+        referencia: mov.referencia,
+        saldoAcumulado: saldoEnEseMomento,
+      };
+    });
+
+    return {
+      stockPorSucursal: stock,
+      totalStockFisico,
+      totalInventarioVirtual,
+      movimientos: historialKardex,
     };
   }
 }
