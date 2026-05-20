@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SistemaRol } from './modules/roles/entities/sistema-rol.entity';
 import { SistemaUsuarioRol } from './modules/roles/entities/sistema-usuario-rol.entity';
 import { ClienteExtension } from './modules/clientes/entities/cliente-extension.entity';
+import { AppController } from './app.controller';
+import { ProductosModule } from './modules/productos/productos.module';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { ClienteExtension } from './modules/clientes/entities/cliente-extension.
         logging: false,
       }),
     }),
+    ProductosModule,
   ],
 })
 export class AppModule {}
