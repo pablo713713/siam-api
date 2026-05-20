@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
 import { ProductosService } from './productos.service';
 import { SearchProductoDto } from './dto/search-producto.dto';
+import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 
 @Controller('productos')
 export class ProductosController {
@@ -9,6 +10,16 @@ export class ProductosController {
   @Get('search')
   async search(@Query() searchDto: SearchProductoDto) {
     return this.productosService.search(searchDto);
+  }
+
+  @Get('search/advanced')
+  async searchAdvanced(@Query() searchDto: AdvancedSearchProductoDto) {
+    return this.productosService.searchAdvanced(searchDto);
+  }
+
+  @Get('search/codigo')
+  async searchByCodigo(@Query() searchDto: SearchProductoDto) {
+    return this.productosService.searchByCodigo(searchDto);
   }
 
   @Get(':id/ingresos')
