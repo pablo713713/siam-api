@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
+import { SistemaRol } from './modules/roles/entities/sistema-rol.entity';
+import { SistemaUsuarioRol } from './modules/roles/entities/sistema-usuario-rol.entity';
+import { ClienteExtension } from './modules/clientes/entities/cliente-extension.entity';
 
 @Module({
   imports: [
@@ -9,7 +11,6 @@ import { AppController } from './app.controller';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      
       useFactory: (config: ConfigService) => ({
         type: 'mssql' as const,
         host: config.get<string>('DB_HOST'),
@@ -25,12 +26,12 @@ import { AppController } from './app.controller';
             rejectUnauthorized: false,
           },
         },
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension],
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: false,
       }),
     }),
   ],
-  controllers: [AppController],
 })
 export class AppModule {}
