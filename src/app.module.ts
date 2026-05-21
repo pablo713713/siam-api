@@ -6,6 +6,10 @@ import { SistemaUsuarioRol } from './modules/roles/entities/sistema-usuario-rol.
 import { ClienteExtension } from './modules/clientes/entities/cliente-extension.entity';
 import { AppController } from './app.controller';
 import { ProductosModule } from './modules/productos/productos.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { Usuario } from './modules/auth/entities/usuario.entity';
+
 
 @Module({
   imports: [
@@ -28,13 +32,16 @@ import { ProductosModule } from './modules/productos/productos.module';
             rejectUnauthorized: false,
           },
         },
-        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension],
+        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: false,
       }),
     }),
     ProductosModule,
+    RolesModule,
+    AuthModule,
+
   ],
 })
 export class AppModule {}
