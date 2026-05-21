@@ -84,6 +84,7 @@ src/
 └── modules/
     ├── auth/
     ├── roles/
+    ├── productos/
     └── [dominio]/
         ├── [dominio].module.ts
         ├── [dominio].controller.ts
@@ -141,7 +142,7 @@ SISTEMA_TABLA_EXTENSION (nueva, nuestra)
 
 El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 
-### Tablas satélite ya creadas
+### Tablas satélite creadas
 
 | Tabla nueva | Apunta a | Propósito |
 |---|---|---|
@@ -151,22 +152,100 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 
 ---
 
-## Módulos implementados
+## Épicas y estado actual
 
-### UH 0 — Inicialización (completada)
+### ÉPICA 1 — Infraestructura y base de datos ✅
+
+**HU-0 — Inicialización del proyecto** ✅
 - Proyecto NestJS creado con pnpm
-- TypeORM configurado con SQL Server
+- TypeORM configurado con SQL Server (ver sección de configuración de BD)
 - Conexión a BDSIAM funcionando
 - Health check en `GET /api/health`
 - Repositorio en GitHub
 
-### UH 1 — Tablas satélite (completada)
-- `SISTEMA_ROLES`: id, nombre, descripcion, activo, createdAt, updatedAt
-- `SISTEMA_USUARIO_ROL`: id, cod_usu, id_rol, asignadoAt
-- `CLIENTE_EXTENSION`: id, cod_cli, acepta_devoluciones, limite_credito, nivel_fidelidad, observaciones
+**HU-1.01 — Tablas satélite de usuarios** ✅
+- Script SQL ejecutado en SSMS
+- Tablas creadas: `SISTEMA_ROLES`, `SISTEMA_USUARIO_ROL`
+- Entities TypeORM mapeadas
 
-### UH 2 — ClienteExtension (completada)
-- Tabla `CLIENTE_EXTENSION` creada y mapeada como entity
+**HU-1.02 — Tabla satélite de clientes** ✅
+- Script SQL ejecutado en SSMS
+- Tabla creada: `CLIENTE_EXTENSION`
+- Entity TypeORM mapeada
+
+---
+
+### ÉPICA 2 — Gestión de usuarios y roles ✅
+
+**HU-2.01 — CRUD de roles** ✅
+- `POST /api/roles` — crear rol
+- `GET /api/roles/:id` — obtener rol por ID
+- `PUT /api/roles/:id` — actualizar rol
+- `DELETE /api/roles/:id` — desactivar rol (soft delete via campo `activo`)
+
+**HU-2.02 — Listar roles** ✅
+- `GET /api/roles` — lista todos los roles ordenados por nombre
+
+**HU-2.03 — Asignar rol a usuario** ✅
+- `POST /api/roles/asignar` — asigna o actualiza rol de un usuario
+- `GET /api/roles/usuario/:cod_usu` — obtiene el rol actual de un usuario
+- Si el usuario ya tiene rol, se reemplaza (no duplica)
+
+**HU-2.04 — Autenticación con roles** ✅
+- `POST /api/auth/login` — login con alias + contraseña
+- Valida contra tabla legacy `USUARIO` (contraseñas en texto plano — sistema legacy)
+- Hace JOIN con `SISTEMA_USUARIO_ROL` y `SISTEMA_ROLES`
+- Devuelve JWT con payload: `{ cod_usu, alias, nombre, apellido, rol, id_rol }`
+- Token expira en 8 horas
+- Estrategia JWT implementada con `passport-jwt`
+
+---
+
+### ÉPICA 3 — Búsqueda de productos ✅
+
+**HU-3.01 — Búsqueda básica de productos** ✅
+- `GET /api/productos/search?q=termino&limit=20`
+- Búsqueda parcial (LIKE) en `DESC_PRO` y `COD_PRO` de tabla legacy `PRODUCTO`
+- Parámetro `q` requerido — devuelve 400 si está vacío
+- Parámetro `limit` opcional, default 20
+- Usa QueryBuilder con variables parametrizadas (previene SQL Injection)
+
+**HU-3.02 — Búsqueda por código exclusivo** ✅
+- `GET /api/productos/search/codigo?q=termino`
+- Extiende búsqueda a tabla `PROV_PRO`: campos `COD_FAB`, `barra`, `COD_ANT`
+- Usa `MAX()` en QueryBuilder para evitar duplicados en relación 1:N entre `PRODUCTO` y `PROV_PRO`
+- Expone `codFab`, `barra`, `codAnt` en la respuesta
+
+**HU-3.03 — Búsqueda avanzada unificada** ✅
+- `GET /api/productos/search/advanced?q=termino&codigo=X&page=1&limit=20`
+- Combina filtros de nombre y código en un solo endpoint
+- Paginación nativa con `page` y `limit`
+- Devuelve estructura con `data` y `meta` (total, page, limit, totalPages)
+- Usa `COUNT(DISTINCT producto.ID_PRO)` para calcular total real sin duplicados
+
+---
+
+### ÉPICA 4 — Stock y Kardex de productos ✅
+
+**HU-4.01 — Stock actualizado por sucursal** ✅
+- `GET /api/productos/:id/stock`
+- Cruza `SUC_PRO_PROV` con `SUCURSAL` para obtener inventario físico y virtual desglosado por locación
+- `ParseIntPipe` en el parámetro `:id`
+- Devuelve 404 si el producto no existe
+
+**HU-4.02 — Historial de ingresos** ✅
+- `GET /api/productos/:id/ingresos`
+- Consolida cronológicamente movimientos de entrada fusionando `IMPORTACION` (compras) e `INVENTARIO` (solo ajustes positivos)
+
+**HU-4.03 — Historial de salidas** ✅
+- `GET /api/productos/:id/salidas`
+- Consolida egresos de `VENTA`, `CREDITO` y `PEDIDO` (este último filtrado solo por cantidad realmente enviada)
+
+**HU-4.04 — Kardex unificado** ✅
+- `GET /api/productos/:id/kardex`
+- Reutiliza los servicios de HU-4.01, 4.02 y 4.03
+- Genera array cronológico unificado de ingresos y salidas
+- Calcula saldo acumulado por movimiento mediante ingeniería inversa matemática tomando como base el stock físico actual
 
 ---
 
@@ -183,6 +262,7 @@ export class SistemaRol {
   @Column({ default: true }) activo: boolean;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
+  @OneToMany(() => SistemaUsuarioRol, (ur) => ur.rol) usuarioRoles: SistemaUsuarioRol[];
 }
 ```
 
@@ -190,11 +270,14 @@ export class SistemaRol {
 ```typescript
 // modules/roles/entities/sistema-usuario-rol.entity.ts
 @Entity('SISTEMA_USUARIO_ROL')
+@Unique(['cod_usu', 'id_rol'])
 export class SistemaUsuarioRol {
   @PrimaryGeneratedColumn() id: number;
   @Column({ length: 7 }) cod_usu: string;
   @Column() id_rol: number;
   @CreateDateColumn() asignadoAt: Date;
+  @ManyToOne(() => SistemaRol, (rol) => rol.usuarioRoles)
+  @JoinColumn({ name: 'id_rol' }) rol: SistemaRol;
 }
 ```
 
@@ -214,6 +297,31 @@ export class ClienteExtension {
 }
 ```
 
+### Usuario (legacy — solo lectura)
+```typescript
+// modules/auth/entities/usuario.entity.ts
+@Entity('USUARIO')
+export class Usuario {
+  @PrimaryColumn({ length: 7 }) COD_USU: string;
+  @Column({ length: 30 }) NOM_USU: string;
+  @Column({ length: 30 }) AP_USU: string;
+  @Column({ nullable: true, length: 20 }) ALIAS: string;
+  @Column({ length: 20, select: false }) CONTRASEÑA: string;  // select:false por seguridad
+  @Column({ nullable: true, length: 3 }) COD_CAR: string;
+  @Column({ nullable: true, length: 5 }) COD_SUC: string;
+  @Column({ nullable: true, length: 1 }) baja: string;        // '0'=activo, '1'=inactivo
+  @Column({ nullable: true, length: 100 }) email: string;
+}
+```
+
+### Producto (legacy — solo lectura)
+```typescript
+// modules/productos/entities/producto.entity.ts
+// Mapea tabla PRODUCTO legacy
+// Campos principales: ID_PRO, COD_PRO, DESC_PRO, estado, CODIGO
+// Se usa en búsquedas junto a PROV_PRO (COD_FAB, barra, COD_ANT)
+```
+
 ---
 
 ## Tabla USUARIO legacy — Estructura relevante
@@ -229,19 +337,41 @@ export class ClienteExtension {
   "COD_SUC": "00000",        // FK a SUCURSAL
   "baja": "0",               // '0' = activo, '1' = inactivo
   "email": "blady_pm@hotmail.com",
-  "INI": "1"                 // Flag de inicialización
+  "INI": "1"
 }
 ```
 
-> Las contraseñas en el sistema legacy están en texto plano. El nuevo sistema las valida
-> contra ese campo pero en futuras UH se podrá migrar a hashing progresivo.
+---
+
+## Endpoints disponibles
+
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| GET | /api/health | Health check | No |
+| POST | /api/auth/login | Login | No |
+| GET | /api/roles | Listar roles | No* |
+| POST | /api/roles | Crear rol | No* |
+| GET | /api/roles/:id | Obtener rol | No* |
+| PUT | /api/roles/:id | Actualizar rol | No* |
+| DELETE | /api/roles/:id | Desactivar rol | No* |
+| POST | /api/roles/asignar | Asignar rol a usuario | No* |
+| GET | /api/roles/usuario/:cod_usu | Ver rol de usuario | No* |
+| GET | /api/productos/search | Búsqueda básica | No* |
+| GET | /api/productos/search/codigo | Búsqueda por código | No* |
+| GET | /api/productos/search/advanced | Búsqueda avanzada | No* |
+| GET | /api/productos/:id/stock | Stock por sucursal | No* |
+| GET | /api/productos/:id/ingresos | Historial de ingresos | No* |
+| GET | /api/productos/:id/salidas | Historial de salidas | No* |
+| GET | /api/productos/:id/kardex | Kardex unificado | No* |
+
+> *Los guards JWT están implementados pero aún no aplicados globalmente. Se aplicarán cuando se definan las rutas protegidas.
 
 ---
 
 ## Configuración de conexión a BD
 
 ```typescript
-// La config que funcionó tras varios intentos — no modificar sin probar
+// La config que funcionó — no modificar sin probar
 {
   type: 'mssql',
   host: 'localhost',
@@ -263,21 +393,6 @@ export class ClienteExtension {
 
 ---
 
-## Flujo de autenticación (planificado — UH 6)
-
-```
-POST /api/auth/login
-  → Validar ALIAS + CONTRASEÑA contra tabla legacy USUARIO
-  → JOIN con SISTEMA_USUARIO_ROL para obtener rol
-  → JOIN con SISTEMA_ROLES para obtener nombre del rol
-  → Generar JWT con payload: { cod_usu, alias, rol }
-  → Retornar token
-```
-
-Rutas protegidas usan `JwtAuthGuard` + decorador `@Roles()`.
-
----
-
 ## Cómo agregar un nuevo módulo
 
 ```powershell
@@ -286,19 +401,7 @@ npx nest g controller modules/[nombre]
 npx nest g service modules/[nombre]
 ```
 
-Luego registrarlo en `app.module.ts`:
-
-```typescript
-import { NuevoModule } from './modules/nuevo/nuevo.module';
-
-@Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRootAsync({...}),
-    NuevoModule,   // agregar acá
-  ],
-})
-```
+Registrarlo en `app.module.ts` y agregar sus entities a la lista global de entities en `TypeOrmModule.forRootAsync`.
 
 ---
 
@@ -312,7 +415,9 @@ Al terminar una sesión donde implementaste algo nuevo, pedile a la IA:
 
 > "Actualizá el CONTEXT.md con lo que implementamos hoy"
 
-Y pegá la sección actualizada acá.
+Para incorporar el trabajo de un compañero, pasale el PR o descripción de lo implementado y pedile:
+
+> "Agregá al CONTEXT.md lo que implementó mi compañero en la ÉPICA X"
 
 ---
 
@@ -321,7 +426,12 @@ Y pegá la sección actualizada acá.
 | Decisión | Alternativa descartada | Motivo |
 |---|---|---|
 | TypeORM en lugar de Prisma | Prisma 6/7 | Prisma intentaba controlar toda la BD legacy y fallaba con `db push` |
+| Script SQL directo en SSMS para migraciones | TypeORM migrations CLI | Evita complejidad de datasource config y problemas de PATH con pnpm |
 | Puerto fijo 1433 sin `instanceName` | `instanceName: SQLEXPRESS` | En tedious, `instanceName` y `port` son mutuamente excluyentes |
 | `encrypt: false` en options | `trustServerCertificate: true` solo | SQL Server Express usa certificado autofirmado que Node.js rechaza |
 | Usuario SQL `siam_user` | Windows Authentication | `tedious` tiene soporte limitado para NTLM en entornos no corporativos |
 | `synchronize: false` siempre | `synchronize: true` | La BD tiene datos reales, nunca permitir que TypeORM la modifique automáticamente |
+| Soft delete en roles (campo `activo`) | Hard delete | Los roles pueden tener usuarios asignados, no se pueden eliminar físicamente |
+| `MAX()` en búsqueda de productos | JOIN simple | Evita duplicados en relación 1:N entre PRODUCTO y PROV_PRO |
+| Reutilización de services en Kardex | Query única | HU-4.04 reutiliza los services de 4.01, 4.02 y 4.03 para mantener bajo acoplamiento y evitar duplicación de lógica |
+| Ingeniería inversa para saldo Kardex | Saldo acumulado directo | La BD legacy no guarda saldo histórico; se calcula hacia atrás desde el stock físico actual |
