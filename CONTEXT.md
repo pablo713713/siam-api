@@ -247,6 +247,43 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Genera array cronológico unificado de ingresos y salidas
 - Calcula saldo acumulado por movimiento mediante ingeniería inversa matemática tomando como base el stock físico actual
 
+### ÉPICA 5 — Gestión de clientes ✅
+
+**HU-5.01 — Perfil combinado del cliente** ✅
+- `GET /api/clientes/:cod_cli/perfil`
+- Cruza tabla legacy `CLIENTE` con `CLIENTE_EXTENSION`
+- Si no existe extensión devuelve valores por defecto (`acepta_devoluciones: false`, resto null/0)
+
+**HU-5.02 — Actualizar extensión del cliente** ✅
+- `PUT /api/clientes/:cod_cli/extension`
+- Upsert sobre `CLIENTE_EXTENSION` (inserta si no existe, actualiza si existe)
+- Campos: `acepta_devoluciones`, `limite_credito`, `nivel_fidelidad`, `observaciones`
+
+**HU-5.03 — Historial de compras del cliente** ✅
+- `GET /api/clientes/:cod_cli/historial-compras`
+- Combina `VENTA` (campo fecha: `FECHA`) y `CREDITO` (campo fecha: `FEC_INICIO`)
+- Ordena cronológicamente descendente y devuelve tipo, fecha, monto y estado
+
+---
+
+### ÉPICA 6 — Reportes financieros ✅
+
+**HU-6.01 — Ingresos totales** ✅
+- `GET /api/reportes/ingresos?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD`
+- Suma `VENTA` (estado `C`) y `CREDITO` (estado `C`) en rango de fechas
+- Devuelve totales separados por tipo y total bruto combinado
+
+**HU-6.02 — Costo de mercancía vendida** ✅
+- `GET /api/reportes/costos?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD`
+- Cruza `DET_VENTA`/`DET_CREDITO` con `PROV_PRO` usando `ID_FAB`
+- Campo de costo: `CIF_CBBA` (no existe `PRECIO_COSTO` en la BD)
+
+**HU-6.03 — Ganancia neta** ✅
+- `GET /api/reportes/ganancia?fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD`
+- Orquesta HU-6.01 y HU-6.02 con `Promise.all`
+- Devuelve `ingresos_brutos`, `costo_mercancia`, `ganancia_neta` y `margen_porcentaje`
+
+
 ---
 
 ## Entidades TypeORM implementadas
@@ -363,6 +400,12 @@ export class Usuario {
 | GET | /api/productos/:id/ingresos | Historial de ingresos | No* |
 | GET | /api/productos/:id/salidas | Historial de salidas | No* |
 | GET | /api/productos/:id/kardex | Kardex unificado | No* |
+| GET | /api/clientes/:cod_cli/perfil | Perfil combinado del cliente | No* |
+| PUT | /api/clientes/:cod_cli/extension | Actualizar extensión del cliente | No* |
+| GET | /api/clientes/:cod_cli/historial-compras | Historial de compras | No* |
+| GET | /api/reportes/ingresos | Ingresos totales por rango | No* |
+| GET | /api/reportes/costos | Costos de mercancía por rango | No* |
+| GET | /api/reportes/ganancia | Ganancia neta por rango | No* |
 
 > *Los guards JWT están implementados pero aún no aplicados globalmente. Se aplicarán cuando se definan las rutas protegidas.
 
@@ -435,3 +478,6 @@ Para incorporar el trabajo de un compañero, pasale el PR o descripción de lo i
 | `MAX()` en búsqueda de productos | JOIN simple | Evita duplicados en relación 1:N entre PRODUCTO y PROV_PRO |
 | Reutilización de services en Kardex | Query única | HU-4.04 reutiliza los services de 4.01, 4.02 y 4.03 para mantener bajo acoplamiento y evitar duplicación de lógica |
 | Ingeniería inversa para saldo Kardex | Saldo acumulado directo | La BD legacy no guarda saldo histórico; se calcula hacia atrás desde el stock físico actual |
+| `FEC_INICIO` en CREDITO en lugar de `FECHA` | `FECHA` | La tabla CREDITO usa `FEC_INICIO` para la fecha de inicio del crédito, no `FECHA` |
+| `CIF_CBBA` como costo en PROV_PRO | `PRECIO_COSTO` | No existe columna `PRECIO_COSTO`; el costo real de importación está en `CIF_CBBA` |
+| `Promise.all` en HU-6.03 | Llamadas secuenciales | Ejecuta ingresos y costos en paralelo para reducir tiempo de respuesta |
