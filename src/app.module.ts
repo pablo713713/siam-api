@@ -8,8 +8,11 @@ import { AppController } from './app.controller';
 import { ProductosModule } from './modules/productos/productos.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { Usuario } from './modules/auth/entities/usuario.entity';
+import { ClientesModule } from './modules/clientes/clientes.module';
+import { ReportesModule } from './modules/reportes/reportes.module';
 
+import { Cliente } from './modules/clientes/entities/cliente.entity';
+import { Usuario } from './modules/auth/entities/usuario.entity';
 
 @Module({
   imports: [
@@ -32,7 +35,7 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
             rejectUnauthorized: false,
           },
         },
-        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario],
+        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario, Cliente],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: false,
@@ -41,7 +44,8 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
     ProductosModule,
     RolesModule,
     AuthModule,
-
+    ClientesModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}
