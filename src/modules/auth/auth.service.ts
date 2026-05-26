@@ -38,8 +38,8 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    // 3. Buscar rol asignado en tabla satélite
-    const usuarioRol = await this.usuarioRolRepository.findOne({
+    // 3. Buscar TODOS los roles asignados
+    const usuarioRoles = await this.usuarioRolRepository.find({
       where: { cod_usu: usuario.COD_USU },
       relations: ['rol'],
     });
@@ -50,8 +50,8 @@ export class AuthService {
       alias: usuario.ALIAS,
       nombre: usuario.NOM_USU,
       apellido: usuario.AP_USU,
-      rol: usuarioRol?.rol?.nombre ?? null,
-      id_rol: usuarioRol?.id_rol ?? null,
+      roles: usuarioRoles.map((ur) => ur.rol.nombre),
+      id_roles: usuarioRoles.map((ur) => ur.id_rol),
     };
 
     // 5. Generar token

@@ -73,32 +73,41 @@ export class RolesService {
 
   // HU-2.03 — Asignar rol a usuario
   async asignarRol(dto: AsignarRolDto): Promise<SistemaUsuarioRol> {
-    await this.findOne(dto.id_rol);
+  await this.findOne(dto.id_rol);
 
-    const existente = await this.usuarioRolRepository.findOne({
-      where: { cod_usu: dto.cod_usu },
-    });
+  const existente = await this.usuarioRolRepository.findOne({
+    where: { cod_usu: dto.cod_usu, id_rol: dto.id_rol },
+  });
 
-    if (existente) {
-      existente.id_rol = dto.id_rol;
-      return this.usuarioRolRepository.save(existente);
-    }
-
-    const nuevo = this.usuarioRolRepository.create(dto);
-    return this.usuarioRolRepository.save(nuevo);
+  if (existente) {
+    throw new ConflictException(
+      `El usuario ${dto.cod_usu} ya tiene asignado el rol ${dto.id_rol}`,
+    );
   }
 
-  // HU-2.03 — Obtener rol de un usuario
-  async getRolDeUsuario(cod_usu: string): Promise<SistemaUsuarioRol> {
-    const usuarioRol = await this.usuarioRolRepository.findOne({
-      where: { cod_usu },
-      relations: ['rol'],
-    });
-    if (!usuarioRol) {
-      throw new NotFoundException(
-        `El usuario ${cod_usu} no tiene rol asignado`,
-      );
-    }
-    return usuarioRol;
+  const nuevo = this.usuarioRolRepository.create(dto);
+  return this.usuarioRolRepository.save(nuevo);
+}
+
+async quitarRol(cod_usu: string, id_rol: number): Promise<{ message: string }> {
+  const usuarioRol = await this.usuarioRolRepository.findOne({
+    where: { cod_usu, id_rol },
+  });
+
+  if (!usuarioRol) {
+    throw new NotFoundException(
+      `El usuario ${cod_usu} no tiene asignado el rol ${id_rol}`,
+    );
   }
+
+  await this.usuarioRolRepository.remove(usuarioRol);
+  return { message: `Rol ${id_rol} removido del usuario ${cod_usu}` };
+}
+
+async getRolesDeUsuario(cod_usu: string): Promise<SistemaUsuarioRol[]> {
+  return this.usuarioRolRepository.find({
+    where: { cod_usu },
+    relations: ['rol'],
+  });
+}
 }

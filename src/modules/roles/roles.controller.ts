@@ -55,7 +55,16 @@ export class RolesController {
 
   // HU-2.03
   @Get('usuario/:cod_usu')
-  getRolDeUsuario(@Param('cod_usu') cod_usu: string) {
-    return this.rolesService.getRolDeUsuario(cod_usu);
-  }
+getRolesDeUsuario(@Param('cod_usu') cod_usu: string) {
+  return this.rolesService.getRolesDeUsuario(cod_usu);
+}
+
+// HU-2.03 — Quitar rol de usuario
+@Delete('usuario/:cod_usu/rol/:id_rol')
+quitarRol(
+  @Param('cod_usu') cod_usu: string,
+  @Param('id_rol', ParseIntPipe) id_rol: number,
+) {
+  return this.rolesService.quitarRol(cod_usu, id_rol);
+}
 }

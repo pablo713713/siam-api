@@ -3,6 +3,6 @@ export interface JwtPayload {
   alias: string;
   nombre: string;
   apellido: string;
-  rol: string | null;
-  id_rol: number | null;
+  roles: string[];
+  id_roles: number[];
 }
