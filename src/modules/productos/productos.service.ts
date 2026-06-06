@@ -19,16 +19,41 @@ export class ProductosService {
 
   async search(searchDto: SearchProductoDto) {
     const { q, limit } = searchDto;
-    
     const take = limit || 20;
+    const term = `%${q}%`;
 
-    const query = this.productoRepository.createQueryBuilder('producto')
-      .where('producto.descPro LIKE :q', { q: `%${q}%` })
-      .orWhere('producto.codPro LIKE :q', { q: `%${q}%` })
-      .orderBy('producto.descPro', 'ASC')
-      .take(take);
-
-    const items = await query.getMany();
+    const items = await this.dataSource.query(`
+      SELECT DISTINCT
+        p.ID_PRO as id,
+        p.COD_PRO as codPro,
+        p.DESC_PRO as descPro,
+        p.ESTADO as estado,
+        p.CODIGO as codigo,
+        MAX(pp.COD_FAB) as codFab,
+        MAX(pp.barra) as barra,
+        MAX(pp.COD_ANT) as codAnt,
+        MAX(ma.NOM_MARCA) as marca,
+        MAX(mo.NOM_MODELO) as modelo
+      FROM PRODUCTO p
+      LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
+      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
+      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
+      WHERE (
+        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      )
+      AND p.ESTADO = 'A'
+      GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
+      ORDER BY p.DESC_PRO ASC
+      OFFSET 0 ROWS FETCH NEXT @1 ROWS ONLY
+    `, [term, take]);
 
     return {
       data: items,
@@ -83,90 +108,79 @@ export class ProductosService {
   }
 
   async searchAdvanced(searchDto: AdvancedSearchProductoDto) {
-    const { q, codigo, page = 1, limit = 20 } = searchDto;
+    const { q, page = 1, limit = 20 } = searchDto;
     const skip = (page - 1) * limit;
+    const term = q ? `%${q}%` : null;
 
-    const query = this.productoRepository.createQueryBuilder('producto')
-      .leftJoin('PROV_PRO', 'pp', 'pp.ID_PRO = producto.ID_PRO');
-
-    if (q) {
-      query.andWhere(new Brackets(qb => {
-        qb.where('producto.DESC_PRO LIKE :q', { q: `%${q}%` })
-          .orWhere('producto.COD_PRO LIKE :q', { q: `%${q}%` });
-      }));
+    if (!term) {
+      return {
+        data: [],
+        meta: { total: 0, page, limit, totalPages: 0 }
+      };
     }
 
-    if (codigo) {
-      query.andWhere(new Brackets(qb => {
-        qb.where('producto.CODIGO LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.COD_FAB LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.barra LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.COD_ANT LIKE :codigo', { codigo: `%${codigo}%` });
-      }));
-    }
+    const items = await this.dataSource.query(`
+      SELECT DISTINCT
+        p.ID_PRO as id,
+        p.COD_PRO as codPro,
+        p.DESC_PRO as descPro,
+        p.ESTADO as estado,
+        p.CODIGO as codigo,
+        MAX(pp.COD_FAB) as codFab,
+        MAX(pp.barra) as barra,
+        MAX(pp.COD_ANT) as codAnt,
+        MAX(ma.NOM_MARCA) as marca,
+        MAX(mo.NOM_MODELO) as modelo
+      FROM PRODUCTO p
+      LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
+      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
+      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
+      WHERE (
+        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      )
+      AND p.ESTADO = 'A'
+      GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
+      ORDER BY p.DESC_PRO ASC
+      OFFSET @1 ROWS FETCH NEXT @2 ROWS ONLY
+    `, [term, skip, limit]);
 
-    query.select([
-      'producto.ID_PRO as id',
-      'producto.COD_PRO as codPro',
-      'producto.DESC_PRO as descPro',
-      'producto.ESTADO as estado',
-      'producto.CODIGO as codigo',
-      'MAX(pp.COD_FAB) as codFab',
-      'MAX(pp.barra) as barra',
-      'MAX(pp.COD_ANT) as codAnt'
-    ])
-    .groupBy('producto.ID_PRO')
-    .addGroupBy('producto.COD_PRO')
-    .addGroupBy('producto.DESC_PRO')
-    .addGroupBy('producto.ESTADO')
-    .addGroupBy('producto.CODIGO')
-    .orderBy('producto.DESC_PRO', 'ASC')
-    .offset(skip)
-    .limit(limit);
+    const countResult = await this.dataSource.query(`
+      SELECT COUNT(DISTINCT p.ID_PRO) as total
+      FROM PRODUCTO p
+      LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
+      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
+      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
+      WHERE (
+        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      )
+      AND p.ESTADO = 'A'
+    `, [term]);
 
-    const items = await query.getRawMany();
-
-    const countQuery = this.productoRepository.createQueryBuilder('producto')
-      .select('COUNT(DISTINCT producto.ID_PRO)', 'total');
-
-    if (q || codigo) {
-      countQuery.leftJoin('PROV_PRO', 'pp', 'pp.ID_PRO = producto.ID_PRO');
-    }
-
-    if (q) {
-      countQuery.andWhere(new Brackets(qb => {
-        qb.where('producto.DESC_PRO LIKE :q', { q: `%${q}%` })
-          .orWhere('producto.COD_PRO LIKE :q', { q: `%${q}%` });
-      }));
-    }
-
-    if (codigo) {
-      countQuery.andWhere(new Brackets(qb => {
-        qb.where('producto.CODIGO LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.COD_FAB LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.barra LIKE :codigo', { codigo: `%${codigo}%` })
-          .orWhere('pp.COD_ANT LIKE :codigo', { codigo: `%${codigo}%` });
-      }));
-    }
-
-    const { total } = await countQuery.getRawOne();
+    const total = Number(countResult[0]?.total || 0);
 
     return {
-      data: items.map(item => ({
-        id: item.id,
-        codPro: item.codPro,
-        descPro: item.descPro,
-        estado: item.estado,
-        codigo: item.codigo,
-        codFab: item.codFab,
-        barra: item.barra,
-        codAnt: item.codAnt
-      })),
+      data: items,
       meta: {
-        total: Number(total || 0),
+        total,
         page,
         limit,
-        totalPages: Math.ceil(Number(total || 0) / limit),
+        totalPages: Math.ceil(total / limit),
       }
     };
   }
