@@ -114,4 +114,33 @@ export class ClientesService {
       historial,
     };
   }
+  async search(q: string, limit = 20) {
+    const term = `%${q}%`;
+
+    const clientes = await this.clienteRepository.manager.query(`
+      SELECT TOP ${limit}
+        c.cod_cli    as codCli,
+        c.NOM_CLI    as nomCli,
+        c.APE_CLI    as apeCli,
+        c.RAZON_SOCIAL as razonSocial,
+        c.NUM_CI_NIT as numCiNit,
+        c.TEL_DOM    as telDom,
+        c.CEL        as cel,
+        c.DOMICILIO  as domicilio,
+        c.DESCUENTO  as descuento,
+        c.CREDITO_MAXIMO as creditoMaximo,
+        c.baja       as baja
+      FROM CLIENTE c
+      WHERE c.baja = '0'
+        AND (
+          c.NOM_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+          c.APE_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+          c.RAZON_SOCIAL LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+          c.NUM_CI_NIT   LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+        )
+      ORDER BY c.NOM_CLI ASC
+    `, [term]);
+
+    return { data: clientes, total: clientes.length };
+  }
 }

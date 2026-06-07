@@ -1,0 +1,270 @@
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { CreateVentaDto } from './dto/create-venta.dto';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class VentasService {
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
+  ) {}
+
+  // ─────────────────────────────────────────
+  // Generar COD_VENTA: {COD_USU(7)}{YYYY(4)}{secuencial(3)}
+  // ─────────────────────────────────────────
+  private async generarCodVenta(cod_usu: string): Promise<string> {
+    const year = new Date().getFullYear().toString();
+    const prefix = `${cod_usu}${year}`;
+
+    const result = await this.dataSource.query(`
+      SELECT TOP 1 COD_VENTA
+      FROM VENTA
+      WHERE COD_VENTA LIKE @0
+      ORDER BY COD_VENTA DESC
+    `, [`${prefix}%`]);
+
+    let secuencial = 1;
+    if (result.length > 0) {
+      const ultimo = result[0].COD_VENTA as string;
+      const ultimoSec = parseInt(ultimo.slice(-3), 10);
+      secuencial = ultimoSec + 1;
+    }
+
+    const sec = secuencial.toString().padStart(3, '0');
+    return `${prefix}${sec}`;
+  }
+
+  // ─────────────────────────────────────────
+  // Registrar venta contado
+  // ─────────────────────────────────────────
+  async create(dto: CreateVentaDto, cod_usu: string) {
+    // 1. Validar stock de cada item
+    for (const item of dto.items) {
+      const stock = await this.dataSource.query(`
+        SELECT CANTIDAD
+        FROM SUC_PRO_PROV
+        WHERE ID_FAB = @0 AND COD_SUC = @1
+      `, [item.id_fab, dto.cod_suc]);
+
+      if (stock.length === 0 || Number(stock[0].CANTIDAD) < item.cantidad) {
+        throw new BadRequestException(
+          `Stock insuficiente para el producto ID_FAB ${item.id_fab}. ` +
+          `Disponible: ${stock[0]?.CANTIDAD ?? 0}, solicitado: ${item.cantidad}`
+        );
+      }
+    }
+
+    // 2. Calcular total
+    const descuento = dto.descuento ?? 0;
+    const totalBruto = dto.items.reduce(
+      (sum, i) => sum + i.precio_venta * i.cantidad, 0
+    );
+    const totalFinal = totalBruto * (1 - descuento / 100);
+
+    // 3. Generar código de venta
+    const cod_venta = await this.generarCodVenta(cod_usu);
+
+    const fecha = new Date();
+
+    // 4. Ejecutar todo en una transacción
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Insertar cabecera VENTA
+      await queryRunner.query(`
+        INSERT INTO VENTA (
+          COD_VENTA, FECHA, COD_USU, TIPO, TOTAL, OBS,
+          COD_CLI, ESTADO, FACTURA, DESC_PROF, COD_INI,
+          TIPO_VENTA, TOTAL_INI, saw, fecha_envio, dolarParalelo
+        ) VALUES (
+          @0, @1, @2, @3, @4, @5,
+          @6, @7, @8, @9, @10,
+          @11, @12, @13, @14, @15
+        )
+      `, [
+        cod_venta, fecha, cod_usu, 'CONTADO', totalFinal, dto.obs ?? '',
+        dto.cod_cli, 'C', dto.factura ? 1 : 0, descuento, cod_usu,
+        'CO', totalFinal, 'N', fecha, 0,
+      ]);
+
+      // Insertar items DET_VENTA y descontar stock
+      for (let i = 0; i < dto.items.length; i++) {
+        const item = dto.items[i];
+
+        await queryRunner.query(`
+            INSERT INTO DET_VENTA (
+                COD_VENTA, COD_FAB, CANTIDAD, PRECIO_VENTA,
+                PREC_LISTA, DOLAR, DESC_UNIT, NRO,
+                PLIS_BS, p_fob, existencia, ID_FAB
+            ) VALUES (
+                @0, @1, @2, @3,
+                @4, @5, @6, @7,
+                @8, @9, @10, @11
+            )
+            `, [
+            cod_venta, item.cod_fab, item.cantidad, item.precio_venta,
+            item.prec_lista, item.precio_venta, 0, i + 1,
+            0, 0, item.existencia, item.id_fab,
+            ]);
+
+        // Descontar stock en SUC_PRO_PROV
+        await queryRunner.query(`
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD - @0
+          WHERE ID_FAB = @1 AND COD_SUC = @2
+        `, [item.cantidad, item.id_fab, dto.cod_suc]);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        cod_venta,
+        total: totalFinal,
+        items: dto.items.length,
+        message: 'Venta registrada correctamente',
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Listar ventas con filtros
+  // ─────────────────────────────────────────
+  async findAll(fecha?: string, cod_suc?: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const fechaFiltro = fecha ?? new Date().toISOString().split('T')[0];
+
+    const ventas = await this.dataSource.query(`
+      SELECT
+        v.COD_VENTA  as codVenta,
+        v.FECHA      as fecha,
+        v.TOTAL      as total,
+        v.ESTADO     as estado,
+        v.FACTURA    as factura,
+        v.TIPO_VENTA as tipoVenta,
+        v.DESC_PROF  as descuento,
+        v.COD_USU    as codUsu,
+        c.NOM_CLI    as nomCliente,
+        c.APE_CLI    as apeCliente,
+        c.RAZON_SOCIAL as razonSocial
+      FROM VENTA v
+      LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+      WHERE CAST(v.FECHA AS DATE) = @0
+      ORDER BY v.FECHA DESC
+      OFFSET @1 ROWS FETCH NEXT @2 ROWS ONLY
+    `, [fechaFiltro, skip, limit]);
+
+    const countResult = await this.dataSource.query(`
+      SELECT COUNT(*) as total
+      FROM VENTA v
+      WHERE CAST(v.FECHA AS DATE) = @0
+    `, [fechaFiltro]);
+
+    const total = Number(countResult[0]?.total ?? 0);
+
+    return {
+      data: ventas,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // ─────────────────────────────────────────
+  // Detalle de una venta
+  // ─────────────────────────────────────────
+  async findOne(cod_venta: string) {
+    const venta = await this.dataSource.query(`
+      SELECT
+        v.COD_VENTA  as codVenta,
+        v.FECHA      as fecha,
+        v.TOTAL      as total,
+        v.ESTADO     as estado,
+        v.FACTURA    as factura,
+        v.TIPO_VENTA as tipoVenta,
+        v.DESC_PROF  as descuento,
+        v.OBS        as obs,
+        v.COD_USU    as codUsu,
+        c.cod_cli    as codCli,
+        c.NOM_CLI    as nomCliente,
+        c.APE_CLI    as apeCliente,
+        c.RAZON_SOCIAL as razonSocial,
+        c.NUM_CI_NIT as numCiNit
+      FROM VENTA v
+      LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+      WHERE v.COD_VENTA = @0
+    `, [cod_venta]);
+
+    if (venta.length === 0) {
+      throw new NotFoundException(`Venta ${cod_venta} no encontrada`);
+    }
+
+    const items = await this.dataSource.query(`
+      SELECT
+        dv.ID_FAB      as idFab,
+        dv.COD_FAB     as codFab,
+        dv.CANTIDAD    as cantidad,
+        dv.PRECIO_VENTA as precioVenta,
+        dv.PREC_LISTA  as precLista,
+        dv.DESC_UNIT   as descuento,
+        p.DESC_PRO     as descPro,
+        p.COD_PRO      as codPro
+      FROM DET_VENTA dv
+      INNER JOIN PROV_PRO pp ON pp.ID_FAB = dv.ID_FAB
+      INNER JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+      WHERE dv.COD_VENTA = @0
+    `, [cod_venta]);
+
+    return { ...venta[0], items };
+  }
+
+  // ─────────────────────────────────────────
+  // Anular venta
+  // ─────────────────────────────────────────
+  async anular(cod_venta: string, cod_usu: string) {
+    const venta = await this.findOne(cod_venta);
+
+    if (venta.estado === 'A') {
+      throw new BadRequestException('La venta ya está anulada');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Cambiar estado a anulado
+      await queryRunner.query(`
+        UPDATE VENTA SET ESTADO = 'A' WHERE COD_VENTA = @0
+      `, [cod_venta]);
+
+      // Revertir stock
+      for (const item of venta.items) {
+        await queryRunner.query(`
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD + @0
+          WHERE ID_FAB = @1 AND COD_SUC = (
+            SELECT COD_INI FROM VENTA WHERE COD_VENTA = @2
+          )
+        `, [item.cantidad, item.idFab, cod_venta]);
+      }
+
+      await queryRunner.commitTransaction();
+      return { message: `Venta ${cod_venta} anulada correctamente` };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+}

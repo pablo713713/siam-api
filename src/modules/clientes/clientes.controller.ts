@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Put, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
 import { UpdateClienteExtensionDto } from './dto/update-cliente-extension.dto';
 
@@ -25,5 +25,12 @@ export class ClientesController {
   @Get(':cod_cli/historial-compras')
   getHistorialCompras(@Param('cod_cli', ParseIntPipe) cod_cli: number) {
     return this.clientesService.getHistorialCompras(cod_cli);
+  }
+  @Get('search')
+  search(
+    @Query('q') q: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.clientesService.search(q, limit ? Number(limit) : 20);
   }
 }
