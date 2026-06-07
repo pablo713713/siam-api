@@ -10,6 +10,9 @@ import { RolesModule } from './modules/roles/roles.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientesModule } from './modules/clientes/clientes.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { AlmacenesModule } from './modules/almacenes/almacenes.module';
+import { SistemaUsuarioAlmacen } from './modules/almacenes/entities/sistema-usuario-almacen.entity';
 
 import { Cliente } from './modules/clientes/entities/cliente.entity';
 import { Usuario } from './modules/auth/entities/usuario.entity';
@@ -35,7 +38,7 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
             rejectUnauthorized: false,
           },
         },
-        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario, Cliente],
+        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario, Cliente, SistemaUsuarioAlmacen],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: false,
@@ -46,6 +49,8 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
     AuthModule,
     ClientesModule,
     ReportesModule,
+    UsuariosModule,
+    AlmacenesModule,
   ],
 })
 export class AppModule {}
