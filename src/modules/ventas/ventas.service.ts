@@ -267,4 +267,44 @@ export class VentasService {
       await queryRunner.release();
     }
   }
+  async getTipoCambioVigente() {
+    const result = await this.dataSource.query(`
+        SELECT TOP 1
+        FECHA as fecha,
+        TIPO_CAMBIO as tipoCambio,
+        cOD_USU as codUsu
+        FROM CAMBIO_DOLAR
+        ORDER BY FECHA DESC
+    `);
+
+    if (result.length === 0) {
+        throw new NotFoundException('No hay tipo de cambio registrado');
+    }
+
+    return result[0];
+    }
+
+    async registrarTipoCambio(tipoCambio: number, cod_usu: string) {
+    const fecha = new Date();
+
+    const existe = await this.dataSource.query(`
+        SELECT TOP 1 FECHA FROM CAMBIO_DOLAR
+        WHERE CAST(FECHA AS DATE) = CAST(@0 AS DATE)
+    `, [fecha]);
+
+    if (existe.length > 0) {
+        throw new BadRequestException('Ya existe un tipo de cambio registrado para hoy');
+    }
+
+    await this.dataSource.query(`
+        INSERT INTO CAMBIO_DOLAR (FECHA, TIPO_CAMBIO, cOD_USU)
+        VALUES (@0, @1, @2)
+    `, [fecha, tipoCambio, cod_usu]);
+
+    return {
+        fecha,
+        tipoCambio,
+        message: 'Tipo de cambio registrado correctamente',
+    };
+    }
 }

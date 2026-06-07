@@ -37,4 +37,16 @@ export class VentasController {
   anular(@Param('cod_venta') cod_venta: string, @Request() req: any) {
     return this.ventasService.anular(cod_venta, req.user?.cod_usu ?? '0000001');
   }
+  @Get('tipo-cambio/vigente')
+  getTipoCambioVigente() {
+    return this.ventasService.getTipoCambioVigente();
+    }
+
+    @Post('tipo-cambio')
+    registrarTipoCambio(
+    @Body('tipo_cambio') tipoCambio: number,
+    @Body('cod_usu') cod_usu: string,
+    ) {
+    return this.ventasService.registrarTipoCambio(tipoCambio, cod_usu);
+    }
 }

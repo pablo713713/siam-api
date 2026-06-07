@@ -33,7 +33,10 @@ export class ProductosService {
         MAX(pp.barra) as barra,
         MAX(pp.COD_ANT) as codAnt,
         MAX(ma.NOM_MARCA) as marca,
-        MAX(mo.NOM_MODELO) as modelo
+        MAX(mo.NOM_MODELO) as modelo,
+        MAX(pp.PLIS_PRO) as plisPro,
+        MAX(pp.ID_FAB) as idFab
+
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
@@ -130,7 +133,9 @@ export class ProductosService {
         MAX(pp.barra) as barra,
         MAX(pp.COD_ANT) as codAnt,
         MAX(ma.NOM_MARCA) as marca,
-        MAX(mo.NOM_MODELO) as modelo
+        MAX(mo.NOM_MODELO) as modelo,
+        MAX(pp.PLIS_PRO) as plisPro,
+        MAX(pp.ID_FAB) as idFab
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
