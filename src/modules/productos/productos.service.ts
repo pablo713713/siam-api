@@ -352,4 +352,67 @@ export class ProductosService {
       movimientos: historialKardex,
     };
   }
+  async getStockResumen(id: number) {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const almacenes = ['00004', '00005', '00006', '00007', '00010', '00011'];
+    const codigos = almacenes.map((c) => `'${c}'`).join(',');
+
+    const stock = await this.dataSource.query(`
+      SELECT
+        s.COD_SUC    as codSuc,
+        s.NOM_SUC    as nomSuc,
+        ISNULL(spp.CANTIDAD, 0) as cantidad,
+        MAX(v.FECHA) as ultimaVenta
+      FROM SUCURSAL s
+      LEFT JOIN SUC_PRO_PROV spp
+        ON spp.COD_SUC = s.COD_SUC
+        AND spp.ID_FAB IN (
+          SELECT ID_FAB FROM PROV_PRO WHERE ID_PRO = @0
+        )
+      LEFT JOIN DET_VENTA dv
+        ON dv.ID_FAB = spp.ID_FAB
+      LEFT JOIN VENTA v
+        ON v.COD_VENTA = dv.COD_VENTA
+        AND v.ESTADO = 'C'
+        AND v.COD_INI = s.COD_SUC
+      WHERE s.COD_SUC IN (${codigos})
+      GROUP BY s.COD_SUC, s.NOM_SUC, spp.CANTIDAD
+      ORDER BY s.COD_SUC ASC
+    `, [id]);
+
+    const hoy = new Date();
+
+    const resultado = stock.map((row: any) => ({
+      codSuc: row.codSuc,
+      nomSuc: row.nomSuc,
+      cantidad: Number(row.cantidad ?? 0),
+      diasSinMovimiento: row.ultimaVenta
+        ? Math.floor((hoy.getTime() - new Date(row.ultimaVenta).getTime()) / (1000 * 60 * 60 * 24))
+        : null,
+    }));
+
+    // Detalle del producto
+    const detalle = await this.dataSource.query(`
+      SELECT
+        p.COD_PRO    as codSiam,
+        MAX(pp.COD_FAB) as codFabrica,
+        p.DESC_PRO   as descripcion,
+        MAX(ma.NOM_MARCA) as marca
+      FROM PRODUCTO p
+      LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
+      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
+      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      WHERE p.ID_PRO = @0
+      GROUP BY p.COD_PRO, p.DESC_PRO
+    `, [id]);
+
+    return {
+      detalle: detalle[0] ?? null,
+      stockPorAlmacen: resultado,
+    };
+  }
 }

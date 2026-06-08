@@ -41,4 +41,8 @@ export class ProductosController {
   async getKardex(@Param('id', ParseIntPipe) id: number) {
     return this.productosService.getKardex(id);
   }
+  @Get(':id/resumen')
+  getStockResumen(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.getStockResumen(id);
+  }
 }

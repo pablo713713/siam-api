@@ -14,6 +14,7 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { AlmacenesModule } from './modules/almacenes/almacenes.module';
 import { SistemaUsuarioAlmacen } from './modules/almacenes/entities/sistema-usuario-almacen.entity';
 import { VentasModule } from './modules/ventas/ventas.module';
+import { Producto } from './modules/productos/entities/producto.entity';
 
 
 import { Cliente } from './modules/clientes/entities/cliente.entity';
@@ -40,7 +41,7 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
             rejectUnauthorized: false,
           },
         },
-        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario, Cliente, SistemaUsuarioAlmacen],
+        entities: [SistemaRol, SistemaUsuarioRol, ClienteExtension, Usuario, Cliente, SistemaUsuarioAlmacen, Producto],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         logging: false,
