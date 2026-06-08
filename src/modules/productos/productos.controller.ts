@@ -45,4 +45,12 @@ export class ProductosController {
   getStockResumen(@Param('id', ParseIntPipe) id: number) {
     return this.productosService.getStockResumen(id);
   }
+  @Get(':id/kardex-almacen')
+  getKardexPorAlmacen(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('codSuc') codSuc?: string,
+    @Query('fechaDesde') fechaDesde?: string,
+  ) {
+    return this.productosService.getKardexPorAlmacen(id, codSuc, fechaDesde);
+  }
 }

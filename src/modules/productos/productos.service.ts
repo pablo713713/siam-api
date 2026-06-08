@@ -35,7 +35,10 @@ export class ProductosService {
         MAX(ma.NOM_MARCA) as marca,
         MAX(mo.NOM_MODELO) as modelo,
         MAX(pp.PLIS_PRO) as plisPro,
-        MAX(pp.ID_FAB) as idFab
+        MAX(pp.PMIN_PRO) as pminPro,
+        MAX(pp.PMAY_PRO) as pmayPro,
+        MAX(pp.CIFFSus)  as ciffSus,
+        MAX(pp.ID_FAB)   as idFab
 
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
@@ -135,7 +138,10 @@ export class ProductosService {
         MAX(ma.NOM_MARCA) as marca,
         MAX(mo.NOM_MODELO) as modelo,
         MAX(pp.PLIS_PRO) as plisPro,
-        MAX(pp.ID_FAB) as idFab
+        MAX(pp.PMIN_PRO) as pminPro,
+        MAX(pp.PMAY_PRO) as pmayPro,
+        MAX(pp.CIFFSus)  as ciffSus,
+        MAX(pp.ID_FAB)   as idFab
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
@@ -413,6 +419,111 @@ export class ProductosService {
     return {
       detalle: detalle[0] ?? null,
       stockPorAlmacen: resultado,
+    };
+  }
+
+  async getKardexPorAlmacen(
+    id: number,
+    codSuc?: string,
+    fechaDesde?: string,
+  ) {
+    const producto = await this.productoRepository.findOne({ where: { id } });
+    if (!producto) {
+      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    }
+
+    const fechaFiltro = fechaDesde
+      ? `AND fecha >= '${fechaDesde}'`
+      : '';
+
+    const sucFiltro = codSuc && codSuc !== 'TODOS'
+      ? `AND sucursal = '${codSuc}'`
+      : '';
+
+    const movimientos = await this.dataSource.query(`
+      SELECT * FROM (
+
+        -- REMISION DE INGRESO
+        SELECT
+          re.FECHA            as fecha,
+          dr.ID_FAB           as idFab,
+          pp.COD_FAB          as codigo,
+          'REMISION DE INGRESO' as descripcion,
+          dr.CANTIDAD         as entrada,
+          0                   as salida,
+          dr.existencia       as existencia,
+          re.COD_DES          as sucursal,
+          re.COD_USU          as usuario,
+          re.OBS_REM          as observacion
+        FROM DET_REMIE dr
+        INNER JOIN REMISION_E re ON re.COD_REM = dr.COD_REM
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = dr.ID_FAB
+        WHERE pp.ID_PRO = @0
+
+        UNION ALL
+
+        -- REMISION DE SALIDA
+        SELECT
+          rs.FECHA            as fecha,
+          ds.ID_FAB           as idFab,
+          pp.COD_FAB          as codigo,
+          'REMISION DE SALIDA' as descripcion,
+          0                   as entrada,
+          ds.CANTIDAD         as salida,
+          0                   as existencia,
+          rs.SUC_ORI          as sucursal,
+          rs.COD_USU          as usuario,
+          rs.OBS_REM          as observacion
+        FROM DET_REMIS ds
+        INNER JOIN REMISION_S rs ON rs.COD_REM = ds.COD_REM
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
+        WHERE pp.ID_PRO = @0
+
+        UNION ALL
+
+        -- INVENTARIO
+        SELECT
+          inv.FEC_INV         as fecha,
+          di.ID_FAB           as idFab,
+          pp.COD_FAB          as codigo,
+          'INVENTARIO'        as descripcion,
+          CASE WHEN di.DIFERENCIA > 0 THEN di.DIFERENCIA ELSE 0 END as entrada,
+          CASE WHEN di.DIFERENCIA < 0 THEN ABS(di.DIFERENCIA) ELSE 0 END as salida,
+          di.CANTIDAD         as existencia,
+          inv.COD_SUC         as sucursal,
+          inv.COD_USU         as usuario,
+          ISNULL(di.OBS, inv.OBS) as observacion
+        FROM DET_INVENTARIO di
+        INNER JOIN INVENTARIO inv ON inv.COD_INV = di.COD_INV
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = di.ID_FAB
+        WHERE pp.ID_PRO = @0
+
+      ) AS kardex
+      WHERE 1=1
+      ${sucFiltro}
+      ${fechaFiltro}
+      ORDER BY fecha DESC
+    `, [id]);
+
+    // Info del producto
+    const info = await this.dataSource.query(`
+      SELECT
+        p.COD_PRO       as codSiam,
+        MAX(pp.COD_FAB) as codFabrica,
+        MAX(pp.ID_FAB)  as idFab,
+        p.DESC_PRO      as descripcion,
+        MAX(ma.NOM_MARCA) as marca
+      FROM PRODUCTO p
+      LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
+      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
+      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      WHERE p.ID_PRO = @0
+      GROUP BY p.COD_PRO, p.DESC_PRO
+    `, [id]);
+
+    return {
+      info: info[0] ?? null,
+      movimientos,
     };
   }
 }
