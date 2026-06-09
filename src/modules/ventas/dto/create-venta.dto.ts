@@ -4,6 +4,16 @@ import {
   IsArray, ValidateNested, IsInt, IsPositive, IsNumber, Min,
 } from 'class-validator';
 
+export class DistribucionAlmacenDto {
+  @IsString()
+  @IsNotEmpty()
+  cod_suc: string;
+
+  @IsInt()
+  @IsPositive()
+  cantidad: number;
+}
+
 export class ItemVentaDto {
   @IsInt()
   @IsPositive()
@@ -27,6 +37,12 @@ export class ItemVentaDto {
 
   @IsInt()
   existencia: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DistribucionAlmacenDto)
+  @IsOptional()
+  distribucion?: DistribucionAlmacenDto[];
 }
 
 export class CreateVentaDto {

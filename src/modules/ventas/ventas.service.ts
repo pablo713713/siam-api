@@ -7,6 +7,9 @@ import { DataSource } from 'typeorm';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
 
+
+const COD_SUC_MOTORZONE = '00011';
+
 @Injectable()
 export class VentasService {
   constructor(
@@ -43,35 +46,37 @@ export class VentasService {
   // Registrar venta contado
   // ─────────────────────────────────────────
   async create(dto: CreateVentaDto, cod_usu: string) {
-    // 1. Validar stock de cada item
+    // 1. Validar stock por distribución
     for (const item of dto.items) {
-      const stock = await this.dataSource.query(`
-        SELECT CANTIDAD
-        FROM SUC_PRO_PROV
-        WHERE ID_FAB = @0 AND COD_SUC = @1
-      `, [item.id_fab, dto.cod_suc]);
+      const distribucion = item.distribucion && item.distribucion.length > 0
+        ? item.distribucion
+        : [{ cod_suc: COD_SUC_MOTORZONE, cantidad: item.cantidad }];
 
-      if (stock.length === 0 || Number(stock[0].CANTIDAD) < item.cantidad) {
-        throw new BadRequestException(
-          `Stock insuficiente para el producto ID_FAB ${item.id_fab}. ` +
-          `Disponible: ${stock[0]?.CANTIDAD ?? 0}, solicitado: ${item.cantidad}`
-        );
+      for (const distrib of distribucion) {
+        const stock = await this.dataSource.query(`
+          SELECT CANTIDAD
+          FROM SUC_PRO_PROV
+          WHERE ID_FAB = @0 AND COD_SUC = @1
+        `, [item.id_fab, distrib.cod_suc]);
+
+        if (stock.length === 0 || Number(stock[0].CANTIDAD) < distrib.cantidad) {
+          throw new BadRequestException(
+            `Stock insuficiente para ID_FAB ${item.id_fab} en sucursal ${distrib.cod_suc}. ` +
+            `Disponible: ${stock[0]?.CANTIDAD ?? 0}, solicitado: ${distrib.cantidad}`
+          );
+        }
       }
     }
 
     // 2. Calcular total
     const descuento = dto.descuento ?? 0;
-    const totalBruto = dto.items.reduce(
-      (sum, i) => sum + i.precio_venta * i.cantidad, 0
-    );
+    const totalBruto = dto.items.reduce((sum, i) => sum + i.precio_venta * i.cantidad, 0);
     const totalFinal = totalBruto * (1 - descuento / 100);
 
-    // 3. Generar código de venta
+    // 3. Generar código
     const cod_venta = await this.generarCodVenta(cod_usu);
-
     const fecha = new Date();
 
-    // 4. Ejecutar todo en una transacción
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -94,32 +99,38 @@ export class VentasService {
         'CO', totalFinal, 'N', fecha, 0,
       ]);
 
-      // Insertar items DET_VENTA y descontar stock
+      // Insertar items y descontar stock por distribución
       for (let i = 0; i < dto.items.length; i++) {
         const item = dto.items[i];
 
         await queryRunner.query(`
-            INSERT INTO DET_VENTA (
-                COD_VENTA, COD_FAB, CANTIDAD, PRECIO_VENTA,
-                PREC_LISTA, DOLAR, DESC_UNIT, NRO,
-                PLIS_BS, p_fob, existencia, ID_FAB
-            ) VALUES (
-                @0, @1, @2, @3,
-                @4, @5, @6, @7,
-                @8, @9, @10, @11
-            )
-            `, [
-            cod_venta, item.cod_fab, item.cantidad, item.precio_venta,
-            item.prec_lista, item.precio_venta, 0, i + 1,
-            0, 0, item.existencia, item.id_fab,
-            ]);
+          INSERT INTO DET_VENTA (
+            COD_VENTA, COD_FAB, CANTIDAD, PRECIO_VENTA,
+            PREC_LISTA, DOLAR, DESC_UNIT, NRO,
+            PLIS_BS, p_fob, existencia, ID_FAB
+          ) VALUES (
+            @0, @1, @2, @3,
+            @4, @5, @6, @7,
+            @8, @9, @10, @11
+          )
+        `, [
+          cod_venta, item.cod_fab, item.cantidad, item.precio_venta,
+          item.prec_lista, item.precio_venta, 0, i + 1,
+          0, 0, item.existencia, item.id_fab,
+        ]);
 
-        // Descontar stock en SUC_PRO_PROV
-        await queryRunner.query(`
-          UPDATE SUC_PRO_PROV
-          SET CANTIDAD = CANTIDAD - @0
-          WHERE ID_FAB = @1 AND COD_SUC = @2
-        `, [item.cantidad, item.id_fab, dto.cod_suc]);
+        // Descontar stock por cada almacén de la distribución
+        const distribucion = item.distribucion && item.distribucion.length > 0
+          ? item.distribucion
+          : [{ cod_suc: dto.cod_suc, cantidad: item.cantidad }];
+
+        for (const distrib of distribucion) {
+          await queryRunner.query(`
+            UPDATE SUC_PRO_PROV
+            SET CANTIDAD = CANTIDAD - @0
+            WHERE ID_FAB = @1 AND COD_SUC = @2
+          `, [distrib.cantidad, item.id_fab, distrib.cod_suc]);
+        }
       }
 
       await queryRunner.commitTransaction();

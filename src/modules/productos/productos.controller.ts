@@ -53,4 +53,8 @@ export class ProductosController {
   ) {
     return this.productosService.getKardexPorAlmacen(id, codSuc, fechaDesde);
   }
+  @Get('stock-fab/:idFab')
+  getStockPorIdFab(@Param('idFab', ParseIntPipe) idFab: number) {
+    return this.productosService.getStockPorIdFab(idFab);
+  }
 }

@@ -441,69 +441,72 @@ export class ProductosService {
       : '';
 
     const movimientos = await this.dataSource.query(`
-      SELECT * FROM (
+  SELECT * FROM (
 
-        -- REMISION DE INGRESO
-        SELECT
-          re.FECHA            as fecha,
-          dr.ID_FAB           as idFab,
-          pp.COD_FAB          as codigo,
-          'REMISION DE INGRESO' as descripcion,
-          dr.CANTIDAD         as entrada,
-          0                   as salida,
-          dr.existencia       as existencia,
-          re.COD_DES          as sucursal,
-          re.COD_USU          as usuario,
-          re.OBS_REM          as observacion
-        FROM DET_REMIE dr
-        INNER JOIN REMISION_E re ON re.COD_REM = dr.COD_REM
-        INNER JOIN PROV_PRO pp ON pp.ID_FAB = dr.ID_FAB
-        WHERE pp.ID_PRO = @0
+    SELECT
+      re.FECHA              as fecha,
+      dr.ID_FAB             as idFab,
+      pp.COD_FAB            as codigo,
+      'REMISION DE INGRESO' as descripcion,
+      dr.CANTIDAD           as entrada,
+      0                     as salida,
+      dr.existencia         as existencia,
+      ISNULL(s.NOM_SUC, re.COD_DES) as sucursal,
+      ISNULL(u.NOM_USU + ' ' + u.AP_USU, re.COD_USU) as usuario,
+      re.OBS_REM            as observacion
+    FROM DET_REMIE dr
+    INNER JOIN REMISION_E re ON re.COD_REM = dr.COD_REM
+    INNER JOIN PROV_PRO pp ON pp.ID_FAB = dr.ID_FAB
+    LEFT JOIN SUCURSAL s ON s.COD_SUC = re.COD_DES
+    LEFT JOIN USUARIO u ON u.COD_USU = re.COD_USU
+    WHERE pp.ID_PRO = @0
 
-        UNION ALL
+    UNION ALL
 
-        -- REMISION DE SALIDA
-        SELECT
-          rs.FECHA            as fecha,
-          ds.ID_FAB           as idFab,
-          pp.COD_FAB          as codigo,
-          'REMISION DE SALIDA' as descripcion,
-          0                   as entrada,
-          ds.CANTIDAD         as salida,
-          0                   as existencia,
-          rs.SUC_ORI          as sucursal,
-          rs.COD_USU          as usuario,
-          rs.OBS_REM          as observacion
-        FROM DET_REMIS ds
-        INNER JOIN REMISION_S rs ON rs.COD_REM = ds.COD_REM
-        INNER JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
-        WHERE pp.ID_PRO = @0
+    SELECT
+      rs.FECHA              as fecha,
+      ds.ID_FAB             as idFab,
+      pp.COD_FAB            as codigo,
+      'REMISION DE SALIDA'  as descripcion,
+      0                     as entrada,
+      ds.CANTIDAD           as salida,
+      0                     as existencia,
+      ISNULL(s.NOM_SUC, rs.SUC_ORI) as sucursal,
+      ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as usuario,
+      rs.OBS_REM            as observacion
+    FROM DET_REMIS ds
+    INNER JOIN REMISION_S rs ON rs.COD_REM = ds.COD_REM
+    INNER JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
+    LEFT JOIN SUCURSAL s ON s.COD_SUC = rs.SUC_ORI
+    LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
+    WHERE pp.ID_PRO = @0
 
-        UNION ALL
+    UNION ALL
 
-        -- INVENTARIO
-        SELECT
-          inv.FEC_INV         as fecha,
-          di.ID_FAB           as idFab,
-          pp.COD_FAB          as codigo,
-          'INVENTARIO'        as descripcion,
-          CASE WHEN di.DIFERENCIA > 0 THEN di.DIFERENCIA ELSE 0 END as entrada,
-          CASE WHEN di.DIFERENCIA < 0 THEN ABS(di.DIFERENCIA) ELSE 0 END as salida,
-          di.CANTIDAD         as existencia,
-          inv.COD_SUC         as sucursal,
-          inv.COD_USU         as usuario,
-          ISNULL(di.OBS, inv.OBS) as observacion
-        FROM DET_INVENTARIO di
-        INNER JOIN INVENTARIO inv ON inv.COD_INV = di.COD_INV
-        INNER JOIN PROV_PRO pp ON pp.ID_FAB = di.ID_FAB
-        WHERE pp.ID_PRO = @0
+    SELECT
+      inv.FEC_INV           as fecha,
+      di.ID_FAB             as idFab,
+      pp.COD_FAB            as codigo,
+      'INVENTARIO'          as descripcion,
+      CASE WHEN di.DIFERENCIA > 0 THEN di.DIFERENCIA ELSE 0 END as entrada,
+      CASE WHEN di.DIFERENCIA < 0 THEN ABS(di.DIFERENCIA) ELSE 0 END as salida,
+      di.CANTIDAD           as existencia,
+      ISNULL(s.NOM_SUC, inv.COD_SUC) as sucursal,
+      ISNULL(u.NOM_USU + ' ' + u.AP_USU, inv.COD_USU) as usuario,
+      ISNULL(di.OBS, inv.OBS) as observacion
+    FROM DET_INVENTARIO di
+    INNER JOIN INVENTARIO inv ON inv.COD_INV = di.COD_INV
+    INNER JOIN PROV_PRO pp ON pp.ID_FAB = di.ID_FAB
+    LEFT JOIN SUCURSAL s ON s.COD_SUC = inv.COD_SUC
+    LEFT JOIN USUARIO u ON u.COD_USU = inv.COD_USU
+    WHERE pp.ID_PRO = @0
 
-      ) AS kardex
-      WHERE 1=1
-      ${sucFiltro}
-      ${fechaFiltro}
-      ORDER BY fecha DESC
-    `, [id]);
+  ) AS kardex
+  WHERE 1=1
+  ${sucFiltro}
+  ${fechaFiltro}
+  ORDER BY fecha DESC
+`, [id]);
 
     // Info del producto
     const info = await this.dataSource.query(`
@@ -524,6 +527,29 @@ export class ProductosService {
     return {
       info: info[0] ?? null,
       movimientos,
+    };
+  }
+  async getStockPorIdFab(idFab: number) {
+    const stock = await this.dataSource.query(`
+      SELECT
+        spp.COD_SUC   as codSuc,
+        s.NOM_SUC     as nomSuc,
+        spp.CANTIDAD  as cantidad
+      FROM SUC_PRO_PROV spp
+      INNER JOIN SUCURSAL s ON s.COD_SUC = spp.COD_SUC
+      WHERE spp.ID_FAB = @0
+      AND spp.CANTIDAD > 0
+      ORDER BY spp.CANTIDAD DESC
+    `, [idFab]);
+
+    const totalStock = stock.reduce((sum: number, s: any) => sum + Number(s.cantidad), 0);
+    const stockMotorZone = stock.find((s: any) => s.codSuc === '00011')?.cantidad ?? 0;
+
+    return {
+      idFab,
+      stockMotorZone: Number(stockMotorZone),
+      totalStock,
+      porAlmacen: stock,
     };
   }
 }
