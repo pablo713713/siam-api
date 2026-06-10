@@ -283,6 +283,15 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Orquesta HU-6.01 y HU-6.02 con `Promise.all`
 - Devuelve `ingresos_brutos`, `costo_mercancia`, `ganancia_neta` y `margen_porcentaje`
 
+### ÉPICA 7 — Devoluciones y Ajustes ✅
+
+**HU-D.01 — Registrar devolución parcial** ✅
+- `POST /api/devoluciones`
+- Permite devolver ítems específicos de una venta.
+- Verifica la existencia de la venta (`VENTA`) y calcula dinámicamente el total devolviendo el `PRECIO_VENTA` original desde `DET_VENTA`.
+- Implementa lógica segura (UPSERT manual) en tablas legacy `DEVOLUCION` y `DET_DEVOLUCION` para evitar violaciones de llaves primarias/únicas en devoluciones múltiples de la misma venta.
+- Verifica que la cantidad a devolver no sobrepase la cantidad comprada originalmente menos lo que ya se haya devuelto.
+- Revierte el inventario sumando la cantidad devuelta directamente a la sucursal de Motor Zone (`COD_SUC = '00011'`) en la tabla `SUC_PRO_PROV`.
 
 ---
 
