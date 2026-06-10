@@ -19,6 +19,7 @@ import { Producto } from './modules/productos/entities/producto.entity';
 
 import { Cliente } from './modules/clientes/entities/cliente.entity';
 import { Usuario } from './modules/auth/entities/usuario.entity';
+import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { Usuario } from './modules/auth/entities/usuario.entity';
     UsuariosModule,
     AlmacenesModule,
     VentasModule,
+    DevolucionesModule,
     
 
   ],
