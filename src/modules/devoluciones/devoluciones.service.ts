@@ -19,7 +19,7 @@ export class DevolucionesService {
     try {
       // 1. Validar que la venta exista y no esté anulada
       const ventaResult = await queryRunner.query(`
-        SELECT ESTADO FROM VENTA WHERE COD_VENTA = @0
+        SELECT ESTADO, FECHA FROM VENTA WHERE COD_VENTA = @0
       `, [cod_venta]);
 
       if (ventaResult.length === 0) {
@@ -41,6 +41,8 @@ export class DevolucionesService {
         `, [cod_venta, fecha, cod_usu, obs || '']);
       }
 
+      let granTotalDevuelto = 0;
+
       // 3. Procesar items
       for (const item of items) {
         // Validar item en la venta original y calcular total
@@ -56,6 +58,7 @@ export class DevolucionesService {
         const precioVenta = Number(detVenta[0].PRECIO_VENTA);
         const cantidadVendida = Number(detVenta[0].CANTIDAD);
         const totalDevuelto = item.cantidad * precioVenta;
+        granTotalDevuelto += totalDevuelto;
 
         // Verificar si ya existe en DET_DEVOLUCION
         const detDevExist = await queryRunner.query(`
@@ -92,6 +95,26 @@ export class DevolucionesService {
           SET CANTIDAD = CANTIDAD + @0
           WHERE ID_FAB = @1 AND COD_SUC = @2
         `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
+      }
+
+      // 5. Ajuste financiero en CIERRE_CAJA (HU-D.02)
+      if (granTotalDevuelto > 0) {
+        const fechaVentaOriginal = ventaResult[0].FECHA;
+        const cierres = await queryRunner.query(`
+          SELECT cod_cc FROM CIERRE_CAJA
+          WHERE CAST(FECHA_INI AS DATE) = CAST(@0 AS DATE)
+            AND COD_SUC = @1
+        `, [fechaVentaOriginal, COD_SUC_MOTORZONE]);
+
+        if (cierres.length > 0) {
+          const cod_cc = cierres[0].cod_cc;
+          await queryRunner.query(`
+            UPDATE CIERRE_CAJA
+            SET VENTA = ISNULL(VENTA, 0) - @0,
+                DEVOLUCION = ISNULL(DEVOLUCION, 0) + @0
+            WHERE cod_cc = @1
+          `, [granTotalDevuelto, cod_cc]);
+        }
       }
 
       await queryRunner.commitTransaction();

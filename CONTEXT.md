@@ -293,6 +293,13 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Verifica que la cantidad a devolver no sobrepase la cantidad comprada originalmente menos lo que ya se haya devuelto.
 - Revierte el inventario sumando la cantidad devuelta directamente a la sucursal de Motor Zone (`COD_SUC = '00011'`) en la tabla `SUC_PRO_PROV`.
 
+**HU-D.02 — Ajuste financiero del día** ✅
+- Integrado directamente en el flujo del endpoint `POST /api/devoluciones`.
+- Busca la caja correspondiente a la fecha de la venta original en la sucursal matriz (`COD_SUC = '00011'`) usando la tabla legacy `CIERRE_CAJA`.
+- Acumula matemáticamente el importe monetario total devuelto.
+- Si existe el cierre para ese día, deduce el acumulado del campo `VENTA` e incrementa el campo `DEVOLUCION` para asegurar el cuadre de caja.
+- Manejo seguro de nulos en base de datos mediante la instrucción SQL `ISNULL(campo, 0)`.
+
 ---
 
 ## Entidades TypeORM implementadas
