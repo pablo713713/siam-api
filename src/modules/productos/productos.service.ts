@@ -48,9 +48,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
@@ -150,9 +150,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
@@ -173,9 +173,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
@@ -432,89 +432,97 @@ export class ProductosService {
       throw new NotFoundException(`El producto con ID ${id} no existe.`);
     }
 
-    const fechaFiltro = fechaDesde
-      ? `AND fecha >= '${fechaDesde}'`
-      : '';
+    const params: any[] = [id];
+    let sucFiltro = '';
+    let fechaFiltro = '';
 
-    const sucFiltro = codSuc && codSuc !== 'TODOS'
-      ? `AND sucursal = '${codSuc}'`
-      : '';
+    if (codSuc && codSuc !== 'TODOS') {
+      params.push(codSuc);
+      sucFiltro = `AND codSucFiltro = @${params.length - 1}`;
+    }
+
+    if (fechaDesde) {
+      params.push(fechaDesde);
+      fechaFiltro = `AND fecha >= @${params.length - 1}`;
+    }
 
     const movimientos = await this.dataSource.query(`
-  SELECT * FROM (
+      SELECT * FROM (
 
-    SELECT
-      re.FECHA              as fecha,
-      dr.ID_FAB             as idFab,
-      pp.COD_FAB            as codigo,
-      'REMISION DE INGRESO' as descripcion,
-      dr.CANTIDAD           as entrada,
-      0                     as salida,
-      dr.existencia         as existencia,
-      ISNULL(s.NOM_SUC, re.COD_DES) as sucursal,
-      ISNULL(u.NOM_USU + ' ' + u.AP_USU, re.COD_USU) as usuario,
-      re.OBS_REM            as observacion
-    FROM DET_REMIE dr
-    INNER JOIN REMISION_E re ON re.COD_REM = dr.COD_REM
-    INNER JOIN PROV_PRO pp ON pp.ID_FAB = dr.ID_FAB
-    LEFT JOIN SUCURSAL s ON s.COD_SUC = re.COD_DES
-    LEFT JOIN USUARIO u ON u.COD_USU = re.COD_USU
-    WHERE pp.ID_PRO = @0
+        SELECT
+          re.FECHA              as fecha,
+          dr.ID_FAB             as idFab,
+          pp.COD_FAB            as codigo,
+          'REMISION DE INGRESO' as descripcion,
+          dr.CANTIDAD           as entrada,
+          0                     as salida,
+          dr.existencia         as existencia,
+          re.COD_DES            as codSucFiltro,
+          ISNULL(s.NOM_SUC, re.COD_DES) as sucursal,
+          ISNULL(u.NOM_USU + ' ' + u.AP_USU, re.COD_USU) as usuario,
+          re.OBS_REM            as observacion
+        FROM DET_REMIE dr
+        INNER JOIN REMISION_E re ON re.COD_REM = dr.COD_REM
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = dr.ID_FAB
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = re.COD_DES
+        LEFT JOIN USUARIO u ON u.COD_USU = re.COD_USU
+        WHERE pp.ID_PRO = @0
 
-    UNION ALL
+        UNION ALL
 
-    SELECT
-      rs.FECHA              as fecha,
-      ds.ID_FAB             as idFab,
-      pp.COD_FAB            as codigo,
-      'REMISION DE SALIDA'  as descripcion,
-      0                     as entrada,
-      ds.CANTIDAD           as salida,
-      0                     as existencia,
-      ISNULL(s.NOM_SUC, rs.SUC_ORI) as sucursal,
-      ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as usuario,
-      rs.OBS_REM            as observacion
-    FROM DET_REMIS ds
-    INNER JOIN REMISION_S rs ON rs.COD_REM = ds.COD_REM
-    INNER JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
-    LEFT JOIN SUCURSAL s ON s.COD_SUC = rs.SUC_ORI
-    LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
-    WHERE pp.ID_PRO = @0
+        SELECT
+          rs.FECHA              as fecha,
+          ds.ID_FAB             as idFab,
+          pp.COD_FAB            as codigo,
+          'REMISION DE SALIDA'  as descripcion,
+          0                     as entrada,
+          ds.CANTIDAD           as salida,
+          0                     as existencia,
+          rs.SUC_ORI            as codSucFiltro,
+          ISNULL(s.NOM_SUC, rs.SUC_ORI) as sucursal,
+          ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as usuario,
+          rs.OBS_REM            as observacion
+        FROM DET_REMIS ds
+        INNER JOIN REMISION_S rs ON rs.COD_REM = ds.COD_REM
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = rs.SUC_ORI
+        LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
+        WHERE pp.ID_PRO = @0
 
-    UNION ALL
+        UNION ALL
 
-    SELECT
-      inv.FEC_INV           as fecha,
-      di.ID_FAB             as idFab,
-      pp.COD_FAB            as codigo,
-      'INVENTARIO'          as descripcion,
-      CASE WHEN di.DIFERENCIA > 0 THEN di.DIFERENCIA ELSE 0 END as entrada,
-      CASE WHEN di.DIFERENCIA < 0 THEN ABS(di.DIFERENCIA) ELSE 0 END as salida,
-      di.CANTIDAD           as existencia,
-      ISNULL(s.NOM_SUC, inv.COD_SUC) as sucursal,
-      ISNULL(u.NOM_USU + ' ' + u.AP_USU, inv.COD_USU) as usuario,
-      ISNULL(di.OBS, inv.OBS) as observacion
-    FROM DET_INVENTARIO di
-    INNER JOIN INVENTARIO inv ON inv.COD_INV = di.COD_INV
-    INNER JOIN PROV_PRO pp ON pp.ID_FAB = di.ID_FAB
-    LEFT JOIN SUCURSAL s ON s.COD_SUC = inv.COD_SUC
-    LEFT JOIN USUARIO u ON u.COD_USU = inv.COD_USU
-    WHERE pp.ID_PRO = @0
+        SELECT
+          inv.FEC_INV           as fecha,
+          di.ID_FAB             as idFab,
+          pp.COD_FAB            as codigo,
+          'INVENTARIO'          as descripcion,
+          CASE WHEN di.DIFERENCIA > 0 THEN di.DIFERENCIA ELSE 0 END as entrada,
+          CASE WHEN di.DIFERENCIA < 0 THEN ABS(di.DIFERENCIA) ELSE 0 END as salida,
+          di.CANTIDAD           as existencia,
+          inv.COD_SUC           as codSucFiltro,
+          ISNULL(s.NOM_SUC, inv.COD_SUC) as sucursal,
+          ISNULL(u.NOM_USU + ' ' + u.AP_USU, inv.COD_USU) as usuario,
+          ISNULL(di.OBS, inv.OBS) as observacion
+        FROM DET_INVENTARIO di
+        INNER JOIN INVENTARIO inv ON inv.COD_INV = di.COD_INV
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = di.ID_FAB
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = inv.COD_SUC
+        LEFT JOIN USUARIO u ON u.COD_USU = inv.COD_USU
+        WHERE pp.ID_PRO = @0
 
-  ) AS kardex
-  WHERE 1=1
-  ${sucFiltro}
-  ${fechaFiltro}
-  ORDER BY fecha DESC
-`, [id]);
+      ) AS kardex
+      WHERE 1=1
+      ${sucFiltro}
+      ${fechaFiltro}
+      ORDER BY fecha DESC
+    `, params);
 
-    // Info del producto
     const info = await this.dataSource.query(`
       SELECT
-        p.COD_PRO       as codSiam,
-        MAX(pp.COD_FAB) as codFabrica,
-        MAX(pp.ID_FAB)  as idFab,
-        p.DESC_PRO      as descripcion,
+        p.COD_PRO         as codSiam,
+        MAX(pp.COD_FAB)   as codFabrica,
+        MAX(pp.ID_FAB)    as idFab,
+        p.DESC_PRO        as descripcion,
         MAX(ma.NOM_MARCA) as marca
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
@@ -524,9 +532,12 @@ export class ProductosService {
       GROUP BY p.COD_PRO, p.DESC_PRO
     `, [id]);
 
+    // Quitar codSucFiltro del resultado final (uso interno)
+    const movimientosLimpios = movimientos.map(({ codSucFiltro, ...resto }: any) => resto);
+
     return {
       info: info[0] ?? null,
-      movimientos,
+      movimientos: movimientosLimpios,
     };
   }
   async getStockPorIdFab(idFab: number) {

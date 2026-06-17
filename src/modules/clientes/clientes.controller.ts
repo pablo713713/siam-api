@@ -33,4 +33,11 @@ export class ClientesController {
   ) {
     return this.clientesService.search(q, limit ? Number(limit) : 20);
   }
+  @Get(':cod_cli/compras/:cod_venta')
+  getDetalleCompra(
+    @Param('cod_cli', ParseIntPipe) cod_cli: number,
+    @Param('cod_venta') cod_venta: string,
+  ) {
+    return this.clientesService.getDetalleCompra(cod_cli, cod_venta);
+  }
 }

@@ -152,9 +152,31 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Listar ventas con filtros
   // ─────────────────────────────────────────
-  async findAll(fecha?: string, cod_suc?: string, page = 1, limit = 20) {
+  async findAll(
+    fecha?: string,
+    fechaFin?: string,
+    cod_suc?: string,
+    page = 1,
+    limit = 20,
+  ) {
     const skip = (page - 1) * limit;
-    const fechaFiltro = fecha ?? new Date().toISOString().split('T')[0];
+
+    let filtroFecha = '';
+    const params: any[] = [];
+
+    if (fecha && fechaFin) {
+      params.push(fecha, fechaFin);
+      filtroFecha = `WHERE CAST(v.FECHA AS DATE) >= @0 AND CAST(v.FECHA AS DATE) <= @1`;
+    } else if (fecha) {
+      params.push(fecha);
+      filtroFecha = `WHERE CAST(v.FECHA AS DATE) = @0`;
+    } else {
+      filtroFecha = `WHERE 1=1`;
+    }
+
+    params.push(skip, limit);
+    const skipIdx = params.length - 2;
+    const limitIdx = params.length - 1;
 
     const ventas = await this.dataSource.query(`
       SELECT
@@ -171,16 +193,17 @@ export class VentasService {
         c.RAZON_SOCIAL as razonSocial
       FROM VENTA v
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
-      WHERE CAST(v.FECHA AS DATE) = @0
+      ${filtroFecha}
       ORDER BY v.FECHA DESC
-      OFFSET @1 ROWS FETCH NEXT @2 ROWS ONLY
-    `, [fechaFiltro, skip, limit]);
+      OFFSET @${skipIdx} ROWS FETCH NEXT @${limitIdx} ROWS ONLY
+    `, params);
 
+    const countParams = params.slice(0, -2);
     const countResult = await this.dataSource.query(`
       SELECT COUNT(*) as total
       FROM VENTA v
-      WHERE CAST(v.FECHA AS DATE) = @0
-    `, [fechaFiltro]);
+      ${filtroFecha}
+    `, countParams);
 
     const total = Number(countResult[0]?.total ?? 0);
 
@@ -318,4 +341,59 @@ export class VentasService {
         message: 'Tipo de cambio registrado correctamente',
     };
     }
+    async getDolarParaleloVigente(cod_emp: string) {
+    const result = await this.dataSource.query(`
+      SELECT TOP 1
+        FECHA        as fecha,
+        TIPO_CAMBIO  as tipoCambio,
+        COD_EMP      as codEmp,
+        COD_USU      as codUsu
+      FROM CAMBIO_DOLAR_PARALELO
+      WHERE COD_EMP = @0
+      ORDER BY FECHA DESC
+    `, [cod_emp]);
+
+    if (result.length === 0) {
+      throw new NotFoundException('No hay tipo de cambio paralelo registrado');
+    }
+
+    return result[0];
+  }
+
+  async registrarDolarParalelo(tipoCambio: number, cod_usu: string, cod_emp: string) {
+    const hoy = new Date();
+    const fechaDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+    const existe = await this.dataSource.query(`
+      SELECT TOP 1 FECHA FROM CAMBIO_DOLAR_PARALELO
+      WHERE CAST(FECHA AS DATE) = CAST(@0 AS DATE)
+      AND COD_EMP = @1
+    `, [fechaDia, cod_emp]);
+
+    if (existe.length > 0) {
+      await this.dataSource.query(`
+        UPDATE CAMBIO_DOLAR_PARALELO
+        SET TIPO_CAMBIO = @0, FECHA_INGRESO = @1, COD_USU = @2
+        WHERE CAST(FECHA AS DATE) = CAST(@3 AS DATE)
+        AND COD_EMP = @4
+      `, [tipoCambio, hoy, cod_usu, fechaDia, cod_emp]);
+
+      return {
+        fecha: fechaDia,
+        tipoCambio,
+        message: 'Tipo de cambio paralelo actualizado correctamente',
+      };
+    }
+
+    await this.dataSource.query(`
+      INSERT INTO CAMBIO_DOLAR_PARALELO (FECHA, FECHA_INGRESO, TIPO_CAMBIO, COD_EMP, COD_USU)
+      VALUES (@0, @1, @2, @3, @4)
+    `, [fechaDia, hoy, tipoCambio, cod_emp, cod_usu]);
+
+    return {
+      fecha: fechaDia,
+      tipoCambio,
+      message: 'Tipo de cambio paralelo registrado correctamente',
+    };
+  }
 }
