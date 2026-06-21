@@ -20,7 +20,7 @@ export class ProductosService {
   async search(searchDto: SearchProductoDto) {
     const { q, limit } = searchDto;
     const take = limit || 20;
-    const term = `%${q}%`;
+    const term = `"${q}*"`;
 
     const items = await this.dataSource.query(`
       SELECT DISTINCT
@@ -44,18 +44,13 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
-      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
-      WHERE (
-        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      WHERE p.ESTADO = 'A'
+      AND (
+        CONTAINS(p.DESC_PRO, @0) OR
+        CONTAINS(p.COD_PRO, @0) OR
+        CONTAINS(ma.NOM_MARCA, @0) OR
+        CONTAINS(mo.NOM_MODELO, @0)
       )
-      AND p.ESTADO = 'A'
       GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
       ORDER BY p.DESC_PRO ASC
       OFFSET 0 ROWS FETCH NEXT @1 ROWS ONLY
@@ -116,7 +111,7 @@ export class ProductosService {
   async searchAdvanced(searchDto: AdvancedSearchProductoDto) {
     const { q, page = 1, limit = 20 } = searchDto;
     const skip = (page - 1) * limit;
-    const term = q ? `%${q}%` : null;
+    const term = q ? `"${q}*"` : null;
 
     if (!term) {
       return {
@@ -146,18 +141,13 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
-      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
-      WHERE (
-        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      WHERE p.ESTADO = 'A'
+      AND (
+        CONTAINS(p.DESC_PRO, @0) OR
+        CONTAINS(p.COD_PRO, @0) OR
+        CONTAINS(ma.NOM_MARCA, @0) OR
+        CONTAINS(mo.NOM_MODELO, @0)
       )
-      AND p.ESTADO = 'A'
       GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
       ORDER BY p.DESC_PRO ASC
       OFFSET @1 ROWS FETCH NEXT @2 ROWS ONLY
@@ -169,18 +159,13 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
-      LEFT JOIN CARACTERISTICAS c ON c.ID_PRO = p.ID_PRO
-      WHERE (
-        p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+      WHERE p.ESTADO = 'A'
+      AND (
+        CONTAINS(p.DESC_PRO, @0) OR
+        CONTAINS(p.COD_PRO, @0) OR
+        CONTAINS(ma.NOM_MARCA, @0) OR
+        CONTAINS(mo.NOM_MODELO, @0)
       )
-      AND p.ESTADO = 'A'
     `, [term]);
 
     const total = Number(countResult[0]?.total || 0);
