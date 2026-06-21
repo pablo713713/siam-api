@@ -48,9 +48,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
@@ -150,9 +150,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
@@ -173,9 +173,9 @@ export class ProductosService {
       WHERE (
         p.DESC_PRO       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         p.COD_PRO        LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-        // pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_FAB       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.COD_ANT       LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+        pp.barra         LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         ma.NOM_MARCA     LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         mo.NOM_MODELO    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
         c.DESCRIPCION    LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI

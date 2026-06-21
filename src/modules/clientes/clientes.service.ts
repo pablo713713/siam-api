@@ -167,8 +167,8 @@ export class ClientesService {
         AND (
           c.NOM_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
           c.APE_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-          // c.RAZON_SOCIAL LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
-          // c.NUM_CI_NIT   LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
+          c.RAZON_SOCIAL LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
+          c.NUM_CI_NIT   LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
         )
       ORDER BY c.NOM_CLI ASC
     `, [term]);
