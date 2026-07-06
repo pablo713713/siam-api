@@ -32,7 +32,7 @@ export class ProductosService {
         MAX(pp.COD_FAB) as codFab,
         MAX(pp.barra) as barra,
         MAX(pp.COD_ANT) as codAnt,
-        MAX(ma.NOM_MARCA) as marca,
+        MAX(pr.NOM_PROV) as marca,
         MAX(mo.NOM_MODELO) as modelo,
         MAX(pp.PLIS_PRO) as plisPro,
         MAX(pp.PMIN_PRO) as pminPro,
@@ -44,6 +44,7 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
@@ -130,7 +131,7 @@ export class ProductosService {
         MAX(pp.COD_FAB) as codFab,
         MAX(pp.barra) as barra,
         MAX(pp.COD_ANT) as codAnt,
-        MAX(ma.NOM_MARCA) as marca,
+        MAX(pr.NOM_PROV) as marca,
         MAX(mo.NOM_MODELO) as modelo,
         MAX(pp.PLIS_PRO) as plisPro,
         MAX(pp.PMIN_PRO) as pminPro,
@@ -141,6 +142,7 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
@@ -159,6 +161,7 @@ export class ProductosService {
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
+      LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR

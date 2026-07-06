@@ -178,11 +178,14 @@ export class VentasService {
     const skipIdx = params.length - 2;
     const limitIdx = params.length - 1;
 
+    // MODIFICADO: Ahora el total global de cada fila deduce dinámicamente sus devoluciones
     const ventas = await this.dataSource.query(`
       SELECT
         v.COD_VENTA  as codVenta,
         v.FECHA      as fecha,
-        v.TOTAL      as total,
+        -- Total neto actual = Total Venta - Suma de sus Devoluciones
+        (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
+        ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto, -- Informativo por si lo requieres luego
         v.ESTADO     as estado,
         v.FACTURA    as factura,
         v.TIPO_VENTA as tipoVenta,
@@ -193,6 +196,12 @@ export class VentasService {
         c.RAZON_SOCIAL as razonSocial
       FROM VENTA v
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+      -- Subconsulta agrupada para obtener el monto devuelto por venta
+      LEFT JOIN (
+        SELECT COD_VENTA, SUM(TOTAL) as TOTAL_DEV
+        FROM DET_DEVOLUCION
+        GROUP BY COD_VENTA
+      ) d_tot ON d_tot.COD_VENTA = v.COD_VENTA
       ${filtroFecha}
       ORDER BY v.FECHA DESC
       OFFSET @${skipIdx} ROWS FETCH NEXT @${limitIdx} ROWS ONLY
@@ -216,12 +225,22 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Detalle de una venta
   // ─────────────────────────────────────────
+  // ─────────────────────────────────────────
+  // Detalle de una venta (Modificado con Opción B)
+  // ─────────────────────────────────────────
+  // ─────────────────────────────────────────
+  // Detalle de una venta (Modificado con Opción B - Cabecera y Items)
+  // ─────────────────────────────────────────
   async findOne(cod_venta: string) {
+    // MODIFICADO: Ahora el total resta dinámicamente la suma de todas las devoluciones de esta venta
     const venta = await this.dataSource.query(`
       SELECT
         v.COD_VENTA  as codVenta,
         v.FECHA      as fecha,
-        v.TOTAL      as total,
+        v.TOTAL      as totalOriginal,
+        -- Total neto actual = Total Venta - Total Devuelto
+        (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
+        ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto,
         v.ESTADO     as estado,
         v.FACTURA    as factura,
         v.TIPO_VENTA as tipoVenta,
@@ -235,6 +254,12 @@ export class VentasService {
         c.NUM_CI_NIT as numCiNit
       FROM VENTA v
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+      -- Subconsulta para traer la suma total de lo devuelto en esta venta
+      LEFT JOIN (
+        SELECT COD_VENTA, SUM(TOTAL) as TOTAL_DEV
+        FROM DET_DEVOLUCION
+        GROUP BY COD_VENTA
+      ) d_tot ON d_tot.COD_VENTA = v.COD_VENTA
       WHERE v.COD_VENTA = @0
     `, [cod_venta]);
 
@@ -242,19 +267,27 @@ export class VentasService {
       throw new NotFoundException(`Venta ${cod_venta} no encontrada`);
     }
 
+    // Consulta de ítems (se mantiene igual al paso anterior)
     const items = await this.dataSource.query(`
       SELECT
-        dv.ID_FAB      as idFab,
-        dv.COD_FAB     as codFab,
-        dv.CANTIDAD    as cantidad,
+        dv.ID_FAB       as idFab,
+        dv.COD_FAB      as codFab,
+        dv.CANTIDAD     as cantidadOriginal,
+        (dv.CANTIDAD - ISNULL(dd.CANTIDAD_DEV, 0)) as cantidad, 
+        ISNULL(dd.CANTIDAD_DEV, 0) as cantidadDevuelta,
         dv.PRECIO_VENTA as precioVenta,
-        dv.PREC_LISTA  as precLista,
-        dv.DESC_UNIT   as descuento,
-        p.DESC_PRO     as descPro,
-        p.COD_PRO      as codPro
+        dv.PREC_LISTA   as precLista,
+        dv.DESC_UNIT    as descuento,
+        p.DESC_PRO      as descPro,
+        p.COD_PRO       as codPro
       FROM DET_VENTA dv
       INNER JOIN PROV_PRO pp ON pp.ID_FAB = dv.ID_FAB
       INNER JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+      LEFT JOIN (
+        SELECT COD_VENTA, ID_FAB, SUM(CANTIDAD) as CANTIDAD_DEV 
+        FROM DET_DEVOLUCION 
+        GROUP BY COD_VENTA, ID_FAB
+      ) dd ON dd.COD_VENTA = dv.COD_VENTA AND dd.ID_FAB = dv.ID_FAB
       WHERE dv.COD_VENTA = @0
     `, [cod_venta]);
 

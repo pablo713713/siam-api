@@ -14,6 +14,20 @@ export class ReportesService {
   async getIngresosTotales(dto: RangoFechasDto) {
     const manager = this.clienteRepository.manager;
 
+    // 1. Obtener la suma total de devoluciones en este rango de fechas
+    const devoluciones = await manager
+      .createQueryBuilder()
+      .select('ISNULL(SUM(d.TOTAL), 0)', 'total')
+      .from('DET_DEVOLUCION', 'd')
+      .innerJoin('VENTA', 'v', 'v.COD_VENTA = d.COD_VENTA')
+      .where('v.FECHA >= :inicio', { inicio: dto.fecha_inicio })
+      .andWhere('v.FECHA <= :fin', { fin: dto.fecha_fin })
+      .andWhere("v.ESTADO = 'C'")
+      .getRawOne();
+
+    const totalDevoluciones = parseFloat(devoluciones.total) || 0;
+
+    // 2. Obtener ventas sumando el total original bruto
     const ventas = await manager
       .createQueryBuilder()
       .select('ISNULL(SUM(v.TOTAL), 0)', 'total')
@@ -34,26 +48,30 @@ export class ReportesService {
       .andWhere("c.ESTADO = 'C'")
       .getRawOne();
 
-    const totalVentas = parseFloat(ventas.total) || 0;
+    // Las ventas de contado netas son: Total Original - Lo Devolución
+    const totalVentasOriginal = parseFloat(ventas.total) || 0;
+    const totalVentasNetas = Math.max(0, totalVentasOriginal - totalDevoluciones);
     const totalCreditos = parseFloat(creditos.total) || 0;
 
     return {
       rango: dto,
       ventas_contado: {
-        total: totalVentas,
+        total: totalVentasNetas,
         cantidad: parseInt(ventas.cantidad) || 0,
       },
       ventas_credito: {
         total: totalCreditos,
         cantidad: parseInt(creditos.cantidad) || 0,
       },
-      total_bruto: totalVentas + totalCreditos,
+      total_bruto: totalVentasNetas + totalCreditos,
+      total_devoluciones: totalDevoluciones, // <-- Regresa el KPI al Front
     };
   }
 
   async getCostosMercancia(dto: RangoFechasDto) {
     const manager = this.clienteRepository.manager;
 
+    // Obtener el costo original de la mercadería vendida
     const costosVentas = await manager
       .createQueryBuilder()
       .select('ISNULL(SUM(dv.CANTIDAD * pp.CIF_CBBA), 0)', 'costo_total')
@@ -65,7 +83,19 @@ export class ReportesService {
       .andWhere("v.ESTADO = 'C'")
       .getRawOne();
 
-    const costosCreditos = await manager
+    // Restar el costo de los productos que fueron devueltos (vuelven al inventario, no son pérdida)
+    const costosDevoluciones = await manager
+      .createQueryBuilder()
+      .select('ISNULL(SUM(dd.CANTIDAD * pp.CIF_CBBA), 0)', 'costo_total')
+      .from('DET_DEVOLUCION', 'dd')
+      .innerJoin('VENTA', 'v', 'v.COD_VENTA = dd.COD_VENTA')
+      .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = dd.ID_FAB')
+      .where('v.FECHA >= :inicio', { inicio: dto.fecha_inicio })
+      .andWhere('v.FECHA <= :fin', { fin: dto.fecha_fin })
+      .andWhere("v.ESTADO = 'C'")
+      .getRawOne();
+
+    const creditos = await manager
       .createQueryBuilder()
       .select('ISNULL(SUM(dc.CANTIDAD * pp.CIF_CBBA), 0)', 'costo_total')
       .from('DET_CREDITO', 'dc')
@@ -76,14 +106,14 @@ export class ReportesService {
       .andWhere("c.ESTADO = 'C'")
       .getRawOne();
 
-    const costoVentas = parseFloat(costosVentas.costo_total) || 0;
-    const costoCreditos = parseFloat(costosCreditos.costo_total) || 0;
+    const costoVentasNeto = Math.max(0, (parseFloat(costosVentas.costo_total) || 0) - (parseFloat(costosDevoluciones.costo_total) || 0));
+    const costoCreditos = parseFloat(creditos.costo_total) || 0;
 
     return {
       rango: dto,
-      costo_ventas_contado: costoVentas,
+      costo_ventas_contado: costoVentasNeto,
       costo_ventas_credito: costoCreditos,
-      costo_total: costoVentas + costoCreditos,
+      costo_total: costoVentasNeto + costoCreditos,
     };
   }
 
