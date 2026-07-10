@@ -21,6 +21,7 @@ export class ProductosService {
     const { q, limit } = searchDto;
     const take = limit || 20;
     const term = `"${q}*"`;
+    const termLike = `%${q}%`;
 
     const items = await this.dataSource.query(`
       SELECT DISTINCT
@@ -39,7 +40,6 @@ export class ProductosService {
         MAX(pp.PMAY_PRO) as pmayPro,
         MAX(pp.CIFFSus)  as ciffSus,
         MAX(pp.ID_FAB)   as idFab
-
       FROM PRODUCTO p
       LEFT JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
@@ -48,14 +48,14 @@ export class ProductosService {
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(p.COD_PRO, @0) OR
         CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0)
+        CONTAINS(mo.NOM_MODELO, @0) OR
+        pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
       ORDER BY p.DESC_PRO ASC
-      OFFSET 0 ROWS FETCH NEXT @1 ROWS ONLY
-    `, [term, take]);
+      OFFSET 0 ROWS FETCH NEXT @2 ROWS ONLY
+    `, [term, termLike, take]);
 
     return {
       data: items,
@@ -113,6 +113,7 @@ export class ProductosService {
     const { q, page = 1, limit = 20 } = searchDto;
     const skip = (page - 1) * limit;
     const term = q ? `"${q}*"` : null;
+    const termLike = q ? `%${q}%` : null;
 
     if (!term) {
       return {
@@ -146,14 +147,14 @@ export class ProductosService {
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(p.COD_PRO, @0) OR
         CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0)
+        CONTAINS(mo.NOM_MODELO, @0) OR
+        pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       GROUP BY p.ID_PRO, p.COD_PRO, p.DESC_PRO, p.ESTADO, p.CODIGO
       ORDER BY p.DESC_PRO ASC
-      OFFSET @1 ROWS FETCH NEXT @2 ROWS ONLY
-    `, [term, skip, limit]);
+      OFFSET @2 ROWS FETCH NEXT @3 ROWS ONLY
+    `, [term, termLike, skip, limit]);
 
     const countResult = await this.dataSource.query(`
       SELECT COUNT(DISTINCT p.ID_PRO) as total
@@ -165,11 +166,11 @@ export class ProductosService {
       WHERE p.ESTADO = 'A'
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(p.COD_PRO, @0) OR
         CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0)
+        CONTAINS(mo.NOM_MODELO, @0) OR
+        pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
-    `, [term]);
+    `, [term, termLike]);
 
     const total = Number(countResult[0]?.total || 0);
 
@@ -375,7 +376,7 @@ export class ProductosService {
         AND v.COD_INI = s.COD_SUC
       WHERE s.COD_SUC IN (${codigos})
       GROUP BY s.COD_SUC, s.NOM_SUC, spp.CANTIDAD
-      ORDER BY s.COD_SUC ASC
+      ORDER BY ISNULL(spp.CANTIDAD, 0) DESC
     `, [id]);
 
     const hoy = new Date();
