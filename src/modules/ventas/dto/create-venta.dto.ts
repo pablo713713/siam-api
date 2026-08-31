@@ -57,6 +57,10 @@ export class CreateVentaDto {
   @IsBoolean()
   factura: boolean;
 
+  @IsString()
+  @IsOptional()
+  estado?: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
