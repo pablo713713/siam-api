@@ -7,6 +7,11 @@ export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
   // HU-5.01
+  @Get('ocasional')
+  getOcasional() {
+    return this.clientesService.getOcasional();
+  }
+
   @Get(':cod_cli/perfil')
   getPerfil(@Param('cod_cli', ParseIntPipe) cod_cli: number) {
     return this.clientesService.getPerfil(cod_cli);

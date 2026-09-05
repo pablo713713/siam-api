@@ -21,11 +21,13 @@ export class VentasController {
     @Query('cod_suc') cod_suc?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('estado') estado?: string,
   ) {
     return this.ventasService.findAll(
       fecha, fechaFin, cod_suc,
       page ? Number(page) : 1,
       limit ? Number(limit) : 20,
+      estado,
     );
   }
 
@@ -61,6 +63,14 @@ export class VentasController {
   @Get(':cod_venta')
   findOne(@Param('cod_venta') cod_venta: string) {
     return this.ventasService.findOne(cod_venta);
+  }
+
+  @Put(':cod_venta/confirmar')
+  confirmar(
+    @Param('cod_venta') cod_venta: string,
+    @Body('items') items: { id_fab: number; precio_venta: number }[],
+  ) {
+    return this.ventasService.confirmar(cod_venta, items);
   }
 
   @Put(':cod_venta/anular')
