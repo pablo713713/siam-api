@@ -95,7 +95,7 @@ export class VentasService {
         )
       `, [
         cod_venta, fecha, cod_usu, 'CONTADO', totalFinal, dto.obs ?? '',
-        dto.cod_cli, 'C', dto.factura ? 1 : 0, descuento, cod_usu,
+        dto.cod_cli, dto.estado ?? 'C', dto.factura ? 1 : 0, descuento, cod_usu,
         'CO', totalFinal, 'N', fecha, 0,
       ]);
 
@@ -158,60 +158,93 @@ export class VentasService {
     cod_suc?: string,
     page = 1,
     limit = 20,
+    estado?: string,
   ) {
     const skip = (page - 1) * limit;
-
-    let filtroFecha = '';
     const params: any[] = [];
+    const conditions: string[] = [];
 
     if (fecha && fechaFin) {
       params.push(fecha, fechaFin);
-      filtroFecha = `WHERE CAST(v.FECHA AS DATE) >= @0 AND CAST(v.FECHA AS DATE) <= @1`;
+      conditions.push(`v.FECHA >= @${params.length - 2} AND v.FECHA < DATEADD(DAY, 1, @${params.length - 1})`);
     } else if (fecha) {
       params.push(fecha);
-      filtroFecha = `WHERE CAST(v.FECHA AS DATE) = @0`;
-    } else {
-      filtroFecha = `WHERE 1=1`;
+      conditions.push(`v.FECHA >= @${params.length - 1} AND v.FECHA < DATEADD(DAY, 1, @${params.length - 1})`);
     }
+
+    if (estado) {
+      params.push(estado);
+      conditions.push(`v.ESTADO = @${params.length - 1}`);
+    }
+
+    if (cod_suc) {
+      params.push(cod_suc);
+      conditions.push(`v.COD_INI = @${params.length - 1}`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Para ventas pendientes no necesitamos calcular devoluciones: una venta
+    // recién creada todavía no debería tener devoluciones. Esto evita recorrer
+    // DET_DEVOLUCION y hace mucho más rápida la pantalla de Confirmar Venta.
+    const pending = estado === 'P';
 
     params.push(skip, limit);
     const skipIdx = params.length - 2;
     const limitIdx = params.length - 1;
 
-    // MODIFICADO: Ahora el total global de cada fila deduce dinámicamente sus devoluciones
-    const ventas = await this.dataSource.query(`
+    const ventasQuery = pending ? `
       SELECT
-        v.COD_VENTA  as codVenta,
-        v.FECHA      as fecha,
-        -- Total neto actual = Total Venta - Suma de sus Devoluciones
-        (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
-        ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto, -- Informativo por si lo requieres luego
-        v.ESTADO     as estado,
-        v.FACTURA    as factura,
+        v.COD_VENTA as codVenta,
+        v.FECHA as fecha,
+        v.TOTAL as total,
+        0 as totalDevuelto,
+        v.ESTADO as estado,
+        v.FACTURA as factura,
         v.TIPO_VENTA as tipoVenta,
-        v.DESC_PROF  as descuento,
-        v.COD_USU    as codUsu,
-        c.NOM_CLI    as nomCliente,
-        c.APE_CLI    as apeCliente,
+        v.DESC_PROF as descuento,
+        v.COD_USU as codUsu,
+        c.NOM_CLI as nomCliente,
+        c.APE_CLI as apeCliente,
         c.RAZON_SOCIAL as razonSocial
       FROM VENTA v
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
-      -- Subconsulta agrupada para obtener el monto devuelto por venta
-      LEFT JOIN (
-        SELECT COD_VENTA, SUM(TOTAL) as TOTAL_DEV
-        FROM DET_DEVOLUCION
-        GROUP BY COD_VENTA
-      ) d_tot ON d_tot.COD_VENTA = v.COD_VENTA
-      ${filtroFecha}
+      ${where}
       ORDER BY v.FECHA DESC
       OFFSET @${skipIdx} ROWS FETCH NEXT @${limitIdx} ROWS ONLY
-    `, params);
+    ` : `
+      SELECT
+        v.COD_VENTA as codVenta,
+        v.FECHA as fecha,
+        (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
+        ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto,
+        v.ESTADO as estado,
+        v.FACTURA as factura,
+        v.TIPO_VENTA as tipoVenta,
+        v.DESC_PROF as descuento,
+        v.COD_USU as codUsu,
+        c.NOM_CLI as nomCliente,
+        c.APE_CLI as apeCliente,
+        c.RAZON_SOCIAL as razonSocial
+      FROM VENTA v
+      LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+      OUTER APPLY (
+        SELECT SUM(dd.TOTAL) as TOTAL_DEV
+        FROM DET_DEVOLUCION dd
+        WHERE dd.COD_VENTA = v.COD_VENTA
+      ) d_tot
+      ${where}
+      ORDER BY v.FECHA DESC
+      OFFSET @${skipIdx} ROWS FETCH NEXT @${limitIdx} ROWS ONLY
+    `;
+
+    const ventas = await this.dataSource.query(ventasQuery, params);
 
     const countParams = params.slice(0, -2);
     const countResult = await this.dataSource.query(`
-      SELECT COUNT(*) as total
+      SELECT COUNT_BIG(*) as total
       FROM VENTA v
-      ${filtroFecha}
+      ${where}
     `, countParams);
 
     const total = Number(countResult[0]?.total ?? 0);
@@ -292,6 +325,67 @@ export class VentasService {
     `, [cod_venta]);
 
     return { ...venta[0], items };
+  }
+
+  // ─────────────────────────────────────────
+  // Confirmar venta pendiente
+  // ─────────────────────────────────────────
+  async confirmar(cod_venta: string, items: { id_fab: number; precio_venta: number }[]) {
+    const venta = await this.findOne(cod_venta);
+
+    if (venta.estado !== 'P') {
+      throw new BadRequestException('La venta no está pendiente de confirmación.');
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException('La venta debe tener al menos un producto.');
+    }
+
+    const precios = new Map(items.map(item => [Number(item.id_fab), Number(item.precio_venta)]));
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      for (const item of venta.items) {
+        if (!precios.has(Number(item.idFab))) continue;
+        const precio = precios.get(Number(item.idFab))!;
+        if (!Number.isFinite(precio) || precio < 0) {
+          throw new BadRequestException(`Precio inválido para ID_FAB ${item.idFab}.`);
+        }
+
+        await queryRunner.query(`
+          UPDATE DET_VENTA
+          SET PRECIO_VENTA = @0, DOLAR = @0
+          WHERE COD_VENTA = @1 AND ID_FAB = @2
+        `, [precio, cod_venta, item.idFab]);
+      }
+
+      const total = venta.items.reduce((sum, item) => {
+        const precio = precios.has(Number(item.idFab))
+          ? precios.get(Number(item.idFab))!
+          : Number(item.precioVenta);
+        return sum + precio * Number(item.cantidad);
+      }, 0);
+
+      await queryRunner.query(`
+        UPDATE VENTA
+        SET TOTAL = @0, TOTAL_INI = @0, ESTADO = 'C'
+        WHERE COD_VENTA = @1 AND ESTADO = 'P'
+      `, [total, cod_venta]);
+
+      await queryRunner.commitTransaction();
+      return {
+        cod_venta,
+        total,
+        message: 'Venta confirmada correctamente',
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ─────────────────────────────────────────
