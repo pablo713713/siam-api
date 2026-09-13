@@ -309,20 +309,32 @@ export class VentasService {
     await queryRunner.startTransaction();
 
     try {
-      // Cambiar estado a anulado
-      await queryRunner.query(`
-        UPDATE VENTA SET ESTADO = 'A' WHERE COD_VENTA = @0
-      `, [cod_venta]);
+      // 1. Cambiar estado a anulado
+      await queryRunner.query(
+        `UPDATE VENTA SET ESTADO = 'A' WHERE COD_VENTA = @0`,
+        [cod_venta]
+      );
 
-      // Revertir stock
+      // 2. Revertir stock utilizando la sucursal de la venta guardada en memoria
+      // Asegúrate de pasar todos los identificadores que componen el producto
       for (const item of venta.items) {
-        await queryRunner.query(`
+        await queryRunner.query(
+          `
           UPDATE SUC_PRO_PROV
           SET CANTIDAD = CANTIDAD + @0
-          WHERE ID_FAB = @1 AND COD_SUC = (
-            SELECT COD_INI FROM VENTA WHERE COD_VENTA = @2
-          )
-        `, [item.cantidad, item.idFab, cod_venta]);
+          WHERE ID_FAB  = @1 
+            AND COD_PRO  = @2
+            AND COD_PROV = @3
+            AND COD_SUC  = @4
+          `,
+          [
+            item.cantidad, 
+            item.idFab, 
+            item.codPro,   // ID / Código del producto
+            item.codProv,  // Código del proveedor
+            venta.codIni   // Sucursal origen de la venta (o venta.codSuc)
+          ]
+        );
       }
 
       await queryRunner.commitTransaction();

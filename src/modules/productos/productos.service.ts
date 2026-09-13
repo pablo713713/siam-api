@@ -365,25 +365,32 @@ export class ProductosService {
 
     const stock = await this.dataSource.query(`
       SELECT
-        s.COD_SUC    as codSuc,
-        s.NOM_SUC    as nomSuc,
+        s.COD_SUC     as codSuc,
+        s.NOM_SUC     as nomSuc,
+        pp.ID_FAB     as idFab,
+        pp.COD_FAB    as codFab,
+        pr.NOM_PROV   as proveedor,
         ISNULL(spp.CANTIDAD, 0) as cantidad,
-        MAX(v.FECHA) as ultimaVenta
-      FROM SUCURSAL s
+        ultimaVenta.fecha as ultimaVenta
+      FROM PROV_PRO pp
+      CROSS JOIN SUCURSAL s
       LEFT JOIN SUC_PRO_PROV spp
-        ON spp.COD_SUC = s.COD_SUC
-        AND spp.ID_FAB IN (
-          SELECT ID_FAB FROM PROV_PRO WHERE ID_PRO = @0
-        )
-      LEFT JOIN DET_VENTA dv
-        ON dv.ID_FAB = spp.ID_FAB
-      LEFT JOIN VENTA v
-        ON v.COD_VENTA = dv.COD_VENTA
-        AND v.ESTADO = 'C'
-        AND v.COD_INI = s.COD_SUC
-      WHERE s.COD_SUC IN (${codigos})
-      GROUP BY s.COD_SUC, s.NOM_SUC, spp.CANTIDAD
-      ORDER BY ISNULL(spp.CANTIDAD, 0) DESC
+        ON spp.ID_FAB = pp.ID_FAB
+        AND spp.COD_SUC = s.COD_SUC
+      LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
+      OUTER APPLY (
+        SELECT MAX(v.FECHA) as fecha
+        FROM DET_VENTA dv
+        INNER JOIN VENTA v ON v.COD_VENTA = dv.COD_VENTA
+        INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
+        WHERE dv.ID_FAB = pp.ID_FAB
+          AND u.COD_SUC = s.COD_SUC
+          AND v.ESTADO IN ('C', 'D')
+      ) ultimaVenta
+      WHERE pp.ID_PRO = @0
+        AND pp.BAJA = 'N'
+        AND s.COD_SUC IN (${codigos})
+      ORDER BY pp.ID_FAB ASC, ISNULL(spp.CANTIDAD, 0) DESC
     `, [id]);
 
     const hoy = new Date();
@@ -391,13 +398,15 @@ export class ProductosService {
     const resultado = stock.map((row: any) => ({
       codSuc: row.codSuc,
       nomSuc: row.nomSuc,
+      idFab: row.idFab,
+      codFab: row.codFab,
+      proveedor: row.proveedor,
       cantidad: Number(row.cantidad ?? 0),
       diasSinMovimiento: row.ultimaVenta
         ? Math.floor((hoy.getTime() - new Date(row.ultimaVenta).getTime()) / (1000 * 60 * 60 * 24))
         : null,
     }));
 
-    // Detalle del producto
     const detalle = await this.dataSource.query(`
       SELECT
         p.COD_PRO    as codSiam,
