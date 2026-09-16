@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Brackets } from 'typeorm';
+import { Repository, DataSource, Brackets, QueryRunner } from 'typeorm';
 import { Producto } from './entities/producto.entity';
 import { SearchProductoDto } from './dto/search-producto.dto';
 import { HistorialIngresoDto } from './dto/ingreso.dto';
@@ -8,6 +8,20 @@ import { StockSucursalDto } from './dto/stock.dto';
 import { HistorialSalidaDto } from './dto/salida.dto';
 import { KardexDto } from './dto/kardex.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
+import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
+import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
+
+export const ALMACENES_AUTORIZADOS_MAC = [
+  '00101', // MAC
+  '00005', // ALMACEN II
+  '00006', // ALMACEN III
+  '00007', // ALMACEN IV
+  '00010', // ALMACEN 2H
+  '00011', // MOTOR ZONE
+  '00012', // DPTO MOTOR ZONE
+  '00013', // ROD ZONE
+  '00014', // DEPTO ROD ZONE
+];
 
 @Injectable()
 export class ProductosService {
@@ -649,5 +663,466 @@ export class ProductosService {
       totalStock,
       porAlmacen: stock,
     };
+  }
+
+  // ─────────────────────────────────────────
+  // Códigos correlativos de remisión
+  // ─────────────────────────────────────────
+  private async generarCodRemSalida(
+    queryRunner: QueryRunner,
+    sucOri: string,
+    sucDes: string,
+  ): Promise<string> {
+    const year2 = new Date().getFullYear().toString().slice(-2);
+    const prefix = `${sucOri}${year2}${sucDes}`;
+
+    const result = await queryRunner.query(
+      `
+      SELECT TOP 1 COD_REM
+      FROM REMISION_S
+      WHERE COD_REM LIKE @0
+      ORDER BY COD_REM DESC
+    `,
+      [`${prefix}%`],
+    );
+
+    let secuencial = 0;
+    if (result.length > 0) {
+      const ultimo = result[0].COD_REM as string;
+      const ultimoSec = parseInt(ultimo.slice(-4), 10);
+      secuencial = isNaN(ultimoSec) ? 0 : ultimoSec;
+    }
+
+    const sec = (secuencial + 1).toString().padStart(4, '0');
+    return `${prefix}${sec}`;
+  }
+
+  private async generarCodRemEntrada(
+    queryRunner: QueryRunner,
+    codDes: string,
+  ): Promise<string> {
+    const year4 = new Date().getFullYear().toString();
+    const prefix = `${codDes}${year4}`;
+
+    const result = await queryRunner.query(
+      `
+      SELECT TOP 1 COD_REM
+      FROM REMISION_E
+      WHERE COD_REM LIKE @0
+      ORDER BY COD_REM DESC
+    `,
+      [`${prefix}%`],
+    );
+
+    let secuencial = 0;
+    if (result.length > 0) {
+      const ultimo = result[0].COD_REM as string;
+      const ultimoSec = parseInt(ultimo.slice(-4), 10);
+      secuencial = isNaN(ultimoSec) ? 0 : ultimoSec;
+    }
+
+    const sec = (secuencial + 1).toString().padStart(4, '0');
+    return `${prefix}${sec}`;
+  }
+
+  // ─────────────────────────────────────────
+  // Almacenes disponibles autorizados (Empresa MAC)
+  // ─────────────────────────────────────────
+  async getAlmacenesDisponibles() {
+    const codigos = ALMACENES_AUTORIZADOS_MAC.map((c) => `'${c}'`).join(',');
+    const almacenes = await this.dataSource.query(`
+      SELECT
+        s.COD_SUC as codSuc,
+        s.NOM_SUC as nomSuc,
+        s.COD_EMP as codEmp,
+        e.NOM_EMP as nomEmp
+      FROM SUCURSAL s
+      LEFT JOIN EMPRESA e ON e.COD_EMP = s.COD_EMP
+      WHERE s.COD_SUC IN (${codigos})
+      ORDER BY CASE WHEN s.COD_SUC = '00101' THEN 0 ELSE 1 END, s.NOM_SUC ASC
+    `);
+    return almacenes;
+  }
+
+  // ─────────────────────────────────────────
+  // Movimiento entre almacenes (Traspaso)
+  // ─────────────────────────────────────────
+  async registrarTraspasoAlmacenes(dto: TraspasoAlmacenDto) {
+    const { cod_suc_ori, cod_suc_des, cod_usu, obs, items } = dto;
+
+    if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_ori)) {
+      throw new BadRequestException(
+        `El almacén de origen ${cod_suc_ori} no está autorizado para movimientos.`,
+      );
+    }
+    if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_des)) {
+      throw new BadRequestException(
+        `El almacén de destino ${cod_suc_des} no está autorizado para movimientos.`,
+      );
+    }
+    if (cod_suc_ori === cod_suc_des) {
+      throw new BadRequestException(
+        'El almacén de origen y destino no pueden ser el mismo.',
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Validar stock y recopilar datos de cada ítem
+      const itemsValidados: {
+        id_fab: number;
+        cod_fab: string;
+        cantidad: number;
+        cif: number;
+        obs?: string;
+      }[] = [];
+
+      for (const item of items) {
+        // Stock en origen
+        const stockOrigen = await queryRunner.query(
+          `
+          SELECT ISNULL(CANTIDAD, 0) as cantidad, COD_FAB
+          FROM SUC_PRO_PROV
+          WHERE ID_FAB = @0 AND COD_SUC = @1
+        `,
+          [item.id_fab, cod_suc_ori],
+        );
+
+        const disponible = stockOrigen.length > 0 ? Number(stockOrigen[0].cantidad) : 0;
+        if (disponible < item.cantidad) {
+          throw new BadRequestException(
+            `Stock insuficiente en almacén de origen (${cod_suc_ori}) para ID_FAB ${item.id_fab}. Disponible: ${disponible}, Solicitado: ${item.cantidad}`,
+          );
+        }
+
+        // Datos del producto
+        const provPro = await queryRunner.query(
+          `
+          SELECT COD_FAB, ISNULL(CIF_CBBA, 0) as cif
+          FROM PROV_PRO
+          WHERE ID_FAB = @0
+        `,
+          [item.id_fab],
+        );
+
+        const codFab = provPro[0]?.COD_FAB || stockOrigen[0]?.COD_FAB || '';
+        const cif = Number(provPro[0]?.cif || 0);
+
+        itemsValidados.push({
+          id_fab: item.id_fab,
+          cod_fab: codFab,
+          cantidad: item.cantidad,
+          cif,
+          obs: item.obs,
+        });
+      }
+
+      const totalCif = itemsValidados.reduce((sum, it) => sum + it.cantidad * it.cif, 0);
+      const fecha = new Date();
+
+      // 2. Generar códigos correlativos
+      const codRemS = await this.generarCodRemSalida(queryRunner, cod_suc_ori, cod_suc_des);
+      const codRemE = await this.generarCodRemEntrada(queryRunner, cod_suc_des);
+      const obsTexto = obs?.trim() ? obs : 'Traspaso entre almacenes';
+
+      // 3. Insertar REMISION_S (Salida del almacén origen)
+      await queryRunner.query(
+        `
+        INSERT INTO REMISION_S (
+          COD_REM, COD_USU, SUC_DES, SUC_ORI, FECHA, OBS_REM,
+          revisado, DESCARGADO, ACEPTADO, ESTADO, TOTAL,
+          COD_USU_REB, COD_USU_REB_DESC, COD_PEDIDO, MEDIO_ENVIO,
+          FECHA_ENVIO, NOMBRE_ENVIO, COD_USU_CIF, USUARIO_DESCARGA,
+          virtual, SUC_TRANSITO, nro_nota, usu_count
+        ) VALUES (
+          @0, @1, @2, @3, @4, @5,
+          'S', 'S', 'S', 'A', @6,
+          @7, @8, '1', 'INTERNO',
+          @9, 'SISTEMA', @10, 'SISTEMA',
+          0, '01000', '', '1'
+        )
+      `,
+        [
+          codRemS,
+          cod_usu,
+          cod_suc_des,
+          cod_suc_ori,
+          fecha,
+          obsTexto,
+          totalCif,
+          cod_usu,
+          cod_usu,
+          fecha,
+          cod_usu,
+        ],
+      );
+
+      // 4. Insertar DET_REMIS y descontar stock de origen
+      for (let i = 0; i < itemsValidados.length; i++) {
+        const it = itemsValidados[i];
+        const cifTotal = it.cantidad * it.cif;
+
+        await queryRunner.query(
+          `
+          INSERT INTO DET_REMIS (
+            COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, OBS, NRO, FOB_TOTAL, ID_FAB
+          ) VALUES (
+            @0, @1, @2, @3, @4, @5, 0, @6
+          )
+        `,
+          [codRemS, it.cod_fab, it.cantidad, cifTotal, it.obs || '', i + 1, it.id_fab],
+        );
+
+        await queryRunner.query(
+          `
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD - @0
+          WHERE ID_FAB = @1 AND COD_SUC = @2
+        `,
+          [it.cantidad, it.id_fab, cod_suc_ori],
+        );
+      }
+
+      // 5. Insertar REMISION_E (Entrada en almacén destino)
+      await queryRunner.query(
+        `
+        INSERT INTO REMISION_E (
+          COD_REM, COD_REMI, COD_USU, COD_ORI, COD_DES, FECHA,
+          OBS_REM, estado, TOTAL, USUARIO_DESCARGA, saw, FECHA_DESCARGA
+        ) VALUES (
+          @0, @1, @2, @3, @4, @5,
+          @6, 'D', @7, 'SISTEMA', 'N', @8
+        )
+      `,
+        [
+          codRemE,
+          codRemS, // Link a la remisión de salida
+          cod_usu,
+          cod_suc_ori,
+          cod_suc_des,
+          fecha,
+          obsTexto,
+          totalCif,
+          fecha,
+        ],
+      );
+
+      // 6. Insertar DET_REMIE e incrementar stock en destino
+      for (let i = 0; i < itemsValidados.length; i++) {
+        const it = itemsValidados[i];
+        const cifTotal = it.cantidad * it.cif;
+
+        await queryRunner.query(
+          `
+          INSERT INTO DET_REMIE (
+            COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, NRO, existencia,
+            ID_FAB, cant_ctrl, fecha, cod_usu, obs, ok
+          ) VALUES (
+            @0, @1, @2, @3, @4, 0,
+            @5, @6, @7, @8, @9, 1
+          )
+        `,
+          [
+            codRemE,
+            it.cod_fab,
+            it.cantidad,
+            cifTotal,
+            i + 1,
+            it.id_fab,
+            it.cantidad,
+            fecha,
+            cod_usu,
+            it.obs || null,
+          ],
+        );
+
+        // Actualizar o crear stock en destino
+        const existeDestino = await queryRunner.query(
+          `
+          SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
+        `,
+          [it.id_fab, cod_suc_des],
+        );
+
+        if (existeDestino.length > 0) {
+          await queryRunner.query(
+            `
+            UPDATE SUC_PRO_PROV
+            SET CANTIDAD = CANTIDAD + @0
+            WHERE ID_FAB = @1 AND COD_SUC = @2
+          `,
+            [it.cantidad, it.id_fab, cod_suc_des],
+          );
+        } else {
+          await queryRunner.query(
+            `
+            INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
+            VALUES (@0, @1, @2, 0, 0, @3)
+          `,
+            [cod_suc_des, it.cod_fab, it.cantidad, it.id_fab],
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Traspaso de mercadería registrado exitosamente',
+        codRemSalida: codRemS,
+        codRemEntrada: codRemE,
+        origen: cod_suc_ori,
+        destino: cod_suc_des,
+        fecha,
+        itemsProcesados: itemsValidados.length,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Actualización de mercadería (Ingreso de stock)
+  // ─────────────────────────────────────────
+  async registrarIngresoMercaderia(dto: IngresoMercaderiaDto) {
+    const { cod_suc, cod_usu, obs, items } = dto;
+
+    if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc)) {
+      throw new BadRequestException(
+        `El almacén ${cod_suc} no está autorizado para ingreso de mercadería.`,
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const itemsValidados: {
+        id_fab: number;
+        cod_fab: string;
+        cantidad: number;
+        cif: number;
+        obs?: string;
+      }[] = [];
+
+      for (const item of items) {
+        const provPro = await queryRunner.query(
+          `
+          SELECT COD_FAB, ISNULL(CIF_CBBA, 0) as cif
+          FROM PROV_PRO
+          WHERE ID_FAB = @0
+        `,
+          [item.id_fab],
+        );
+
+        if (provPro.length === 0) {
+          throw new NotFoundException(`El ítem con ID_FAB ${item.id_fab} no existe.`);
+        }
+
+        itemsValidados.push({
+          id_fab: item.id_fab,
+          cod_fab: provPro[0].COD_FAB,
+          cantidad: item.cantidad,
+          cif: Number(provPro[0].cif || 0),
+          obs: item.obs,
+        });
+      }
+
+      const totalCif = itemsValidados.reduce((sum, it) => sum + it.cantidad * it.cif, 0);
+      const fecha = new Date();
+      const codRemE = await this.generarCodRemEntrada(queryRunner, cod_suc);
+      const obsTexto = obs?.trim() ? obs : 'Actualización de mercadería';
+
+      // Insertar REMISION_E
+      await queryRunner.query(
+        `
+        INSERT INTO REMISION_E (
+          COD_REM, COD_REMI, COD_USU, COD_ORI, COD_DES, FECHA,
+          OBS_REM, estado, TOTAL, USUARIO_DESCARGA, saw, FECHA_DESCARGA
+        ) VALUES (
+          @0, 'ACTUALIZACION', @1, '01000', @2, @3,
+          @4, 'D', @5, 'SISTEMA', 'N', @6
+        )
+      `,
+        [codRemE, cod_usu, cod_suc, fecha, obsTexto, totalCif, fecha],
+      );
+
+      // Insertar DET_REMIE e incrementar stock
+      for (let i = 0; i < itemsValidados.length; i++) {
+        const it = itemsValidados[i];
+        const cifTotal = it.cantidad * it.cif;
+
+        await queryRunner.query(
+          `
+          INSERT INTO DET_REMIE (
+            COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, NRO, existencia,
+            ID_FAB, cant_ctrl, fecha, cod_usu, obs, ok
+          ) VALUES (
+            @0, @1, @2, @3, @4, 0,
+            @5, @6, @7, @8, @9, 1
+          )
+        `,
+          [
+            codRemE,
+            it.cod_fab,
+            it.cantidad,
+            cifTotal,
+            i + 1,
+            it.id_fab,
+            it.cantidad,
+            fecha,
+            cod_usu,
+            it.obs || null,
+          ],
+        );
+
+        const existeDestino = await queryRunner.query(
+          `
+          SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
+        `,
+          [it.id_fab, cod_suc],
+        );
+
+        if (existeDestino.length > 0) {
+          await queryRunner.query(
+            `
+            UPDATE SUC_PRO_PROV
+            SET CANTIDAD = CANTIDAD + @0
+            WHERE ID_FAB = @1 AND COD_SUC = @2
+          `,
+            [it.cantidad, it.id_fab, cod_suc],
+          );
+        } else {
+          await queryRunner.query(
+            `
+            INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
+            VALUES (@0, @1, @2, 0, 0, @3)
+          `,
+            [cod_suc, it.cod_fab, it.cantidad, it.id_fab],
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Ingreso de mercadería registrado exitosamente',
+        codRemEntrada: codRemE,
+        almacen: cod_suc,
+        fecha,
+        itemsProcesados: itemsValidados.length,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
