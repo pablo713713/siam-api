@@ -300,6 +300,24 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Si existe el cierre para ese día, deduce el acumulado del campo `VENTA` e incrementa el campo `DEVOLUCION` para asegurar el cuadre de caja.
 - Manejo seguro de nulos en base de datos mediante la instrucción SQL `ISNULL(campo, 0)`.
 
+### ÉPICA 8 — Movimientos entre Almacenes y Actualización de Mercadería ✅
+
+**HU-M.01 — Listar almacenes autorizados (MAC)** ✅
+- `GET /api/productos/almacenes-disponibles`
+- Retorna exclusivamente los 9 almacenes pertenecientes a la empresa MAC (`COD_EMP = '001'`).
+
+**HU-M.02 — Movimiento entre almacenes (Traspaso)** ✅
+- `POST /api/productos/traspaso`
+- Permite transferir productos de un almacén origen a uno destino de la empresa MAC.
+- Valida que ambos almacenes sean autorizados, distintos y que exista stock suficiente en origen (`SUC_PRO_PROV`).
+- Disminuye stock en almacén origen e incrementa en destino (hace `INSERT` si el producto no existía en destino).
+- Genera en transacción atómica la Remisión de Salida (`REMISION_S` / `DET_REMIS`) y la Remisión de Entrada (`REMISION_E` / `DET_REMIE`) con correlativos legacy, reflejándose automáticamente en el Kardex.
+
+**HU-M.03 — Actualización de mercadería (Ingreso de stock)** ✅
+- `POST /api/productos/actualizar-mercaderia`
+- Permite ingresar stock a cualquiera de los almacenes autorizados de MAC.
+- Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
+
 ---
 
 ## Entidades TypeORM implementadas
@@ -422,6 +440,10 @@ export class Usuario {
 | GET | /api/reportes/ingresos | Ingresos totales por rango | No* |
 | GET | /api/reportes/costos | Costos de mercancía por rango | No* |
 | GET | /api/reportes/ganancia | Ganancia neta por rango | No* |
+| POST | /api/devoluciones | Registrar devolución parcial | No* |
+| GET | /api/productos/almacenes-disponibles | Almacenes autorizados empresa MAC | No* |
+| POST | /api/productos/traspaso | Movimiento de stock entre almacenes | No* |
+| POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |
 
 > *Los guards JWT están implementados pero aún no aplicados globalmente. Se aplicarán cuando se definan las rutas protegidas.
 

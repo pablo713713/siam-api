@@ -1,11 +1,28 @@
-import { Controller, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, ParseIntPipe } from '@nestjs/common';
 import { ProductosService } from './productos.service';
 import { SearchProductoDto } from './dto/search-producto.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
+import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
+import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
 
 @Controller('productos')
 export class ProductosController {
   constructor(private readonly productosService: ProductosService) {}
+
+  @Get('almacenes-disponibles')
+  async getAlmacenesDisponibles() {
+    return this.productosService.getAlmacenesDisponibles();
+  }
+
+  @Post('traspaso')
+  async registrarTraspaso(@Body() dto: TraspasoAlmacenDto) {
+    return this.productosService.registrarTraspasoAlmacenes(dto);
+  }
+
+  @Post('actualizar-mercaderia')
+  async registrarIngresoMercaderia(@Body() dto: IngresoMercaderiaDto) {
+    return this.productosService.registrarIngresoMercaderia(dto);
+  }
 
   @Get('search')
   async search(@Query() searchDto: SearchProductoDto) {
