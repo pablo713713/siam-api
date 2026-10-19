@@ -22,6 +22,10 @@ export class CreateDevolucionDto {
 
   @IsOptional()
   @IsString()
+  cod_suc?: string;
+
+  @IsOptional()
+  @IsString()
   obs?: string;
 
   @IsArray()

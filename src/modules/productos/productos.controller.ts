@@ -4,6 +4,7 @@ import { SearchProductoDto } from './dto/search-producto.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
+import { VerificarCajeroDto } from './dto/verificar-cajero.dto';
 
 @Controller('productos')
 export class ProductosController {
@@ -14,9 +15,29 @@ export class ProductosController {
     return this.productosService.getAlmacenesDisponibles();
   }
 
+  @Post('verificar-cajero')
+  async verificarCajero(@Body() dto: VerificarCajeroDto) {
+    return this.productosService.verificarCajeroPorPassword(dto);
+  }
+
   @Post('traspaso')
   async registrarTraspaso(@Body() dto: TraspasoAlmacenDto) {
     return this.productosService.registrarTraspasoAlmacenes(dto);
+  }
+
+  @Get('traspasos')
+  async getHistorialTraspasos(
+    @Query('fecha') fecha?: string,
+    @Query('cod_suc_ori') cod_suc_ori?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.productosService.getHistorialTraspasos(
+      fecha,
+      cod_suc_ori,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Post('actualizar-mercaderia')
