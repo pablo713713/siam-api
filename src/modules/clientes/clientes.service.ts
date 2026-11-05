@@ -142,48 +142,7 @@ export class ClientesService {
     };
   }
 
-  async getOcasional() {
-    // En esta base de datos, el cliente ocasional es COD_CLI=1 (Cliente Anónimo).
-    // También mantenemos búsquedas alternativas por si cambia la identificación en otra BD.
-    // Usamos las tres posibilidades para no depender de una sola columna.
-    const resultado = await this.clienteRepository.manager.query(`
-      SELECT TOP 1
-        c.cod_cli          as codCli,
-        c.NOM_CLI          as nomCli,
-        c.APE_CLI          as apeCli,
-        c.RAZON_SOCIAL     as razonSocial,
-        c.NUM_CI_NIT       as numCiNit,
-        c.TEL_DOM          as telDom,
-        c.CEL              as cel,
-        c.DOMICILIO        as domicilio,
-        c.CREDITO_MAXIMO   as creditoMaximo,
-        c.codigo           as codigoCalificacion,
-        cc.Tipo_cliente    as tipoCliente,
-        cc.consignacion    as condicionCredito,
-        cc.Calificacion    as calificacion,
-        cc.tiempo          as tiempoCredito,
-        CASE WHEN ISNULL(c.CREDITO_MAXIMO, 0) > 0 THEN 1 ELSE 0 END as puedeCredito
-      FROM CLIENTE c
-      LEFT JOIN CLIENTE_CONSIGNACION cc ON cc.codigo = c.codigo
-      WHERE c.cod_cli = @0
-         OR c.cod_cli = 1
-         OR LTRIM(RTRIM(ISNULL(c.NUM_CI_NIT, ''))) = '1191'
-         OR UPPER(ISNULL(c.NOM_CLI, '')) LIKE '%OCASIONAL%'
-         OR UPPER(ISNULL(c.APE_CLI, '')) LIKE '%OCASIONAL%'
-         OR UPPER(ISNULL(c.RAZON_SOCIAL, '')) LIKE '%OCASIONAL%'
-      ORDER BY CASE WHEN c.cod_cli = 1 THEN 0 WHEN c.cod_cli = @0 THEN 1 ELSE 2 END, c.cod_cli
-    `, [1191]);
-
-    if (!resultado.length) {
-      throw new NotFoundException(
-        'No se encontró el cliente ocasional (Cliente Anónimo, código 1).',
-      );
-    }
-
-    return resultado[0];
-  }
-
-  async search(q: string, limit = 20) {
+  async search(q: string, cod_emp: string, limit = 20) {
     const term = `%${q}%`;
 
     const clientes = await this.clienteRepository.manager.query(`
@@ -204,8 +163,10 @@ export class ClientesService {
         cc.tiempo          as tiempoCredito,
         CASE WHEN ISNULL(c.CREDITO_MAXIMO, 0) > 0 THEN 1 ELSE 0 END as puedeCredito
       FROM CLIENTE c
+      INNER JOIN SUCURSAL s ON s.COD_SUC = c.COD_SUC
       LEFT JOIN CLIENTE_CONSIGNACION cc ON cc.codigo = c.codigo
       WHERE c.baja = '0'
+        AND s.COD_EMP = @1
         AND (
           c.NOM_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
           c.APE_CLI      LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI OR
@@ -213,10 +174,51 @@ export class ClientesService {
           c.NUM_CI_NIT   LIKE @0 COLLATE SQL_Latin1_General_CP1_CI_AI
         )
       ORDER BY c.NOM_CLI ASC
-    `, [term]);
+    `, [term, cod_emp]);
 
     return { data: clientes, total: clientes.length };
   }
+
+async getOcasional(cod_emp: string) {
+  const resultado = await this.clienteRepository.manager.query(`
+    SELECT TOP 1
+      c.cod_cli          as codCli,
+      c.NOM_CLI          as nomCli,
+      c.APE_CLI          as apeCli,
+      c.RAZON_SOCIAL     as razonSocial,
+      c.NUM_CI_NIT       as numCiNit,
+      c.TEL_DOM          as telDom,
+      c.CEL              as cel,
+      c.DOMICILIO        as domicilio,
+      c.CREDITO_MAXIMO   as creditoMaximo,
+      c.codigo           as codigoCalificacion,
+      cc.Tipo_cliente    as tipoCliente,
+      cc.consignacion    as condicionCredito,
+      cc.Calificacion    as calificacion,
+      cc.tiempo          as tiempoCredito,
+      CASE WHEN ISNULL(c.CREDITO_MAXIMO, 0) > 0 THEN 1 ELSE 0 END as puedeCredito
+    FROM CLIENTE c
+    INNER JOIN SUCURSAL s ON s.COD_SUC = c.COD_SUC
+    LEFT JOIN CLIENTE_CONSIGNACION cc ON cc.codigo = c.codigo
+    WHERE s.COD_EMP = @0
+      AND (
+        c.cod_cli = 1 OR
+        LTRIM(RTRIM(ISNULL(c.NUM_CI_NIT, ''))) = '1191' OR
+        UPPER(ISNULL(c.NOM_CLI, '')) LIKE '%OCASIONAL%' OR
+        UPPER(ISNULL(c.APE_CLI, '')) LIKE '%OCASIONAL%' OR
+        UPPER(ISNULL(c.RAZON_SOCIAL, '')) LIKE '%OCASIONAL%'
+      )
+    ORDER BY CASE WHEN c.cod_cli = 1 THEN 0 ELSE 1 END, c.cod_cli
+  `, [cod_emp]);
+
+  if (!resultado.length) {
+    throw new NotFoundException(
+      `No se encontró el cliente ocasional para la empresa ${cod_emp}.`,
+    );
+  }
+
+  return resultado[0];
+}
   async getDetalleCompra(cod_cli: number, cod_venta: string) {
     const manager = this.clienteRepository.manager;
 

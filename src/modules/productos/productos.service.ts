@@ -17,7 +17,7 @@ export class ProductosService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async search(searchDto: SearchProductoDto) {
+  async search(searchDto: SearchProductoDto, cod_emp: string) {
     const { q, limit } = searchDto;
     const take = limit || 20;
     const term = `"${q}*"`;
@@ -46,27 +46,22 @@ export class ProductosService {
       FROM PRODUCTO p
       INNER JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
-      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
       LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND pp.BAJA = 'N'
+      AND p.COD_EMP = @3
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0) OR
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       ORDER BY p.DESC_PRO ASC, pp.ID_FAB ASC
       OFFSET 0 ROWS FETCH NEXT @2 ROWS ONLY
-    `, [term, termLike, take]);
+    `, [term, termLike, take, cod_emp]);
 
-    return {
-      data: items,
-      limit: take,
-    };
+    return { data: items, limit: take };
   }
 
-  async searchByCodigo(searchDto: SearchProductoDto) {
+  async searchByCodigo(searchDto: SearchProductoDto, cod_emp: string) {
     const { q, limit } = searchDto;
     const take = limit || 20;
 
@@ -82,11 +77,14 @@ export class ProductosService {
         'MAX(pp.barra) as barra',
         'MAX(pp.COD_ANT) as codAnt'
       ])
-      .where('producto.COD_PRO LIKE :q', { q: `%${q}%` })
-      .orWhere('producto.CODIGO LIKE :q', { q: `%${q}%` })
-      .orWhere('pp.COD_FAB LIKE :q', { q: `%${q}%` })
-      .orWhere('pp.barra LIKE :q', { q: `%${q}%` })
-      .orWhere('pp.COD_ANT LIKE :q', { q: `%${q}%` })
+      .where('producto.COD_EMP = :cod_emp', { cod_emp })
+      .andWhere(new Brackets((qb) => {
+        qb.where('producto.COD_PRO LIKE :q', { q: `%${q}%` })
+          .orWhere('producto.CODIGO LIKE :q', { q: `%${q}%` })
+          .orWhere('pp.COD_FAB LIKE :q', { q: `%${q}%` })
+          .orWhere('pp.barra LIKE :q', { q: `%${q}%` })
+          .orWhere('pp.COD_ANT LIKE :q', { q: `%${q}%` });
+      }))
       .groupBy('producto.ID_PRO')
       .addGroupBy('producto.COD_PRO')
       .addGroupBy('producto.DESC_PRO')
@@ -99,30 +97,22 @@ export class ProductosService {
 
     return {
       data: items.map(item => ({
-        id: item.id,
-        codPro: item.codPro,
-        descPro: item.descPro,
-        estado: item.estado,
-        codigo: item.codigo,
-        codFab: item.codFab,
-        barra: item.barra,
-        codAnt: item.codAnt
+        id: item.id, codPro: item.codPro, descPro: item.descPro,
+        estado: item.estado, codigo: item.codigo, codFab: item.codFab,
+        barra: item.barra, codAnt: item.codAnt
       })),
       limit: take,
     };
   }
 
-  async searchAdvanced(searchDto: AdvancedSearchProductoDto) {
+  async searchAdvanced(searchDto: AdvancedSearchProductoDto, cod_emp: string) {
     const { q, page = 1, limit = 20 } = searchDto;
     const skip = (page - 1) * limit;
     const term = q ? `"${q}*"` : null;
     const termLike = q ? `%${q}%` : null;
 
     if (!term) {
-      return {
-        data: [],
-        meta: { total: 0, page, limit, totalPages: 0 }
-      };
+      return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
     }
 
     const items = await this.dataSource.query(`
@@ -148,54 +138,42 @@ export class ProductosService {
       FROM PRODUCTO p
       INNER JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
-      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
       LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND pp.BAJA = 'N'
+      AND p.COD_EMP = @2
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0) OR
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       ORDER BY p.DESC_PRO ASC, pp.ID_FAB ASC
-      OFFSET @2 ROWS FETCH NEXT @3 ROWS ONLY
-    `, [term, termLike, skip, limit]);
+      OFFSET @3 ROWS FETCH NEXT @4 ROWS ONLY
+    `, [term, termLike, cod_emp, skip, limit]);
 
     const countResult = await this.dataSource.query(`
       SELECT COUNT(*) as total
       FROM PRODUCTO p
       INNER JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
-      LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
-      LEFT JOIN MARCA ma ON ma.COD_MARCA = mo.COD_MARCA
-      LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
       WHERE p.ESTADO = 'A'
       AND pp.BAJA = 'N'
+      AND p.COD_EMP = @2
       AND (
         CONTAINS(p.DESC_PRO, @0) OR
-        CONTAINS(ma.NOM_MARCA, @0) OR
-        CONTAINS(mo.NOM_MODELO, @0) OR
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
-    `, [term, termLike]);
+    `, [term, termLike, cod_emp]);
 
     const total = Number(countResult[0]?.total || 0);
 
     return {
       data: items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      }
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  async getHistorialIngresos(id: number): Promise<HistorialIngresoDto[]> {
-    const producto = await this.productoRepository.findOne({ where: { id } });
-    if (!producto) {
-      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+  async getHistorialIngresos(id: number, cod_emp: string): Promise<HistorialIngresoDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id, codEmp: cod_emp } });  if (!producto) {
+    throw new NotFoundException(`El producto con ID ${id} no existe.`);
     }
 
     const importaciones = await this.dataSource.createQueryBuilder()
@@ -233,10 +211,10 @@ export class ProductosService {
     return historial;
   }
 
-  async getStockSucursal(id: number): Promise<StockSucursalDto[]> {
-    const producto = await this.productoRepository.findOne({ where: { id } });
+  async getStockSucursal(id: number, cod_emp: string): Promise<StockSucursalDto[]> {
+    const producto = await this.productoRepository.findOne({ where: { id, codEmp: cod_emp } });
     if (!producto) {
-      throw new NotFoundException(`El producto con ID ${id} no existe.`);
+    throw new NotFoundException(`El producto con ID ${id} no existe.`);
     }
 
     const stock = await this.dataSource.createQueryBuilder()
@@ -259,11 +237,11 @@ export class ProductosService {
     }));
   }
 
-  async getHistorialSalidas(id: number): Promise<HistorialSalidaDto[]> {
-    const producto = await this.productoRepository.findOne({ where: { id } });
-    if (!producto) {
-      throw new NotFoundException(`El producto con ID ${id} no existe.`);
-    }
+ async getHistorialSalidas(id: number, cod_emp: string): Promise<HistorialSalidaDto[]> {
+  const producto = await this.productoRepository.findOne({ where: { id, codEmp: cod_emp } });
+  if (!producto) {
+    throw new NotFoundException(`El producto con ID ${id} no existe.`);
+  }
 
     const ventas = await this.dataSource.createQueryBuilder()
       .select('v.FECHA', 'fecha')
@@ -311,10 +289,10 @@ export class ProductosService {
     return historial;
   }
 
-  async getKardex(id: number): Promise<KardexDto> {
-    const stock = await this.getStockSucursal(id);
-    const ingresos = await this.getHistorialIngresos(id);
-    const salidas = await this.getHistorialSalidas(id);
+  async getKardex(id: number, cod_emp: string): Promise<KardexDto> {
+  const stock = await this.getStockSucursal(id, cod_emp);
+  const ingresos = await this.getHistorialIngresos(id, cod_emp);
+  const salidas = await this.getHistorialSalidas(id, cod_emp);
 
     const totalStockFisico = stock.reduce((sum, s) => sum + s.stockFisico, 0);
     const totalInventarioVirtual = stock.reduce((sum, s) => sum + s.inventarioVirtual, 0);
@@ -354,11 +332,11 @@ export class ProductosService {
       movimientos: historialKardex,
     };
   }
-  async getStockResumen(id: number) {
-    const producto = await this.productoRepository.findOne({ where: { id } });
-    if (!producto) {
-      throw new NotFoundException(`El producto con ID ${id} no existe.`);
-    }
+  async getStockResumen(id: number, cod_emp: string) {
+  const producto = await this.productoRepository.findOne({ where: { id, codEmp: cod_emp } });
+  if (!producto) {
+    throw new NotFoundException(`El producto con ID ${id} no existe.`);
+  }
 
     const almacenes = ['00004', '00005', '00006', '00007', '00010', '00011'];
     const codigos = almacenes.map((c) => `'${c}'`).join(',');
@@ -427,15 +405,11 @@ export class ProductosService {
     };
   }
 
-  async getKardexPorAlmacen(
-    id: number,
-    codSuc?: string,
-    fechaDesde?: string,
-  ) {
-    const producto = await this.productoRepository.findOne({ where: { id } });
-    if (!producto) {
-      throw new NotFoundException(`El producto con ID ${id} no existe.`);
-    }
+  async getKardexPorAlmacen(id: number, cod_emp: string, codSuc?: string, fechaDesde?: string) {
+  const producto = await this.productoRepository.findOne({ where: { id, codEmp: cod_emp } });
+  if (!producto) {
+    throw new NotFoundException(`El producto con ID ${id} no existe.`);
+  }
 
     const params: any[] = [id];
     let sucFiltro = '';
@@ -627,7 +601,18 @@ export class ProductosService {
       movimientos: movimientosLimpios,
     };
   }
-  async getStockPorIdFab(idFab: number) {
+  async getStockPorIdFab(idFab: number, cod_emp: string) {
+    const producto = await this.dataSource.query(`
+      SELECT p.ID_PRO
+      FROM PROV_PRO pp
+      INNER JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+      WHERE pp.ID_FAB = @0 AND p.COD_EMP = @1
+    `, [idFab, cod_emp]);
+
+    if (producto.length === 0) {
+      throw new NotFoundException(`El producto con ID_FAB ${idFab} no existe`);
+    }
+
     const stock = await this.dataSource.query(`
       SELECT
         spp.COD_SUC   as codSuc,

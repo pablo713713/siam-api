@@ -17,15 +17,15 @@ export class AlmacenesService {
   ) {}
 
   // Listar todos los almacenes disponibles
-  async findAll() {
-  const almacenes = await this.dataSource.query(`
-    SELECT COD_SUC as codSuc, NOM_SUC as nomSuc
-    FROM SUCURSAL
-    WHERE COD_SUC IN ('00004','00005','00006','00007','00008','00009','00010')
-    ORDER BY NOM_SUC ASC
-  `);
-  return almacenes;
-}
+  async findAll(cod_emp: string) {
+    const almacenes = await this.dataSource.query(`
+      SELECT COD_SUC as codSuc, NOM_SUC as nomSuc
+      FROM SUCURSAL
+      WHERE COD_EMP = @0
+      ORDER BY NOM_SUC ASC
+    `, [cod_emp]);
+    return almacenes;
+  }
 
   // Obtener almacenes asignados a un usuario
   async getAlmacenesDeUsuario(cod_usu: string) {

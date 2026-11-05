@@ -6,4 +6,5 @@ export interface JwtPayload {
   roles: string[];
   id_roles: number[];
   almacenes: { codSuc: string; nomSuc: string }[];
+  cod_emp: string;
 }
