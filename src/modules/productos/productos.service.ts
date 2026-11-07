@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Brackets, QueryRunner } from 'typeorm';
 import { Producto } from './entities/producto.entity';
@@ -10,17 +10,17 @@ import { KardexDto } from './dto/kardex.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
+import { VerificarCajeroDto } from './dto/verificar-cajero.dto';
 
 export const ALMACENES_AUTORIZADOS_MAC = [
-  '00101', // MAC
+  '00011', // MOTOR ZONE (Principal)
   '00005', // ALMACEN II
   '00006', // ALMACEN III
   '00007', // ALMACEN IV
   '00010', // ALMACEN 2H
-  '00011', // MOTOR ZONE
-  '00012', // DPTO MOTOR ZONE
+  '00012', // DPTO MOTOR ZONE (DEPOSITO M.Z.)
   '00013', // ROD ZONE
-  '00014', // DEPTO ROD ZONE
+  '00014', // DEPTO ROD ZONE (DEPOSITO ROD ZONE)
 ];
 
 @Injectable()
@@ -724,16 +724,62 @@ export class ProductosService {
       FROM SUCURSAL s
       LEFT JOIN EMPRESA e ON e.COD_EMP = s.COD_EMP
       WHERE s.COD_SUC IN (${codigos})
-      ORDER BY CASE WHEN s.COD_SUC = '00101' THEN 0 ELSE 1 END, s.NOM_SUC ASC
+      ORDER BY CASE WHEN s.COD_SUC = '00011' THEN 0 ELSE 1 END, s.NOM_SUC ASC
     `);
     return almacenes;
+  }
+
+  // ─────────────────────────────────────────
+  // Verificación de Cajero por Contraseña
+  // ─────────────────────────────────────────
+  async verificarCajeroPorPassword(dto: VerificarCajeroDto) {
+    const usuario = await this.dataSource.query(
+      `
+      SELECT COD_USU, NOM_USU, AP_USU, ALIAS, COD_SUC, baja
+      FROM USUARIO
+      WHERE CONTRASEÑA = @0
+        AND baja = '0'
+    `,
+      [dto.password],
+    );
+
+    if (!usuario || usuario.length === 0) {
+      throw new UnauthorizedException(
+        'Contraseña de cajero incorrecta o usuario inactivo.',
+      );
+    }
+
+    const u = usuario[0];
+    return {
+      cod_usu: u.COD_USU,
+      alias: u.ALIAS,
+      nombre: u.NOM_USU,
+      apellido: u.AP_USU,
+      nombreCompleto: `${u.NOM_USU} ${u.AP_USU}`.trim(),
+      cod_suc: u.COD_SUC,
+    };
   }
 
   // ─────────────────────────────────────────
   // Movimiento entre almacenes (Traspaso)
   // ─────────────────────────────────────────
   async registrarTraspasoAlmacenes(dto: TraspasoAlmacenDto) {
-    const { cod_suc_ori, cod_suc_des, cod_usu, obs, items } = dto;
+    const { cod_suc_ori, obs, items } = dto;
+    const cod_suc_des = dto.cod_suc_des || '00011'; // Destino por defecto: MOTOR ZONE
+    let cod_usu = dto.cod_usu;
+
+    if (dto.password_cajero) {
+      const cajero = await this.verificarCajeroPorPassword({
+        password: dto.password_cajero,
+      });
+      cod_usu = cajero.cod_usu;
+    }
+
+    if (!cod_usu) {
+      throw new BadRequestException(
+        'Debe proporcionar el código de usuario (cod_usu) o la contraseña del cajero (password_cajero) para autorizar la remisión.',
+      );
+    }
 
     if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_ori)) {
       throw new BadRequestException(
@@ -1109,5 +1155,86 @@ export class ProductosService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  // ─────────────────────────────────────────
+  // Historial de Traspasos (Hojas de Remisión Digitales)
+  // ─────────────────────────────────────────
+  async getHistorialTraspasos(
+    fecha?: string,
+    cod_suc_ori?: string,
+    page = 1,
+    limit = 50,
+  ) {
+    const skip = (page - 1) * limit;
+    const params: any[] = [];
+    let whereClauses = "WHERE rs.SUC_DES = '00011'"; // Hacia Motor Zone
+
+    if (fecha) {
+      params.push(fecha);
+      whereClauses += ` AND CAST(rs.FECHA AS DATE) = @${params.length - 1}`;
+    }
+
+    if (cod_suc_ori) {
+      params.push(cod_suc_ori);
+      whereClauses += ` AND rs.SUC_ORI = @${params.length - 1}`;
+    }
+
+    const remisiones = await this.dataSource.query(`
+      SELECT
+        rs.COD_REM    as codRemSalida,
+        re.COD_REM    as codRemEntrada,
+        rs.FECHA      as fecha,
+        rs.SUC_ORI    as codSucOri,
+        so.NOM_SUC    as nomSucOri,
+        rs.SUC_DES    as codSucDes,
+        sd.NOM_SUC    as nomSucDes,
+        rs.COD_USU    as codUsu,
+        ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as nombreCajero,
+        rs.OBS_REM    as obs,
+        rs.TOTAL      as totalCif
+      FROM REMISION_S rs
+      LEFT JOIN REMISION_E re ON re.COD_REMI = rs.COD_REM
+      LEFT JOIN SUCURSAL so ON so.COD_SUC = rs.SUC_ORI
+      LEFT JOIN SUCURSAL sd ON sd.COD_SUC = rs.SUC_DES
+      LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
+      ${whereClauses}
+      ORDER BY rs.FECHA DESC
+      OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY
+    `, params);
+
+    const cods = remisiones.map((r: any) => `'${r.codRemSalida}'`).join(',');
+    let itemsDetalle: any[] = [];
+    if (cods.length > 0) {
+      itemsDetalle = await this.dataSource.query(`
+        SELECT
+          ds.COD_REM   as codRemSalida,
+          ds.ID_FAB    as idFab,
+          ds.COD_FAB   as codFab,
+          ds.CANTIDAD  as cantidad,
+          p.DESC_PRO   as descPro
+        FROM DET_REMIS ds
+        LEFT JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
+        LEFT JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+        WHERE ds.COD_REM IN (${cods})
+      `);
+    }
+
+    const data = remisiones.map((r: any) => ({
+      ...r,
+      items: itemsDetalle
+        .filter((it: any) => it.codRemSalida === r.codRemSalida)
+        .map((it: any) => ({
+          idFab: it.idFab,
+          codFab: it.codFab,
+          descPro: it.descPro,
+          cantidad: it.cantidad,
+        })),
+    }));
+
+    return {
+      data,
+      meta: { page, limit, total: data.length },
+    };
   }
 }

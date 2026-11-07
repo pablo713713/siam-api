@@ -93,12 +93,24 @@ export class DevolucionesService {
           `, [item.cantidad, totalDevuelto, cod_venta, item.id_fab]);
         }
 
-        // 4. Restaurar stock a Motor Zone (00011)
-        await queryRunner.query(`
-          UPDATE SUC_PRO_PROV
-          SET CANTIDAD = CANTIDAD + @0
-          WHERE ID_FAB = @1 AND COD_SUC = @2
-        `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
+        // 4. Restaurar stock al almacén indicado (por defecto Motor Zone 00011)
+        const sucDestino = dto.cod_suc || COD_SUC_MOTORZONE;
+        const existeStock = await queryRunner.query(`
+          SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
+        `, [item.id_fab, sucDestino]);
+
+        if (existeStock.length > 0) {
+          await queryRunner.query(`
+            UPDATE SUC_PRO_PROV
+            SET CANTIDAD = CANTIDAD + @0
+            WHERE ID_FAB = @1 AND COD_SUC = @2
+          `, [item.cantidad, item.id_fab, sucDestino]);
+        } else {
+          await queryRunner.query(`
+            INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
+            VALUES (@0, @1, @2, 0, 0, @3)
+          `, [sucDestino, item.cod_fab, item.cantidad, item.id_fab]);
+        }
       }
 
       // 5. Ajuste financiero en CIERRE_CAJA (HU-D.02)

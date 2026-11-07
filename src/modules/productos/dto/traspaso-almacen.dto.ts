@@ -20,13 +20,17 @@ export class TraspasoAlmacenDto {
   @IsNotEmpty({ message: 'El almacén de origen es requerido' })
   cod_suc_ori: string;
 
+  @IsOptional()
   @IsString({ message: 'cod_suc_des debe ser un texto' })
-  @IsNotEmpty({ message: 'El almacén de destino es requerido' })
-  cod_suc_des: string;
+  cod_suc_des?: string;
 
+  @IsOptional()
   @IsString({ message: 'cod_usu debe ser un texto' })
-  @IsNotEmpty({ message: 'El código de usuario es requerido' })
-  cod_usu: string;
+  cod_usu?: string;
+
+  @IsOptional()
+  @IsString({ message: 'password_cajero debe ser un texto' })
+  password_cajero?: string;
 
   @IsOptional()
   @IsString()

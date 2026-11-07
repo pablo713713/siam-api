@@ -304,19 +304,31 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 
 **HU-M.01 — Listar almacenes autorizados (MAC)** ✅
 - `GET /api/productos/almacenes-disponibles`
-- Retorna exclusivamente los 9 almacenes pertenecientes a la empresa MAC (`COD_EMP = '001'`).
+- Retorna exclusivamente los 8 almacenes físicos activos de la empresa MAC (`COD_EMP = '001'`), ordenando en primer lugar el mostrador principal **MOTOR ZONE** (`00011`).
 
-**HU-M.02 — Movimiento entre almacenes (Traspaso)** ✅
+**HU-M.02 — Movimiento entre almacenes y Remisión Digital** ✅
 - `POST /api/productos/traspaso`
-- Permite transferir productos de un almacén origen a uno destino de la empresa MAC.
-- Valida que ambos almacenes sean autorizados, distintos y que exista stock suficiente en origen (`SUC_PRO_PROV`).
-- Disminuye stock en almacén origen e incrementa en destino (hace `INSERT` si el producto no existía en destino).
-- Genera en transacción atómica la Remisión de Salida (`REMISION_S` / `DET_REMIS`) y la Remisión de Entrada (`REMISION_E` / `DET_REMIE`) con correlativos legacy, reflejándose automáticamente en el Kardex.
+- Permite transferir productos de un almacén origen a MOTOR ZONE (`00011`) u otro almacén autorizado de MAC.
+- Permite autorizar el traspaso mediante `password_cajero` en tiempo real (eliminando la hoja de papel física).
+- Valida stock suficiente en origen (`SUC_PRO_PROV`), descuenta en origen e incrementa en destino.
+- Genera en transacción atómica la Remisión de Salida (`REMISION_S` / `DET_REMIS`) y la Remisión de Entrada (`REMISION_E` / `DET_REMIE`) con correlativos legacy, impactando automáticamente en el Kardex.
 
 **HU-M.03 — Actualización de mercadería (Ingreso de stock)** ✅
 - `POST /api/productos/actualizar-mercaderia`
 - Permite ingresar stock a cualquiera de los almacenes autorizados de MAC.
 - Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
+
+**HU-M.04 — Verificación de Cajero por Contraseña** ✅
+- `POST /api/productos/verificar-cajero`
+- Valida la contraseña del cajero en la tabla `USUARIO` (en texto plano) y devuelve su identidad (`cod_usu`, `alias`, `nombreCompleto`) para firmar digitalmente la remisión.
+
+**HU-M.05 — Historial de Hojas de Remisión Digitales** ✅
+- `GET /api/productos/traspasos`
+- Lista el histórico de traspasos hacia Motor Zone con fecha, almacén origen, cajero responsable e ítems detallados.
+
+**Regla de Negocio en Ventas y Devoluciones:**
+- `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.
+- `POST /api/devoluciones`: Permite devolver stock de forma flexible a cualquier almacén indicado mediante el campo opcional `cod_suc` (por defecto retorna a MOTOR ZONE `00011`).
 
 ---
 
@@ -442,7 +454,9 @@ export class Usuario {
 | GET | /api/reportes/ganancia | Ganancia neta por rango | No* |
 | POST | /api/devoluciones | Registrar devolución parcial | No* |
 | GET | /api/productos/almacenes-disponibles | Almacenes autorizados empresa MAC | No* |
-| POST | /api/productos/traspaso | Movimiento de stock entre almacenes | No* |
+| POST | /api/productos/verificar-cajero | Identificar cajero por contraseña | No* |
+| POST | /api/productos/traspaso | Movimiento de stock / Remisión digital | No* |
+| GET | /api/productos/traspasos | Historial de hojas de remisión digitales | No* |
 | POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |
 
 > *Los guards JWT están implementados pero aún no aplicados globalmente. Se aplicarán cuando se definan las rutas protegidas.
