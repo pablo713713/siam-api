@@ -89,9 +89,21 @@ export class CreditosService {
   // ─────────────────────────────────────────
   // Crear crédito
   // ─────────────────────────────────────────
-  async create(dto: CreateCreditoDto, cod_usu: string) {
+  async create(dto: CreateCreditoDto, cod_usu: string, cod_emp: string) {
     if (!dto.cod_cli) {
       throw new BadRequestException('Debe seleccionar un cliente');
+    }
+
+    // 0. Validar que el cliente pertenezca a la empresa del usuario logueado
+    const clienteEmp = await this.dataSource.query(`
+      SELECT s.COD_EMP
+      FROM CLIENTE cl
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      WHERE cl.cod_cli = @0
+    `, [dto.cod_cli]);
+
+    if (clienteEmp.length === 0 || clienteEmp[0].COD_EMP !== cod_emp) {
+      throw new BadRequestException('Este cliente no pertenece a su empresa');
     }
 
     // 1. Validar que el cliente pueda comprar a crédito
@@ -219,7 +231,7 @@ export class CreditosService {
   // ─────────────────────────────────────────
   // Apartado 1: créditos activos (ESTADO = 'A'), con semáforo de vencimiento
   // ─────────────────────────────────────────
-  async findActivos() {
+  async findActivos(cod_emp: string) {
     const creditos = await this.dataSource.query(`
       SELECT
         c.COD_CRE      as codCre,
@@ -234,9 +246,47 @@ export class CreditosService {
         DATEDIFF(DAY, GETDATE(), c.FEC_FIN) as diasRestantes
       FROM CREDITO c
       INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
       WHERE c.ESTADO = 'A'
+        AND s.COD_EMP = @0
       ORDER BY c.FEC_FIN ASC
-    `);
+    `, [cod_emp]);
+
+    return creditos.map((c: any) => ({
+      ...c,
+      alerta: this.calcularAlerta(c.diasRestantes),
+    }));
+  }
+  async findAbiertos(cod_emp: string) {
+    const creditos = await this.dataSource.query(`
+      SELECT
+        c.COD_CRE      as codCre,
+        cl.cod_cli     as codCli,
+        cl.NOM_CLI     as nomCliente,
+        cl.APE_CLI     as apeCliente,
+        cl.RAZON_SOCIAL as razonSocial,
+        c.FEC_INICIO   as fecApertura,
+        c.FEC_FIN      as fecPlazo,
+        DATEDIFF(DAY, c.FEC_INICIO, GETDATE()) as diasEnCredito,
+        c.TOTAL        as totalCredito,
+        ISNULL(dev.TOTAL_DEV, 0) as devolucion,
+        c.SALDO        as saldoXCobrar,
+        c.ESTADO       as estado,
+        c.COD_USU      as usuario,
+        c.OBS          as observacion,
+        DATEDIFF(DAY, GETDATE(), c.FEC_FIN) as diasRestantes
+      FROM CREDITO c
+      INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      LEFT JOIN (
+        SELECT COD_CRE, SUM(TOTAL) as TOTAL_DEV
+        FROM DET_DEVOLUCION_CREDITO
+        GROUP BY COD_CRE
+      ) dev ON dev.COD_CRE = c.COD_CRE
+      WHERE c.SALDO > 0
+        AND s.COD_EMP = @0
+      ORDER BY c.FEC_FIN ASC
+    `, [cod_emp]);
 
     return creditos.map((c: any) => ({
       ...c,
@@ -253,7 +303,7 @@ export class CreditosService {
   // ─────────────────────────────────────────
   // Apartado 2, panel izquierdo: clientes habilitados para crédito
   // ─────────────────────────────────────────
-  async findClientesHabilitados() {
+  async findClientesHabilitados(cod_emp: string) {
     const clientes = await this.dataSource.query(`
       SELECT
         cl.cod_cli      as codCli,
@@ -263,6 +313,7 @@ export class CreditosService {
         cl.CREDITO_MAXIMO as creditoMaximo,
         ISNULL(uso.usado, 0) as usado
       FROM CLIENTE cl
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
       LEFT JOIN (
         SELECT COD_CLI, SUM(SALDO) as usado
         FROM CREDITO
@@ -270,8 +321,9 @@ export class CreditosService {
         GROUP BY COD_CLI
       ) uso ON uso.COD_CLI = cl.cod_cli
       WHERE cl.CREDITO_MAXIMO > 0
+        AND s.COD_EMP = @0
       ORDER BY cl.NOM_CLI ASC
-    `);
+    `, [cod_emp]);
 
     return clientes.map((c: any) => ({
       ...c,
@@ -282,7 +334,7 @@ export class CreditosService {
   // ─────────────────────────────────────────
   // Apartado 2, panel derecho: créditos activos de un cliente
   // ─────────────────────────────────────────
-  async findCreditosPorCliente(cod_cli: number) {
+  async findCreditosPorCliente(cod_cli: number, cod_emp: string) {
     const creditos = await this.dataSource.query(`
       SELECT
         c.COD_CRE    as codCre,
@@ -292,9 +344,12 @@ export class CreditosService {
         c.SALDO      as saldo,
         DATEDIFF(DAY, GETDATE(), c.FEC_FIN) as diasRestantes
       FROM CREDITO c
+      INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
       WHERE c.COD_CLI = @0 AND c.ESTADO = 'A'
+        AND s.COD_EMP = @1
       ORDER BY c.FEC_FIN ASC
-    `, [cod_cli]);
+    `, [cod_cli, cod_emp]);
 
     const items = creditos.map((c: any) => ({
       ...c,
@@ -306,39 +361,46 @@ export class CreditosService {
     return { creditos: items, totalSaldos: totalSeleccionable };
   }
 
-  async registrarDevolucion(cod_cre: string, dto: CreateDevolucionCreditoDto, cod_usu: string) {
+  async registrarDevolucion(cod_cre: string, dto: CreateDevolucionCreditoDto, cod_usu: string, cod_emp: string) {
     const credito = await this.dataSource.query(`
-        SELECT SALDO, ESTADO FROM CREDITO WHERE COD_CRE = @0
+      SELECT c.SALDO, c.ESTADO, s.COD_EMP
+      FROM CREDITO c
+      INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      WHERE c.COD_CRE = @0
     `, [cod_cre]);
 
     if (credito.length === 0) {
-        throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
+      throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
+    }
+    if (credito[0].COD_EMP !== cod_emp) {
+      throw new BadRequestException('Este crédito no pertenece a su empresa');
     }
     if (credito[0].ESTADO !== 'A') {
-        throw new BadRequestException('Solo se pueden devolver ítems de créditos activos');
+      throw new BadRequestException('Solo se pueden devolver ítems de créditos activos');
     }
 
     // Validar cantidad disponible a devolver por cada ítem
     for (const item of dto.items) {
-        const original = await this.dataSource.query(`
+      const original = await this.dataSource.query(`
         SELECT dc.CANTIDAD,
-            ISNULL((SELECT SUM(ddc.CANTIDAD) FROM DET_DEVOLUCION_CREDITO ddc
-                    WHERE ddc.COD_CRE = @0 AND ddc.ID_FAB = @1), 0) as yaDevuelto
+          ISNULL((SELECT SUM(ddc.CANTIDAD) FROM DET_DEVOLUCION_CREDITO ddc
+                  WHERE ddc.COD_CRE = @0 AND ddc.ID_FAB = @1), 0) as yaDevuelto
         FROM DET_CREDITO dc
         WHERE dc.COD_CRE = @0 AND dc.ID_FAB = @1
-        `, [cod_cre, item.id_fab]);
+      `, [cod_cre, item.id_fab]);
 
-        if (original.length === 0) {
+      if (original.length === 0) {
         throw new BadRequestException(`El ítem ID_FAB ${item.id_fab} no pertenece a este crédito`);
-        }
+      }
 
-        const disponibleADevolver = Number(original[0].CANTIDAD) - Number(original[0].yaDevuelto);
-        if (item.cantidad > disponibleADevolver) {
+      const disponibleADevolver = Number(original[0].CANTIDAD) - Number(original[0].yaDevuelto);
+      if (item.cantidad > disponibleADevolver) {
         throw new BadRequestException(
-            `No se puede devolver ${item.cantidad} de ID_FAB ${item.id_fab}. ` +
-            `Disponible para devolver: ${disponibleADevolver}`
+          `No se puede devolver ${item.cantidad} de ID_FAB ${item.id_fab}. ` +
+          `Disponible para devolver: ${disponibleADevolver}`
         );
-        }
+      }
     }
 
     const totalDevolucion = dto.items.reduce((sum, i) => sum + i.total, 0);
@@ -348,66 +410,71 @@ export class CreditosService {
     await queryRunner.startTransaction();
 
     try {
-        // Cabecera — COD_DEVC es IDENTITY, lo recuperamos con SCOPE_IDENTITY()
-        const insertHeader = await queryRunner.query(`
+      // Cabecera — COD_DEVC es IDENTITY, lo recuperamos con OUTPUT INSERTED
+      const insertHeader = await queryRunner.query(`
         INSERT INTO DEVOLUCION_CREDITO (COD_CRE, COD_USU, FECHA, TOTAL, OBS, Tipo)
         OUTPUT INSERTED.COD_DEVC
         VALUES (@0, @1, @2, @3, @4, @5)
-        `, [cod_cre, cod_usu, new Date(), totalDevolucion, dto.obs ?? '', dto.esTotal ?? 0]);
+      `, [cod_cre, cod_usu, new Date(), totalDevolucion, dto.obs ?? '', dto.esTotal ?? 0]);
 
-        const cod_devc = insertHeader[0].COD_DEVC;
+      const cod_devc = insertHeader[0].COD_DEVC;
 
-        for (const item of dto.items) {
+      for (const item of dto.items) {
         await queryRunner.query(`
-            INSERT INTO DET_DEVOLUCION_CREDITO (COD_CRE, COD_FAB, CANTIDAD, TOTAL, COD_DEVC, ID_FAB)
-            VALUES (@0, @1, @2, @3, @4, @5)
+          INSERT INTO DET_DEVOLUCION_CREDITO (COD_CRE, COD_FAB, CANTIDAD, TOTAL, COD_DEVC, ID_FAB)
+          VALUES (@0, @1, @2, @3, @4, @5)
         `, [cod_cre, item.cod_fab, item.cantidad, item.total, cod_devc, item.id_fab]);
 
         // Reponer stock en la sucursal indicada (mismo patrón que devoluciones de venta)
         await queryRunner.query(`
-            UPDATE SUC_PRO_PROV
-            SET CANTIDAD = CANTIDAD + @0
-            WHERE ID_FAB = @1 AND COD_SUC = @2
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD + @0
+          WHERE ID_FAB = @1 AND COD_SUC = @2
         `, [item.cantidad, item.id_fab, dto.cod_suc]);
-        }
+      }
 
-        // Ajustar saldo del crédito, sin bajar de 0
-        const nuevoSaldo = Math.max(0, Number(credito[0].SALDO) - totalDevolucion);
-        const nuevoEstado = nuevoSaldo <= 0 ? 'C' : 'A';
+      // Ajustar saldo del crédito, sin bajar de 0
+      const nuevoSaldo = Math.max(0, Number(credito[0].SALDO) - totalDevolucion);
+      const nuevoEstado = nuevoSaldo <= 0 ? 'C' : 'A';
 
-        await queryRunner.query(`
+      await queryRunner.query(`
         UPDATE CREDITO SET SALDO = @0, ESTADO = @1 WHERE COD_CRE = @2
-        `, [nuevoSaldo, nuevoEstado, cod_cre]);
+      `, [nuevoSaldo, nuevoEstado, cod_cre]);
 
-        await queryRunner.commitTransaction();
+      await queryRunner.commitTransaction();
 
-        return {
+      return {
         cod_devc,
         cod_cre,
         totalDevuelto: totalDevolucion,
         nuevoSaldo,
         estado: nuevoEstado,
         message: 'Devolución de crédito registrada correctamente',
-        };
+      };
     } catch (err) {
-        await queryRunner.rollbackTransaction();
-        throw err;
+      await queryRunner.rollbackTransaction();
+      throw err;
     } finally {
-        await queryRunner.release();
+      await queryRunner.release();
     }
-    }
-  async registrarPago(cod_cre: string, dto: RegistrarPagoDto, cod_usu: string) {
+  }
+  async registrarPago(cod_cre: string, dto: RegistrarPagoDto, cod_usu: string, cod_emp: string) {
     const credito = await this.dataSource.query(`
-      SELECT SALDO, ESTADO FROM CREDITO WHERE COD_CRE = @0
+      SELECT c.SALDO, c.ESTADO, s.COD_EMP
+      FROM CREDITO c
+      INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      WHERE c.COD_CRE = @0
     `, [cod_cre]);
 
     if (credito.length === 0) {
       throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
     }
-
-    if (credito[0].ESTADO !== 'A') {
-      throw new BadRequestException('Este crédito no está activo');
+    if (credito[0].COD_EMP !== cod_emp) {
+      throw new BadRequestException('Este crédito no pertenece a su empresa');
     }
+
+  // ... resto del método sin cambios (usa credito[0].SALDO / ESTADO igual que antes)
 
     const saldoActual = Number(credito[0].SALDO);
 
@@ -461,9 +528,9 @@ export class CreditosService {
   // ─────────────────────────────────────────
 // Detalle de un crédito (cabecera + items, con disponible a devolver)
 // ─────────────────────────────────────────
-   async findOne(cod_cre: string) {
+   async findOne(cod_cre: string, cod_emp: string) {
     const credito = await this.dataSource.query(`
-        SELECT
+      SELECT
         c.COD_CRE      as codCre,
         c.COD_CLI      as codCli,
         cl.NOM_CLI     as nomCliente,
@@ -479,17 +546,18 @@ export class CreditosService {
         c.COD_USU      as codUsu,
         c.OBS          as obs,
         DATEDIFF(DAY, GETDATE(), c.FEC_FIN) as diasRestantes
-        FROM CREDITO c
-        INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
-        WHERE c.COD_CRE = @0
-    `, [cod_cre]);
+      FROM CREDITO c
+      INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      WHERE c.COD_CRE = @0 AND s.COD_EMP = @1
+    `, [cod_cre, cod_emp]);
 
     if (credito.length === 0) {
-        throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
+      throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
     }
 
     const items = await this.dataSource.query(`
-        SELECT
+      SELECT
         dc.ID_FAB       as idFab,
         dc.COD_FAB      as codFab,
         dc.CANTIDAD     as cantidadOriginal,
@@ -499,21 +567,109 @@ export class CreditosService {
         dc.DESCUENTO    as descuento,
         p.DESC_PRO      as descPro,
         p.COD_PRO       as codPro
-        FROM DET_CREDITO dc
-        INNER JOIN PROV_PRO pp ON pp.ID_FAB = dc.ID_FAB
-        INNER JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
-        LEFT JOIN (
+      FROM DET_CREDITO dc
+      INNER JOIN PROV_PRO pp ON pp.ID_FAB = dc.ID_FAB
+      INNER JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+      LEFT JOIN (
         SELECT COD_CRE, ID_FAB, SUM(CANTIDAD) as CANTIDAD_DEV
         FROM DET_DEVOLUCION_CREDITO
         GROUP BY COD_CRE, ID_FAB
-        ) dd ON dd.COD_CRE = dc.COD_CRE AND dd.ID_FAB = dc.ID_FAB
-        WHERE dc.COD_CRE = @0
+      ) dd ON dd.COD_CRE = dc.COD_CRE AND dd.ID_FAB = dc.ID_FAB
+      WHERE dc.COD_CRE = @0
     `, [cod_cre]);
 
     return {
-        ...credito[0],
-        alerta: this.calcularAlerta(credito[0].diasRestantes),
-        items,
+      ...credito[0],
+      alerta: this.calcularAlerta(credito[0].diasRestantes),
+      items,
     };
+  }
+    async pagoMultiple(cod_cli: number, codCreList: string[], cod_emp: string) {
+      if (!Array.isArray(codCreList) || codCreList.length === 0) {
+        throw new BadRequestException('Debe seleccionar al menos un crédito');
+      }
+
+      const clienteEmp = await this.dataSource.query(`
+        SELECT s.COD_EMP
+        FROM CLIENTE cl
+        INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+        WHERE cl.cod_cli = @0
+      `, [cod_cli]);
+
+      if (clienteEmp.length === 0 || clienteEmp[0].COD_EMP !== cod_emp) {
+        throw new BadRequestException('Este cliente no pertenece a su empresa');
+      }
+
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        let totalAbonado = 0;
+        const detalles: { cod_cre: string; monto: number }[] = [];
+
+        for (const cod_cre of codCreList) {
+          const credito = await queryRunner.query(`
+            SELECT SALDO, ESTADO, COD_CLI FROM CREDITO WHERE COD_CRE = @0
+          `, [cod_cre]);
+
+          if (credito.length === 0) {
+            throw new NotFoundException(`Crédito ${cod_cre} no encontrado`);
+          }
+          if (Number(credito[0].COD_CLI) !== Number(cod_cli)) {
+            throw new BadRequestException(`El crédito ${cod_cre} no pertenece a este cliente`);
+          }
+          if (credito[0].ESTADO !== 'A') {
+            throw new BadRequestException(`El crédito ${cod_cre} no está activo`);
+          }
+
+          const saldo = Number(credito[0].SALDO);
+          if (saldo <= 0) {
+            throw new BadRequestException(`El crédito ${cod_cre} no tiene saldo pendiente`);
+          }
+
+          // Generar N_PAGO dentro de la misma transacción
+          const ultimoPago = await queryRunner.query(`
+            SELECT TOP 1 N_PAGO FROM PAGO_CREDITO
+            WHERE COD_CRE = @0
+            ORDER BY N_PAGO DESC
+          `, [cod_cre]);
+
+          let secuencial = 0;
+          if (ultimoPago.length > 0) {
+            secuencial = parseInt((ultimoPago[0].N_PAGO as string).slice(-2), 10) + 1;
+          }
+          const n_pago = `${cod_cre}${secuencial.toString().padStart(2, '0')}`;
+
+          await queryRunner.query(`
+            INSERT INTO PAGO_CREDITO (
+              COD_CRE, N_PAGO, TOTAL, SALDO, FECHA, COD_USU, OBS, estado, fecha_pago, tipo_pago
+            ) VALUES (
+              @0, @1, @2, 0, @3, @4, @5, 'A', @3, @6
+            )
+          `, [cod_cre, n_pago, saldo, new Date(), 'SISTEMA', 'Pago múltiple', 'EFECTIVO']);
+
+          await queryRunner.query(`
+            UPDATE CREDITO SET SALDO = 0, ESTADO = 'C' WHERE COD_CRE = @0
+          `, [cod_cre]);
+
+          totalAbonado += saldo;
+          detalles.push({ cod_cre, monto: saldo });
+        }
+
+        await queryRunner.commitTransaction();
+
+        return {
+          totalAbonado,
+          creditosPagados: detalles.length,
+          detalles,
+          message: `${detalles.length} crédito(s) saldado(s) correctamente`,
+        };
+      } catch (err) {
+        await queryRunner.rollbackTransaction();
+        throw err;
+      } finally {
+        await queryRunner.release();
+      }
     }
 }

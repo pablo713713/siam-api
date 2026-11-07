@@ -15,12 +15,14 @@ import { AlmacenesModule } from './modules/almacenes/almacenes.module';
 import { SistemaUsuarioAlmacen } from './modules/almacenes/entities/sistema-usuario-almacen.entity';
 import { VentasModule } from './modules/ventas/ventas.module';
 import { Producto } from './modules/productos/entities/producto.entity';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 
 import { Cliente } from './modules/clientes/entities/cliente.entity';
 import { Usuario } from './modules/auth/entities/usuario.entity';
 import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
-
+import { CreditosModule } from './modules/creditos/creditos.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -57,8 +59,11 @@ import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
     AlmacenesModule,
     VentasModule,
     DevolucionesModule,
-    
+    CreditosModule
 
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppModule {}

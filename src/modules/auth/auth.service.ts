@@ -23,7 +23,6 @@ export class AuthService {
 ) {}
 
   async login(dto: LoginDto): Promise<{ access_token: string; usuario: JwtPayload }> {
-    // 1. Buscar usuario por alias incluyendo contraseña
     const usuario = await this.usuarioRepository
       .createQueryBuilder('u')
       .addSelect('u.CONTRASEÑA')
@@ -48,6 +47,22 @@ export class AuthService {
 
     const almacenes = await this.almacenesService.getAlmacenesDeUsuario(usuario.COD_USU);
 
+    // 4. Calcular cod_emp vía USUARIO.COD_SUC → SUCURSAL.COD_EMP
+    const empresaResult = await this.usuarioRepository.manager.query(`
+      SELECT s.COD_EMP as codEmp
+      FROM USUARIO u
+      INNER JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+      WHERE u.COD_USU = @0
+    `, [usuario.COD_USU]);
+
+    const cod_emp = empresaResult[0]?.codEmp;
+
+    if (!cod_emp) {
+      throw new UnauthorizedException(
+        'El usuario no tiene una sucursal/empresa válida asociada. Contacte al administrador.',
+      );
+    }
+
     const payload: JwtPayload = {
       cod_usu: usuario.COD_USU,
       alias: usuario.ALIAS,
@@ -56,6 +71,7 @@ export class AuthService {
       roles: usuarioRoles.map((ur) => ur.rol.nombre),
       id_roles: usuarioRoles.map((ur) => ur.id_rol),
       almacenes,
+      cod_emp,
     };
 
     // 5. Generar token

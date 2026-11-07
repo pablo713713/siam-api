@@ -8,14 +8,15 @@ import {
 } from '@nestjs/common';
 import { AlmacenesService } from './almacenes.service';
 import { AsignarAlmacenDto } from './dto/asignar-almacen.dto';
+import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 
 @Controller('almacenes')
 export class AlmacenesController {
   constructor(private readonly almacenesService: AlmacenesService) {}
 
   @Get()
-  findAll() {
-    return this.almacenesService.findAll();
+  findAll(@CodEmp() cod_emp: string) {
+    return this.almacenesService.findAll(cod_emp);
   }
 
   @Get('usuario/:cod_usu')

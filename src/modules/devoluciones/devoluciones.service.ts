@@ -8,7 +8,7 @@ const COD_SUC_MOTORZONE = '00011';
 export class DevolucionesService {
   constructor(private readonly dataSource: DataSource) {}
 
-  async create(dto: CreateDevolucionDto) {
+  async create(dto: CreateDevolucionDto, cod_emp: string) {
     const { cod_venta, cod_usu, obs, items } = dto;
     const fecha = new Date();
 
@@ -17,10 +17,14 @@ export class DevolucionesService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Validar que la venta exista y no esté anulada
+      // 1. Validar que la venta exista, sea de la empresa correcta, y no esté anulada
       const ventaResult = await queryRunner.query(`
-        SELECT ESTADO, FECHA FROM VENTA WHERE COD_VENTA = @0
-      `, [cod_venta]);
+        SELECT v.ESTADO, v.FECHA
+        FROM VENTA v
+        INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
+        INNER JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+        WHERE v.COD_VENTA = @0 AND s.COD_EMP = @1
+      `, [cod_venta, cod_emp]);
 
       if (ventaResult.length === 0) {
         throw new NotFoundException(`Venta ${cod_venta} no encontrada`);

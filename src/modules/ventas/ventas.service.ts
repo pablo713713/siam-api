@@ -148,6 +148,7 @@ export class VentasService {
     page = 1,
     limit = 20,
     estado?: string,
+    cod_emp?: string,
   ) {
     const skip = (page - 1) * limit;
     const params: any[] = [];
@@ -162,8 +163,10 @@ export class VentasService {
     }
 
     if (estado) {
-      params.push(estado);
-      conditions.push(`v.ESTADO = @${params.length - 1}`);
+      const estados = estado.split(',').map(e => e.trim()).filter(Boolean);
+      const placeholders = estados.map((_, i) => `@${params.length + i}`);
+      params.push(...estados);
+      conditions.push(`v.ESTADO IN (${placeholders.join(', ')})`);
     }
 
     if (cod_suc) {
@@ -171,16 +174,22 @@ export class VentasService {
       conditions.push(`v.COD_INI = @${params.length - 1}`);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    if (cod_emp) {
+      params.push(cod_emp);
+      conditions.push(`ue.COD_EMP = @${params.length - 1}`);
+    }
 
-    // Para ventas pendientes no necesitamos calcular devoluciones: una venta
-    // recién creada todavía no debería tener devoluciones. Esto evita recorrer
-    // DET_DEVOLUCION y hace mucho más rápida la pantalla de Confirmar Venta.
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const pending = estado === 'P';
 
     params.push(skip, limit);
     const skipIdx = params.length - 2;
     const limitIdx = params.length - 1;
+
+    const joinEmpresa = `
+      INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
+      INNER JOIN SUCURSAL ue ON ue.COD_SUC = u.COD_SUC
+    `;
 
     const ventasQuery = pending ? `
       SELECT
@@ -197,6 +206,7 @@ export class VentasService {
         c.APE_CLI as apeCliente,
         c.RAZON_SOCIAL as razonSocial
       FROM VENTA v
+      ${joinEmpresa}
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
       ${where}
       ORDER BY v.FECHA DESC
@@ -216,6 +226,7 @@ export class VentasService {
         c.APE_CLI as apeCliente,
         c.RAZON_SOCIAL as razonSocial
       FROM VENTA v
+      ${joinEmpresa}
       LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
       OUTER APPLY (
         SELECT SUM(dd.TOTAL) as TOTAL_DEV
@@ -233,6 +244,7 @@ export class VentasService {
     const countResult = await this.dataSource.query(`
       SELECT COUNT_BIG(*) as total
       FROM VENTA v
+      ${joinEmpresa}
       ${where}
     `, countParams);
 
@@ -253,41 +265,48 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Detalle de una venta (Modificado con Opción B - Cabecera y Items)
   // ─────────────────────────────────────────
-  async findOne(cod_venta: string) {
-    // MODIFICADO: Ahora el total resta dinámicamente la suma de todas las devoluciones de esta venta
-    const venta = await this.dataSource.query(`
-      SELECT
-        v.COD_VENTA  as codVenta,
-        v.FECHA      as fecha,
-        v.TOTAL      as totalOriginal,
-        -- Total neto actual = Total Venta - Total Devuelto
-        (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
-        ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto,
-        v.ESTADO     as estado,
-        v.FACTURA    as factura,
-        v.TIPO_VENTA as tipoVenta,
-        v.DESC_PROF  as descuento,
-        v.OBS        as obs,
-        v.COD_USU    as codUsu,
-        c.cod_cli    as codCli,
-        c.NOM_CLI    as nomCliente,
-        c.APE_CLI    as apeCliente,
-        c.RAZON_SOCIAL as razonSocial,
-        c.NUM_CI_NIT as numCiNit
-      FROM VENTA v
-      LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
-      -- Subconsulta para traer la suma total de lo devuelto en esta venta
-      LEFT JOIN (
-        SELECT COD_VENTA, SUM(TOTAL) as TOTAL_DEV
-        FROM DET_DEVOLUCION
-        GROUP BY COD_VENTA
-      ) d_tot ON d_tot.COD_VENTA = v.COD_VENTA
-      WHERE v.COD_VENTA = @0
-    `, [cod_venta]);
+  async findOne(cod_venta: string, cod_emp?: string) {
+  const params: any[] = [cod_venta];
+  let filtroEmp = '';
+  if (cod_emp) {
+    params.push(cod_emp);
+    filtroEmp = 'AND ue.COD_EMP = @1';
+  }
 
-    if (venta.length === 0) {
-      throw new NotFoundException(`Venta ${cod_venta} no encontrada`);
-    }
+  const venta = await this.dataSource.query(`
+    SELECT
+      v.COD_VENTA  as codVenta,
+      v.FECHA      as fecha,
+      v.TOTAL      as totalOriginal,
+      (v.TOTAL - ISNULL(d_tot.TOTAL_DEV, 0)) as total,
+      ISNULL(d_tot.TOTAL_DEV, 0) as totalDevuelto,
+      v.ESTADO     as estado,
+      v.FACTURA    as factura,
+      v.TIPO_VENTA as tipoVenta,
+      v.DESC_PROF  as descuento,
+      v.OBS        as obs,
+      v.COD_USU    as codUsu,
+      c.cod_cli    as codCli,
+      c.NOM_CLI    as nomCliente,
+      c.APE_CLI    as apeCliente,
+      c.RAZON_SOCIAL as razonSocial,
+      c.NUM_CI_NIT as numCiNit
+    FROM VENTA v
+    INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
+    INNER JOIN SUCURSAL ue ON ue.COD_SUC = u.COD_SUC
+    LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
+    LEFT JOIN (
+      SELECT COD_VENTA, SUM(TOTAL) as TOTAL_DEV
+      FROM DET_DEVOLUCION
+      GROUP BY COD_VENTA
+    ) d_tot ON d_tot.COD_VENTA = v.COD_VENTA
+    WHERE v.COD_VENTA = @0
+    ${filtroEmp}
+  `, params);
+
+  if (venta.length === 0) {
+    throw new NotFoundException(`Venta ${cod_venta} no encontrada`);
+  }
 
     // Consulta de ítems (se mantiene igual al paso anterior)
     const items = await this.dataSource.query(`
@@ -469,7 +488,7 @@ export class VentasService {
         message: 'Tipo de cambio registrado correctamente',
     };
     }
-    async getDolarParaleloVigente(cod_emp: string) {
+  async getDolarParaleloVigente(cod_emp: string) {
     const result = await this.dataSource.query(`
       SELECT TOP 1
         FECHA        as fecha,

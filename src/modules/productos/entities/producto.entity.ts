@@ -16,4 +16,7 @@ export class Producto {
 
   @Column({ name: 'CODIGO', type: 'varchar', length: 4, nullable: true })
   codigo: string;
+
+  @Column({ name: 'COD_EMP', type: 'varchar', length: 3 })
+  codEmp: string;
 }
