@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Brackets, QueryRunner } from 'typeorm';
 import { Producto } from './entities/producto.entity';
@@ -10,7 +10,8 @@ import { KardexDto } from './dto/kardex.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
-import { VerificarCajeroDto } from './dto/verificar-cajero.dto';
+import { UsuariosService, VendedorFirmante } from '../usuarios/usuarios.service';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 export const ALMACENES_AUTORIZADOS_MAC = [
   '00011', // MOTOR ZONE (Principal)
@@ -23,12 +24,21 @@ export const ALMACENES_AUTORIZADOS_MAC = [
   '00014', // DEPTO ROD ZONE (DEPOSITO ROD ZONE)
 ];
 
+// Almacén principal: único desde el que se puede vender
+export const COD_SUC_PRINCIPAL = '00011'; // MOTOR ZONE
+
+// Sub-almacenes dentro de Motor Zone. Desde estos el traspaso al principal
+// EXIGE la firma del vendedor (reemplaza al talonario físico).
+// TODO: completar con los códigos reales cuando se ubiquen en la BD.
+export const SUBALMACENES_MOTORZONE: string[] = [];
+
 @Injectable()
 export class ProductosService {
   constructor(
     @InjectRepository(Producto)
     private readonly productoRepository: Repository<Producto>,
     private readonly dataSource: DataSource,
+    private readonly usuariosService: UsuariosService,
   ) {}
 
   async search(searchDto: SearchProductoDto, cod_emp: string) {
@@ -730,56 +740,50 @@ export class ProductosService {
   }
 
   // ─────────────────────────────────────────
-  // Verificación de Cajero por Contraseña
-  // ─────────────────────────────────────────
-  async verificarCajeroPorPassword(dto: VerificarCajeroDto) {
-    const usuario = await this.dataSource.query(
-      `
-      SELECT COD_USU, NOM_USU, AP_USU, ALIAS, COD_SUC, baja
-      FROM USUARIO
-      WHERE CONTRASEÑA = @0
-        AND baja = '0'
-    `,
-      [dto.password],
-    );
-
-    if (!usuario || usuario.length === 0) {
-      throw new UnauthorizedException(
-        'Contraseña de cajero incorrecta o usuario inactivo.',
-      );
-    }
-
-    const u = usuario[0];
-    return {
-      cod_usu: u.COD_USU,
-      alias: u.ALIAS,
-      nombre: u.NOM_USU,
-      apellido: u.AP_USU,
-      nombreCompleto: `${u.NOM_USU} ${u.AP_USU}`.trim(),
-      cod_suc: u.COD_SUC,
-    };
-  }
-
-  // ─────────────────────────────────────────
   // Movimiento entre almacenes (Traspaso)
   // ─────────────────────────────────────────
-  async registrarTraspasoAlmacenes(dto: TraspasoAlmacenDto) {
+  async registrarTraspasoAlmacenes(dto: TraspasoAlmacenDto, encargado: JwtPayload, cod_emp: string) {
     const { cod_suc_ori, obs, items } = dto;
-    const cod_suc_des = dto.cod_suc_des || '00011'; // Destino por defecto: MOTOR ZONE
-    let cod_usu = dto.cod_usu;
+    const cod_suc_des = dto.cod_suc_des || COD_SUC_PRINCIPAL; // Destino por defecto: MOTOR ZONE
 
-    if (dto.password_cajero) {
-      const cajero = await this.verificarCajeroPorPassword({
-        password: dto.password_cajero,
-      });
-      cod_usu = cajero.cod_usu;
+    // Quien autoriza es el usuario autenticado (encargado del almacén de origen)
+    const cod_usu_encargado = encargado?.cod_usu;
+    if (!cod_usu_encargado) {
+      throw new ForbiddenException('No se pudo identificar al encargado que autoriza el traspaso.');
     }
-
-    if (!cod_usu) {
-      throw new BadRequestException(
-        'Debe proporcionar el código de usuario (cod_usu) o la contraseña del cajero (password_cajero) para autorizar la remisión.',
+    const almacenesEncargado = (encargado.almacenes ?? []).map((a) => a.codSuc);
+    if (!almacenesEncargado.includes(cod_suc_ori)) {
+      throw new ForbiddenException(
+        `No tiene asignado el almacén de origen ${cod_suc_ori}; no puede autorizar este traspaso.`,
       );
     }
+
+    // Firma del vendedor: obligatoria desde sub-almacenes de Motor Zone,
+    // opcional en los demás traspasos (si se envía, se valida y registra igual)
+    const firmaEnviada = !!(dto.cod_usu_vendedor || dto.password_vendedor);
+    const firmaObligatoria = SUBALMACENES_MOTORZONE.includes(cod_suc_ori);
+    let vendedor: VendedorFirmante | null = null;
+
+    if (firmaObligatoria || firmaEnviada) {
+      if (!dto.cod_usu_vendedor || !dto.password_vendedor) {
+        throw new BadRequestException(
+          'El vendedor debe firmar el traspaso: seleccione su usuario e ingrese su contraseña.',
+        );
+      }
+      if (dto.cod_usu_vendedor === cod_usu_encargado) {
+        throw new BadRequestException('El vendedor que firma no puede ser el mismo encargado que autoriza.');
+      }
+      vendedor = await this.usuariosService.verificarFirmaVendedor(
+        dto.cod_usu_vendedor,
+        dto.password_vendedor,
+        cod_emp,
+      );
+    }
+
+    // En la remisión legacy: COD_USU = quien emite (encargado),
+    // COD_USU_REB = quien recibe (vendedor que firma; si no hay firma, el encargado)
+    const cod_usu = cod_usu_encargado;
+    const cod_usu_recibe = vendedor?.cod_usu ?? cod_usu_encargado;
 
     if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_ori)) {
       throw new BadRequestException(
@@ -884,10 +888,10 @@ export class ProductosService {
           fecha,
           obsTexto,
           totalCif,
-          cod_usu,
-          cod_usu,
+          cod_usu_recibe, // COD_USU_REB
+          cod_usu_recibe, // COD_USU_REB_DESC
           fecha,
-          cod_usu,
+          cod_usu,        // COD_USU_CIF
         ],
       );
 
@@ -931,7 +935,7 @@ export class ProductosService {
         [
           codRemE,
           codRemS, // Link a la remisión de salida
-          cod_usu,
+          cod_usu_recibe,
           cod_suc_ori,
           cod_suc_des,
           fecha,
@@ -965,7 +969,7 @@ export class ProductosService {
             it.id_fab,
             it.cantidad,
             fecha,
-            cod_usu,
+            cod_usu_recibe,
             it.obs || null,
           ],
         );
@@ -998,6 +1002,28 @@ export class ProductosService {
         }
       }
 
+      // 7. Registrar la autorización firmada (reemplaza al talonario físico).
+      //    Fecha y hora las genera SQL Server en hora de Bolivia (DEFAULT de la
+      //    tabla), no la PC del encargado ni el backend.
+      let autorizacion: { idTa: number; fecha: string; hora: string } | null = null;
+      if (vendedor) {
+        const filas = await queryRunner.query(
+          `
+          INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
+            COD_REM, COD_REM_E, SUC_ORI, SUC_DES,
+            COD_USU_ENCARGADO, COD_USU_VENDEDOR, ESTADO, OBS
+          )
+          OUTPUT
+            INSERTED.ID_TA                             AS idTa,
+            CONVERT(VARCHAR(10), INSERTED.FECHA, 23)   AS fecha,
+            CONVERT(VARCHAR(8),  INSERTED.HORA, 108)   AS hora
+          VALUES (@0, @1, @2, @3, @4, @5, 'PENDIENTE', @6)
+        `,
+          [codRemS, codRemE, cod_suc_ori, cod_suc_des, cod_usu_encargado, vendedor.cod_usu, obsTexto.slice(0, 512)],
+        );
+        autorizacion = filas[0] ?? null;
+      }
+
       await queryRunner.commitTransaction();
 
       return {
@@ -1008,6 +1034,16 @@ export class ProductosService {
         destino: cod_suc_des,
         fecha,
         itemsProcesados: itemsValidados.length,
+        autorizadoPor: cod_usu_encargado,
+        firma: vendedor && autorizacion
+          ? {
+              idAutorizacion: autorizacion.idTa,
+              vendedor: { codUsu: vendedor.cod_usu, alias: vendedor.alias, nombre: vendedor.nombreCompleto },
+              fechaBolivia: autorizacion.fecha,
+              horaBolivia: autorizacion.hora,
+              estado: 'PENDIENTE',
+            }
+          : null,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -1192,12 +1228,23 @@ export class ProductosService {
         rs.COD_USU    as codUsu,
         ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as nombreCajero,
         rs.OBS_REM    as obs,
-        rs.TOTAL      as totalCif
+        rs.TOTAL      as totalCif,
+        ta.ID_TA      as idAutorizacion,
+        ta.COD_USU_ENCARGADO as codUsuEncargado,
+        ISNULL(ue.NOM_USU + ' ' + ue.AP_USU, ta.COD_USU_ENCARGADO) as nombreEncargado,
+        ta.COD_USU_VENDEDOR  as codUsuVendedor,
+        ISNULL(uv.NOM_USU + ' ' + uv.AP_USU, ta.COD_USU_VENDEDOR) as nombreVendedor,
+        CONVERT(VARCHAR(10), ta.FECHA, 23) as fechaFirma,
+        CONVERT(VARCHAR(8),  ta.HORA, 108) as horaFirma,
+        ta.ESTADO     as estadoFirma
       FROM REMISION_S rs
       LEFT JOIN REMISION_E re ON re.COD_REMI = rs.COD_REM
       LEFT JOIN SUCURSAL so ON so.COD_SUC = rs.SUC_ORI
       LEFT JOIN SUCURSAL sd ON sd.COD_SUC = rs.SUC_DES
       LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
+      LEFT JOIN SISTEMA_TRASPASO_AUTORIZACION ta ON ta.COD_REM = rs.COD_REM
+      LEFT JOIN USUARIO ue ON ue.COD_USU = ta.COD_USU_ENCARGADO
+      LEFT JOIN USUARIO uv ON uv.COD_USU = ta.COD_USU_VENDEDOR
       ${whereClauses}
       ORDER BY rs.FECHA DESC
       OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY

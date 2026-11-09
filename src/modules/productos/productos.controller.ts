@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Query, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, ParseIntPipe, Request } from '@nestjs/common';
 import { ProductosService } from './productos.service';
 import { SearchProductoDto } from './dto/search-producto.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
-import { VerificarCajeroDto } from './dto/verificar-cajero.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
+import { JwtPayload } from 'src/modules/auth/interfaces/jwt-payload.interface';
 
 @Controller('productos')
 export class ProductosController {
@@ -16,14 +16,14 @@ export class ProductosController {
     return this.productosService.getAlmacenesDisponibles();
   }
 
-  @Post('verificar-cajero')
-  async verificarCajero(@Body() dto: VerificarCajeroDto) {
-    return this.productosService.verificarCajeroPorPassword(dto);
-  }
-
+  // El encargado que autoriza es el usuario del token; el vendedor firma en el body
   @Post('traspaso')
-  async registrarTraspaso(@Body() dto: TraspasoAlmacenDto) {
-    return this.productosService.registrarTraspasoAlmacenes(dto);
+  async registrarTraspaso(
+    @Body() dto: TraspasoAlmacenDto,
+    @Request() req: { user: JwtPayload },
+    @CodEmp() cod_emp: string,
+  ) {
+    return this.productosService.registrarTraspasoAlmacenes(dto, req.user, cod_emp);
   }
 
   @Get('traspasos')

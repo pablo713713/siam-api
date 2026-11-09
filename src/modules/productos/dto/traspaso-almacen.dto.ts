@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsInt, Min, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TraspasoItemDto {
@@ -24,13 +24,19 @@ export class TraspasoAlmacenDto {
   @IsString({ message: 'cod_suc_des debe ser un texto' })
   cod_suc_des?: string;
 
+  // El encargado que autoriza NO viene en el body: se toma del token JWT.
+
+  // Firma del vendedor que se lleva el producto (combo de usuario + contraseña).
+  // Obligatoria cuando el origen es un sub-almacén de Motor Zone.
   @IsOptional()
-  @IsString({ message: 'cod_usu debe ser un texto' })
-  cod_usu?: string;
+  @IsString({ message: 'cod_usu_vendedor debe ser un texto' })
+  @MaxLength(7)
+  cod_usu_vendedor?: string;
 
   @IsOptional()
-  @IsString({ message: 'password_cajero debe ser un texto' })
-  password_cajero?: string;
+  @IsString({ message: 'password_vendedor debe ser un texto' })
+  @MaxLength(100)
+  password_vendedor?: string;
 
   @IsOptional()
   @IsString()

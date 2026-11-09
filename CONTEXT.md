@@ -149,6 +149,7 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 | `SISTEMA_ROLES` | — | Catálogo de roles del sistema |
 | `SISTEMA_USUARIO_ROL` | `USUARIO.COD_USU` | Asignación de roles a usuarios |
 | `CLIENTE_EXTENSION` | `CLIENTE.cod_cli` | Datos extendidos de clientes |
+| `SISTEMA_TRASPASO_AUTORIZACION` | `REMISION_S`, `USUARIO`, `SUCURSAL` | Firma digital de traspasos (reemplaza el talonario físico). Script: `sql/sistema_traspaso_autorizacion.sql` |
 
 ---
 
@@ -318,13 +319,21 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Permite ingresar stock a cualquiera de los almacenes autorizados de MAC.
 - Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
 
-**HU-M.04 — Verificación de Cajero por Contraseña** ✅
-- `POST /api/productos/verificar-cajero`
-- Valida la contraseña del cajero en la tabla `USUARIO` (en texto plano) y devuelve su identidad (`cod_usu`, `alias`, `nombreCompleto`) para firmar digitalmente la remisión.
+**HU-M.04 — Firma digital del vendedor en traspasos** ✅
+- Reemplaza el talonario físico de traspasos sub-almacén → principal (MOTOR ZONE `00011`).
+- **Encargado que autoriza:** el usuario autenticado (token JWT). Debe tener asignado el almacén de origen (`SISTEMA_USUARIO_ALMACEN`).
+- **Vendedor que firma:** se elige de un combo (`GET /api/usuarios/vendedores`) y se ingresa su contraseña del login. Se envían `cod_usu_vendedor` + `password_vendedor` en `POST /api/productos/traspaso`.
+- La contraseña solo se compara (no se guarda ni se devuelve). 5 intentos fallidos bloquean la firma de ese vendedor por 5 minutos.
+- El vendedor debe estar activo, ser de la misma empresa, tener el rol `Vendedor` (configurable con la variable `ROL_VENDEDOR`) y ser distinto del encargado.
+- La firma es **obligatoria** si el origen está en `SUBALMACENES_MOTORZONE` (`productos.service.ts`, pendiente de completar con los códigos reales) y opcional en los demás traspasos.
+- Se registra en `SISTEMA_TRASPASO_AUTORIZACION` dentro de la misma transacción del traspaso. **Fecha y hora las genera SQL Server en hora de Bolivia (UTC-4)**, no la PC ni el backend.
+- En la remisión legacy: `REMISION_S.COD_USU` = encargado, `COD_USU_REB` = vendedor.
+- Se eliminó `POST /api/productos/verificar-cajero` (identificaba al usuario solo por contraseña).
 
 **HU-M.05 — Historial de Hojas de Remisión Digitales** ✅
 - `GET /api/productos/traspasos`
 - Lista el histórico de traspasos hacia Motor Zone con fecha, almacén origen, cajero responsable e ítems detallados.
+- Incluye la firma: encargado, vendedor, fecha y hora de Bolivia y estado (`PENDIENTE` / `VENDIDO` / `DEVUELTO`).
 
 **Regla de Negocio en Ventas y Devoluciones:**
 - `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.
@@ -454,7 +463,7 @@ export class Usuario {
 | GET | /api/reportes/ganancia | Ganancia neta por rango | No* |
 | POST | /api/devoluciones | Registrar devolución parcial | No* |
 | GET | /api/productos/almacenes-disponibles | Almacenes autorizados empresa MAC | No* |
-| POST | /api/productos/verificar-cajero | Identificar cajero por contraseña | No* |
+| GET | /api/usuarios/vendedores | Combo de vendedores para firmar traspasos | Sí |
 | POST | /api/productos/traspaso | Movimiento de stock / Remisión digital | No* |
 | GET | /api/productos/traspasos | Historial de hojas de remisión digitales | No* |
 | POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |
@@ -532,4 +541,4 @@ Para incorporar el trabajo de un compañero, pasale el PR o descripción de lo i
 | Ingeniería inversa para saldo Kardex | Saldo acumulado directo | La BD legacy no guarda saldo histórico; se calcula hacia atrás desde el stock físico actual |
 | `FEC_INICIO` en CREDITO en lugar de `FECHA` | `FECHA` | La tabla CREDITO usa `FEC_INICIO` para la fecha de inicio del crédito, no `FECHA` |
 | `CIF_CBBA` como costo en PROV_PRO | `PRECIO_COSTO` | No existe columna `PRECIO_COSTO`; el costo real de importación está en `CIF_CBBA` |
-| `Promise.all` en HU-6.03 | Llamadas secuenciales | Ejecuta ingresos y costos en paralelo para reducir tiempo de respuesta |
+| `Promise.all` en HU-6.03 | Llamadas secuenciales | Ejecuta ingresos y costos en paralelo para reducir tiempo de respuesta |
