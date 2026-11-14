@@ -149,7 +149,7 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 | `SISTEMA_ROLES` | — | Catálogo de roles del sistema |
 | `SISTEMA_USUARIO_ROL` | `USUARIO.COD_USU` | Asignación de roles a usuarios |
 | `CLIENTE_EXTENSION` | `CLIENTE.cod_cli` | Datos extendidos de clientes |
-| `SISTEMA_TRASPASO_AUTORIZACION` | `REMISION_S`, `USUARIO`, `SUCURSAL` | Firma digital de traspasos (reemplaza el talonario físico). Script: `sql/sistema_traspaso_autorizacion.sql` |
+| `SISTEMA_TRASPASO_AUTORIZACION` | `REMISION_S`, `USUARIO`, `SUCURSAL` | Firma digital de traspasos (reemplaza el talonario físico). Script: `sql/siam_scripts.sql` |
 
 ---
 
@@ -320,7 +320,7 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
 
 **HU-M.04 — Traspasos con firma digital** ✅
-- Reemplaza el talonario físico. Scripts: `sql/sistema_traspaso_autorizacion.sql` y `sql/roles_traspasos.sql`.
+- Reemplaza el talonario físico. Scripts: `sql/siam_scripts.sql` (archivo único con todos los scripts, en orden).
 - **Quién registra:** el usuario del token con rol `Encargado de Almacen` (o `Administrador`).
 - **Origen:** solo los almacenes que el encargado tiene asignados en `SISTEMA_USUARIO_ALMACEN` (se leen de la BD en cada traspaso). **Destino:** cualquiera de `ALMACENES_AUTORIZADOS_MAC`; por defecto MOTOR ZONE (`00011`).
 - `GET /api/productos/traspaso/contexto` devuelve orígenes del usuario, destinos, almacén principal y almacenes de la tienda.

@@ -1,5 +1,45 @@
 /* =============================================================================
-   SISTEMA_TRASPASO_AUTORIZACION
+   SIAM — Scripts de base de datos (BDSIAM)
+   -----------------------------------------------------------------------------
+   Archivo único con TODOS los scripts propios del sistema nuevo, en el orden
+   en que deben ejecutarse. Cada bloque se puede ejecutar más de una vez sin
+   error (solo crea lo que falta).
+
+   Regla de oro del proyecto: las tablas nuevas llevan prefijo SISTEMA_ y las
+   FK van solo desde las tablas nuevas hacia las legacy. Ningún script de este
+   archivo modifica tablas legacy.
+
+   Al agregar un script nuevo: añadirlo AL FINAL como un bloque numerado y
+   anotarlo en el índice.
+
+   Índice
+     1. Roles para traspasos (Encargado de Almacen, Vendedor)
+     2. SISTEMA_TRASPASO_AUTORIZACION (firma digital de traspasos)
+     3. Ejemplo: asignar rol y almacén a un encargado (comentado)
+   ============================================================================= */
+
+/* =============================================================================
+   1. Roles para traspasos
+     - Encargado de Almacen: registra traspasos desde el/los almacén(es) que
+       tiene asignados en SISTEMA_USUARIO_ALMACEN.
+     - Vendedor: firma las salidas a venta (almacén de tienda -> MOTOR ZONE).
+   ============================================================================= */
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SISTEMA_ROLES WHERE nombre = 'Encargado de Almacen')
+    INSERT INTO dbo.SISTEMA_ROLES (nombre, descripcion, activo, createdAt, updatedAt)
+    VALUES ('Encargado de Almacen',
+            'Registra traspasos desde los almacenes que tiene asignados',
+            1, GETDATE(), GETDATE());
+
+IF NOT EXISTS (SELECT 1 FROM dbo.SISTEMA_ROLES WHERE nombre = 'Vendedor')
+    INSERT INTO dbo.SISTEMA_ROLES (nombre, descripcion, activo, createdAt, updatedAt)
+    VALUES ('Vendedor',
+            'Vende y firma la salida de productos de los almacenes de la tienda',
+            1, GETDATE(), GETDATE());
+GO
+
+/* =============================================================================
+   2. SISTEMA_TRASPASO_AUTORIZACION
    Firma digital de traspasos entre almacenes (reemplaza el talonario físico).
 
    Tipos (los calcula el backend según origen y destino, no los elige el usuario):
@@ -13,11 +53,6 @@
      Las calcula SQL Server desde su hora UTC menos 4 horas (Bolivia es UTC-4
      todo el año, sin horario de verano). No dependen de la PC del usuario ni
      de la zona horaria del servidor, y el backend no las recibe del cliente.
-
-   Regla de oro del proyecto: tabla nueva con prefijo SISTEMA_ y FK solo
-   desde la tabla nueva hacia las legacy. No se modifica ninguna tabla legacy.
-
-   Se puede ejecutar más de una vez sin error.
    ============================================================================= */
 
 IF OBJECT_ID('dbo.SISTEMA_TRASPASO_AUTORIZACION', 'U') IS NULL
@@ -65,6 +100,23 @@ BEGIN
 END
 GO
 
-/* Comprobación: debe mostrar la hora actual de Bolivia
-SELECT DATEADD(HOUR, -4, SYSUTCDATETIME()) AS hora_bolivia;
-*/
+-- Comprobación: debe mostrar la hora actual de Bolivia
+-- SELECT DATEADD(HOUR, -4, SYSUTCDATETIME()) AS hora_bolivia;
+
+/* =============================================================================
+   3. Ejemplo: asignar un encargado a su almacén (cambiar los códigos reales)
+   Descomentar y ejecutar por cada encargado. También se puede hacer desde
+   POST /api/roles/asignar y POST /api/almacenes/asignar.
+   ============================================================================= */
+
+-- -- Rol
+-- INSERT INTO dbo.SISTEMA_USUARIO_ROL (cod_usu, id_rol, asignadoAt)
+-- SELECT '0000123', id, GETDATE() FROM dbo.SISTEMA_ROLES WHERE nombre = 'Encargado de Almacen';
+--
+-- -- Almacén que maneja
+-- INSERT INTO dbo.SISTEMA_USUARIO_ALMACEN (cod_usu, cod_suc, activo, createdAt)
+-- VALUES ('0000123', '00005', 1, GETDATE());
+--
+-- -- Vendedor (para que aparezca en el combo de firma)
+-- INSERT INTO dbo.SISTEMA_USUARIO_ROL (cod_usu, id_rol, asignadoAt)
+-- SELECT '0000456', id, GETDATE() FROM dbo.SISTEMA_ROLES WHERE nombre = 'Vendedor';
