@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsInt, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsInt,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TraspasoItemDto {
@@ -16,21 +25,32 @@ export class TraspasoItemDto {
 }
 
 export class TraspasoAlmacenDto {
+  // Debe ser un almacén asignado al encargado (SISTEMA_USUARIO_ALMACEN)
   @IsString({ message: 'cod_suc_ori debe ser un texto' })
   @IsNotEmpty({ message: 'El almacén de origen es requerido' })
   cod_suc_ori: string;
 
+  // Por defecto MOTOR ZONE (00011)
   @IsOptional()
   @IsString({ message: 'cod_suc_des debe ser un texto' })
   cod_suc_des?: string;
 
-  @IsOptional()
-  @IsString({ message: 'cod_usu debe ser un texto' })
-  cod_usu?: string;
+  // El encargado que registra y autoriza NO viene en el body: se toma del token JWT.
 
+  // Firma (obligatoria en todo traspaso). Contraseña del login de quien firma:
+  //  - Salida a venta (almacén de tienda -> MOTOR ZONE): la del vendedor elegido.
+  //  - Otros traspasos: la del propio encargado que registra.
+  // Solo se usa para verificar; no se guarda.
+  @IsString({ message: 'password_firma debe ser un texto' })
+  @IsNotEmpty({ message: 'Debe ingresar la contraseña para firmar el traspaso' })
+  @MaxLength(100)
+  password_firma: string;
+
+  // Vendedor que se lleva el producto (solo en salidas a venta)
   @IsOptional()
-  @IsString({ message: 'password_cajero debe ser un texto' })
-  password_cajero?: string;
+  @IsString({ message: 'cod_usu_vendedor debe ser un texto' })
+  @MaxLength(7)
+  cod_usu_vendedor?: string;
 
   @IsOptional()
   @IsString()
