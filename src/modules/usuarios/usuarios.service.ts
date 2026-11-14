@@ -4,11 +4,11 @@ import { DataSource } from 'typeorm';
 import { timingSafeEqual } from 'crypto';
 import { SearchUsuarioDto } from './dto/search-usuario.dto';
 
-// Firma del vendedor: intentos fallidos permitidos antes de bloquear
+// Firma de traspasos: intentos fallidos permitidos antes de bloquear
 const MAX_INTENTOS_FIRMA = 5;
 const BLOQUEO_FIRMA_MS = 5 * 60 * 1000; // 5 minutos
 
-export interface VendedorFirmante {
+export interface Firmante {
   cod_usu: string;
   alias: string;
   nombreCompleto: string;
@@ -16,7 +16,7 @@ export interface VendedorFirmante {
 
 @Injectable()
 export class UsuariosService {
-  // Intentos fallidos de firma por vendedor (en memoria del proceso)
+  // Intentos fallidos de firma por usuario (en memoria del proceso)
   private readonly intentosFirma = new Map<string, { fallos: number; bloqueadoHasta: number }>();
 
   constructor(
@@ -25,7 +25,7 @@ export class UsuariosService {
   ) {}
 
   /** Nombre del rol de SISTEMA_ROLES que identifica a los vendedores. */
-  private get rolVendedor(): string {
+  get rolVendedor(): string {
     return this.config.get<string>('ROL_VENDEDOR') ?? 'Vendedor';
   }
 
@@ -55,43 +55,50 @@ export class UsuariosService {
   }
 
   // ─────────────────────────────────────────
-  // Firma del vendedor: usuario (combo) + contraseña del login
+  // Firma de un traspaso: usuario + contraseña del login.
+  //  - Salida a venta: firma el vendedor elegido en el combo (rolRequerido = Vendedor).
+  //  - Otros traspasos: firma el mismo encargado que registra (rolRequerido = null).
   // La contraseña solo se usa para comparar: no se guarda ni se devuelve.
   // ─────────────────────────────────────────
-  async verificarFirmaVendedor(
-    cod_usu_vendedor: string,
+  async verificarFirma(
+    cod_usu_firmante: string,
     password: string,
     cod_emp: string,
-  ): Promise<VendedorFirmante> {
-    this.verificarBloqueo(cod_usu_vendedor);
+    rolRequerido: string | null,
+  ): Promise<Firmante> {
+    this.verificarBloqueo(cod_usu_firmante);
 
     const filas = await this.dataSource.query(`
       SELECT u.COD_USU, u.ALIAS, u.NOM_USU, u.AP_USU, u.CONTRASEÑA as clave, s.COD_EMP
       FROM USUARIO u
       INNER JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
       WHERE u.COD_USU = @0 AND u.baja = '0'
-    `, [cod_usu_vendedor]);
+    `, [cod_usu_firmante]);
 
     const u = filas[0];
     // Mismo mensaje para "no existe" y "contraseña incorrecta": no revela cuál falló
     if (!u || u.COD_EMP !== cod_emp || !this.clavesIguales(u.clave ?? '', password)) {
-      this.registrarFallo(cod_usu_vendedor);
-      throw new UnauthorizedException('Usuario o contraseña del vendedor incorrectos.');
+      this.registrarFallo(cod_usu_firmante);
+      throw new UnauthorizedException(
+        rolRequerido ? 'Usuario o contraseña del vendedor incorrectos.' : 'Contraseña incorrecta.',
+      );
     }
 
-    const esVendedor = await this.dataSource.query(`
-      SELECT 1 as ok
-      FROM SISTEMA_USUARIO_ROL ur
-      INNER JOIN SISTEMA_ROLES r ON r.id = ur.id_rol
-      WHERE ur.cod_usu = @0 AND r.activo = 1
-        AND r.nombre = @1 COLLATE SQL_Latin1_General_CP1_CI_AI
-    `, [cod_usu_vendedor, this.rolVendedor]);
+    if (rolRequerido) {
+      const tieneRol = await this.dataSource.query(`
+        SELECT 1 as ok
+        FROM SISTEMA_USUARIO_ROL ur
+        INNER JOIN SISTEMA_ROLES r ON r.id = ur.id_rol
+        WHERE ur.cod_usu = @0 AND r.activo = 1
+          AND r.nombre = @1 COLLATE SQL_Latin1_General_CP1_CI_AI
+      `, [cod_usu_firmante, rolRequerido]);
 
-    if (esVendedor.length === 0) {
-      throw new BadRequestException('El usuario seleccionado no tiene el rol de vendedor.');
+      if (tieneRol.length === 0) {
+        throw new BadRequestException(`El usuario seleccionado no tiene el rol "${rolRequerido}".`);
+      }
     }
 
-    this.intentosFirma.delete(cod_usu_vendedor);
+    this.intentosFirma.delete(cod_usu_firmante);
     return {
       cod_usu: u.COD_USU,
       alias: u.ALIAS,
@@ -111,7 +118,7 @@ export class UsuariosService {
     if (reg && reg.bloqueadoHasta > Date.now()) {
       const minutos = Math.ceil((reg.bloqueadoHasta - Date.now()) / 60000);
       throw new HttpException(
-        `Demasiados intentos fallidos para este vendedor. Intente en ${minutos} min.`,
+        `Demasiados intentos fallidos de firma para este usuario. Intente en ${minutos} min.`,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }

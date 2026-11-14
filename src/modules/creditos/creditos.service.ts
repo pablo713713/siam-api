@@ -112,25 +112,21 @@ export class CreditosService {
       throw new BadRequestException('Este cliente no tiene habilitada la compra a crédito');
     }
 
-    // 2. Validar stock (idéntico al patrón de ventas)
+    // 2. Validar stock exclusivamente en MOTOR ZONE (00011), igual que la venta al contado.
+    //    Los productos de otros almacenes deben traspasarse antes a MOTOR ZONE.
     for (const item of dto.items) {
-      const distribucion = item.distribucion && item.distribucion.length > 0
-        ? item.distribucion
-        : [{ cod_suc: dto.cod_suc ?? COD_SUC_MOTORZONE, cantidad: item.cantidad }];
+      const stock = await this.dataSource.query(`
+        SELECT CANTIDAD
+        FROM SUC_PRO_PROV
+        WHERE ID_FAB = @0 AND COD_SUC = @1
+      `, [item.id_fab, COD_SUC_MOTORZONE]);
 
-      for (const distrib of distribucion) {
-        const stock = await this.dataSource.query(`
-          SELECT CANTIDAD
-          FROM SUC_PRO_PROV
-          WHERE ID_FAB = @0 AND COD_SUC = @1
-        `, [item.id_fab, distrib.cod_suc]);
-
-        if (stock.length === 0 || Number(stock[0].CANTIDAD) < distrib.cantidad) {
-          throw new BadRequestException(
-            `Stock insuficiente para ID_FAB ${item.id_fab} en sucursal ${distrib.cod_suc}. ` +
-            `Disponible: ${stock[0]?.CANTIDAD ?? 0}, solicitado: ${distrib.cantidad}`
-          );
-        }
+      const disponible = stock.length > 0 ? Number(stock[0].CANTIDAD) : 0;
+      if (disponible < item.cantidad) {
+        throw new BadRequestException(
+          `Stock insuficiente en MOTOR ZONE para ID_FAB ${item.id_fab}. ` +
+          `Disponible: ${disponible}, solicitado: ${item.cantidad}. Debe realizar un traspaso previo desde otro almacén.`
+        );
       }
     }
 
@@ -176,7 +172,7 @@ export class CreditosService {
           @3, '1', 0
         )
       `, [
-        cod_cre, dto.cod_suc ?? COD_SUC_MOTORZONE, dto.cod_cli, cod_usu, fecInicio, fecFin,
+        cod_cre, COD_SUC_MOTORZONE, dto.cod_cli, cod_usu, fecInicio, fecFin,
         totalFinal, totalFinal, dto.dolar ?? 0, dto.obs ?? '',
         descuento, semanasPlazo,
       ]);
@@ -198,17 +194,12 @@ export class CreditosService {
           i + 1, item.id_fab,
         ]);
 
-        const distribucion = item.distribucion && item.distribucion.length > 0
-          ? item.distribucion
-          : [{ cod_suc: dto.cod_suc ?? COD_SUC_MOTORZONE, cantidad: item.cantidad }];
-
-        for (const distrib of distribucion) {
-          await queryRunner.query(`
-            UPDATE SUC_PRO_PROV
-            SET CANTIDAD = CANTIDAD - @0
-            WHERE ID_FAB = @1 AND COD_SUC = @2
-          `, [distrib.cantidad, item.id_fab, distrib.cod_suc]);
-        }
+        // Descontar stock exclusivamente de MOTOR ZONE (00011)
+        await queryRunner.query(`
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD - @0
+          WHERE ID_FAB = @1 AND COD_SUC = @2
+        `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
       }
 
       await queryRunner.commitTransaction();

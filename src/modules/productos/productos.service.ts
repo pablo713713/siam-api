@@ -10,7 +10,7 @@ import { KardexDto } from './dto/kardex.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
-import { UsuariosService, VendedorFirmante } from '../usuarios/usuarios.service';
+import { UsuariosService, Firmante } from '../usuarios/usuarios.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 export const ALMACENES_AUTORIZADOS_MAC = [
@@ -27,10 +27,32 @@ export const ALMACENES_AUTORIZADOS_MAC = [
 // Almacén principal: único desde el que se puede vender
 export const COD_SUC_PRINCIPAL = '00011'; // MOTOR ZONE
 
-// Sub-almacenes dentro de Motor Zone. Desde estos el traspaso al principal
-// EXIGE la firma del vendedor (reemplaza al talonario físico).
-// TODO: completar con los códigos reales cuando se ubiquen en la BD.
-export const SUBALMACENES_MOTORZONE: string[] = [];
+// Almacenes que están DENTRO de la tienda (incluye al principal).
+// Define el tipo de traspaso y quién firma. Ampliar cuando se registren más.
+export const ALMACENES_TIENDA = [
+  '00011', // MOTOR ZONE (principal)
+  '00005', // ALMACEN II
+];
+
+// Rol que puede registrar traspasos desde sus almacenes asignados
+export const ROL_ENCARGADO_ALMACEN = 'Encargado de Almacen';
+const ROLES_PUEDEN_TRASPASAR = [ROL_ENCARGADO_ALMACEN, 'Administrador'];
+
+export type TipoTraspaso = 'INGRESO_TIENDA' | 'SALIDA_VENTA' | 'ENTRE_ALMACENES';
+
+/**
+ * Tipo de traspaso según origen y destino (lo decide el sistema, no el usuario):
+ *  - SALIDA_VENTA:    de un almacén de la tienda al principal, para vender. Firma el vendedor.
+ *  - INGRESO_TIENDA:  de un almacén externo a uno de la tienda. Firma el encargado.
+ *  - ENTRE_ALMACENES: cualquier otro caso. Firma el encargado.
+ */
+export function calcularTipoTraspaso(origen: string, destino: string): TipoTraspaso {
+  const origenEnTienda = ALMACENES_TIENDA.includes(origen);
+  const destinoEnTienda = ALMACENES_TIENDA.includes(destino);
+  if (origenEnTienda && destino === COD_SUC_PRINCIPAL) return 'SALIDA_VENTA';
+  if (!origenEnTienda && destinoEnTienda) return 'INGRESO_TIENDA';
+  return 'ENTRE_ALMACENES';
+}
 
 @Injectable()
 export class ProductosService {
@@ -742,48 +764,88 @@ export class ProductosService {
   // ─────────────────────────────────────────
   // Movimiento entre almacenes (Traspaso)
   // ─────────────────────────────────────────
+  // Contexto para la pantalla de traspasos: almacenes de origen del usuario
+  // (los que tiene asignados), destinos posibles y almacenes de la tienda.
+  async getContextoTraspaso(usuario: JwtPayload) {
+    const origenes = await this.getAlmacenesAsignados(usuario.cod_usu);
+    const codigos = ALMACENES_AUTORIZADOS_MAC.map((c) => `'${c}'`).join(',');
+    const destinos = await this.dataSource.query(`
+      SELECT COD_SUC as codSuc, NOM_SUC as nomSuc
+      FROM SUCURSAL
+      WHERE COD_SUC IN (${codigos})
+      ORDER BY CASE WHEN COD_SUC = '${COD_SUC_PRINCIPAL}' THEN 0 ELSE 1 END, NOM_SUC ASC
+    `);
+    return {
+      puedeTraspasar: (usuario.roles ?? []).some((r) => ROLES_PUEDEN_TRASPASAR.includes(r)),
+      origenes: origenes.filter((o) => ALMACENES_AUTORIZADOS_MAC.includes(o.codSuc)),
+      destinos,
+      almacenPrincipal: COD_SUC_PRINCIPAL,
+      almacenesTienda: ALMACENES_TIENDA,
+    };
+  }
+
+  // Almacenes asignados al usuario, leídos de la BD (no del token, que puede estar desactualizado)
+  private async getAlmacenesAsignados(cod_usu: string): Promise<{ codSuc: string; nomSuc: string }[]> {
+    return this.dataSource.query(`
+      SELECT s.COD_SUC as codSuc, s.NOM_SUC as nomSuc
+      FROM SISTEMA_USUARIO_ALMACEN ua
+      INNER JOIN SUCURSAL s ON s.COD_SUC = ua.cod_suc
+      WHERE ua.cod_usu = @0 AND ua.activo = 1
+      ORDER BY s.NOM_SUC ASC
+    `, [cod_usu]);
+  }
+
   async registrarTraspasoAlmacenes(dto: TraspasoAlmacenDto, encargado: JwtPayload, cod_emp: string) {
     const { cod_suc_ori, obs, items } = dto;
     const cod_suc_des = dto.cod_suc_des || COD_SUC_PRINCIPAL; // Destino por defecto: MOTOR ZONE
 
-    // Quien autoriza es el usuario autenticado (encargado del almacén de origen)
+    // 1. Quien registra y autoriza es el usuario autenticado
     const cod_usu_encargado = encargado?.cod_usu;
     if (!cod_usu_encargado) {
-      throw new ForbiddenException('No se pudo identificar al encargado que autoriza el traspaso.');
+      throw new ForbiddenException('No se pudo identificar al usuario que registra el traspaso.');
     }
-    const almacenesEncargado = (encargado.almacenes ?? []).map((a) => a.codSuc);
-    if (!almacenesEncargado.includes(cod_suc_ori)) {
+    if (!(encargado.roles ?? []).some((r) => ROLES_PUEDEN_TRASPASAR.includes(r))) {
+      throw new ForbiddenException(`Solo un usuario con rol "${ROL_ENCARGADO_ALMACEN}" puede registrar traspasos.`);
+    }
+
+    // 2. El origen solo puede ser un almacén asignado al encargado
+    const asignados = (await this.getAlmacenesAsignados(cod_usu_encargado)).map((a) => a.codSuc);
+    if (!asignados.includes(cod_suc_ori)) {
       throw new ForbiddenException(
-        `No tiene asignado el almacén de origen ${cod_suc_ori}; no puede autorizar este traspaso.`,
+        `No tiene asignado el almacén de origen ${cod_suc_ori}; solo puede traspasar desde sus almacenes.`,
       );
     }
 
-    // Firma del vendedor: obligatoria desde sub-almacenes de Motor Zone,
-    // opcional en los demás traspasos (si se envía, se valida y registra igual)
-    const firmaEnviada = !!(dto.cod_usu_vendedor || dto.password_vendedor);
-    const firmaObligatoria = SUBALMACENES_MOTORZONE.includes(cod_suc_ori);
-    let vendedor: VendedorFirmante | null = null;
+    // 3. Tipo de traspaso y firma (siempre obligatoria)
+    const tipo = calcularTipoTraspaso(cod_suc_ori, cod_suc_des);
+    if (!dto.password_firma) {
+      throw new BadRequestException('Debe firmar el traspaso ingresando la contraseña.');
+    }
 
-    if (firmaObligatoria || firmaEnviada) {
-      if (!dto.cod_usu_vendedor || !dto.password_vendedor) {
-        throw new BadRequestException(
-          'El vendedor debe firmar el traspaso: seleccione su usuario e ingrese su contraseña.',
-        );
+    let firmante: Firmante;
+    if (tipo === 'SALIDA_VENTA') {
+      // Salida a venta: firma el vendedor que se lleva el producto
+      if (!dto.cod_usu_vendedor) {
+        throw new BadRequestException('Seleccione el vendedor que se lleva los productos.');
       }
       if (dto.cod_usu_vendedor === cod_usu_encargado) {
-        throw new BadRequestException('El vendedor que firma no puede ser el mismo encargado que autoriza.');
+        throw new BadRequestException('El vendedor que firma no puede ser el mismo encargado que registra.');
       }
-      vendedor = await this.usuariosService.verificarFirmaVendedor(
-        dto.cod_usu_vendedor,
-        dto.password_vendedor,
-        cod_emp,
+      firmante = await this.usuariosService.verificarFirma(
+        dto.cod_usu_vendedor, dto.password_firma, cod_emp, this.usuariosService.rolVendedor,
+      );
+    } else {
+      // Ingreso a tienda u otro traspaso: firma el mismo encargado con su contraseña
+      firmante = await this.usuariosService.verificarFirma(
+        cod_usu_encargado, dto.password_firma, cod_emp, null,
       );
     }
 
     // En la remisión legacy: COD_USU = quien emite (encargado),
-    // COD_USU_REB = quien recibe (vendedor que firma; si no hay firma, el encargado)
+    // COD_USU_REB = quien recibe / se lleva el producto (firmante)
     const cod_usu = cod_usu_encargado;
-    const cod_usu_recibe = vendedor?.cod_usu ?? cod_usu_encargado;
+    const cod_usu_recibe = firmante.cod_usu;
+    const estadoFirma = tipo === 'SALIDA_VENTA' ? 'PENDIENTE' : 'COMPLETADO';
 
     if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_ori)) {
       throw new BadRequestException(
@@ -1005,24 +1067,24 @@ export class ProductosService {
       // 7. Registrar la autorización firmada (reemplaza al talonario físico).
       //    Fecha y hora las genera SQL Server en hora de Bolivia (DEFAULT de la
       //    tabla), no la PC del encargado ni el backend.
-      let autorizacion: { idTa: number; fecha: string; hora: string } | null = null;
-      if (vendedor) {
-        const filas = await queryRunner.query(
-          `
-          INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
-            COD_REM, COD_REM_E, SUC_ORI, SUC_DES,
-            COD_USU_ENCARGADO, COD_USU_VENDEDOR, ESTADO, OBS
-          )
-          OUTPUT
-            INSERTED.ID_TA                             AS idTa,
-            CONVERT(VARCHAR(10), INSERTED.FECHA, 23)   AS fecha,
-            CONVERT(VARCHAR(8),  INSERTED.HORA, 108)   AS hora
-          VALUES (@0, @1, @2, @3, @4, @5, 'PENDIENTE', @6)
-        `,
-          [codRemS, codRemE, cod_suc_ori, cod_suc_des, cod_usu_encargado, vendedor.cod_usu, obsTexto.slice(0, 512)],
-        );
-        autorizacion = filas[0] ?? null;
-      }
+      const filasFirma = await queryRunner.query(
+        `
+        INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
+          COD_REM, COD_REM_E, TIPO, SUC_ORI, SUC_DES,
+          COD_USU_ENCARGADO, COD_USU_FIRMANTE, ESTADO, OBS
+        )
+        OUTPUT
+          INSERTED.ID_TA                             AS idTa,
+          CONVERT(VARCHAR(10), INSERTED.FECHA, 23)   AS fecha,
+          CONVERT(VARCHAR(8),  INSERTED.HORA, 108)   AS hora
+        VALUES (@0, @1, @2, @3, @4, @5, @6, @7, @8)
+      `,
+        [
+          codRemS, codRemE, tipo, cod_suc_ori, cod_suc_des,
+          cod_usu_encargado, firmante.cod_usu, estadoFirma, obsTexto.slice(0, 512),
+        ],
+      );
+      const autorizacion: { idTa: number; fecha: string; hora: string } | undefined = filasFirma[0];
 
       await queryRunner.commitTransaction();
 
@@ -1034,16 +1096,15 @@ export class ProductosService {
         destino: cod_suc_des,
         fecha,
         itemsProcesados: itemsValidados.length,
+        tipo,
         autorizadoPor: cod_usu_encargado,
-        firma: vendedor && autorizacion
-          ? {
-              idAutorizacion: autorizacion.idTa,
-              vendedor: { codUsu: vendedor.cod_usu, alias: vendedor.alias, nombre: vendedor.nombreCompleto },
-              fechaBolivia: autorizacion.fecha,
-              horaBolivia: autorizacion.hora,
-              estado: 'PENDIENTE',
-            }
-          : null,
+        firma: {
+          idAutorizacion: autorizacion?.idTa ?? null,
+          firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
+          fechaBolivia: autorizacion?.fecha ?? null,
+          horaBolivia: autorizacion?.hora ?? null,
+          estado: estadoFirma,
+        },
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -1232,8 +1293,9 @@ export class ProductosService {
         ta.ID_TA      as idAutorizacion,
         ta.COD_USU_ENCARGADO as codUsuEncargado,
         ISNULL(ue.NOM_USU + ' ' + ue.AP_USU, ta.COD_USU_ENCARGADO) as nombreEncargado,
-        ta.COD_USU_VENDEDOR  as codUsuVendedor,
-        ISNULL(uv.NOM_USU + ' ' + uv.AP_USU, ta.COD_USU_VENDEDOR) as nombreVendedor,
+        ta.TIPO       as tipo,
+        ta.COD_USU_FIRMANTE  as codUsuFirmante,
+        ISNULL(uv.NOM_USU + ' ' + uv.AP_USU, ta.COD_USU_FIRMANTE) as nombreFirmante,
         CONVERT(VARCHAR(10), ta.FECHA, 23) as fechaFirma,
         CONVERT(VARCHAR(8),  ta.HORA, 108) as horaFirma,
         ta.ESTADO     as estadoFirma
@@ -1244,7 +1306,7 @@ export class ProductosService {
       LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
       LEFT JOIN SISTEMA_TRASPASO_AUTORIZACION ta ON ta.COD_REM = rs.COD_REM
       LEFT JOIN USUARIO ue ON ue.COD_USU = ta.COD_USU_ENCARGADO
-      LEFT JOIN USUARIO uv ON uv.COD_USU = ta.COD_USU_VENDEDOR
+      LEFT JOIN USUARIO uv ON uv.COD_USU = ta.COD_USU_FIRMANTE
       ${whereClauses}
       ORDER BY rs.FECHA DESC
       OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY

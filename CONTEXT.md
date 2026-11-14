@@ -319,24 +319,29 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Permite ingresar stock a cualquiera de los almacenes autorizados de MAC.
 - Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
 
-**HU-M.04 — Firma digital del vendedor en traspasos** ✅
-- Reemplaza el talonario físico de traspasos sub-almacén → principal (MOTOR ZONE `00011`).
-- **Encargado que autoriza:** el usuario autenticado (token JWT). Debe tener asignado el almacén de origen (`SISTEMA_USUARIO_ALMACEN`).
-- **Vendedor que firma:** se elige de un combo (`GET /api/usuarios/vendedores`) y se ingresa su contraseña del login. Se envían `cod_usu_vendedor` + `password_vendedor` en `POST /api/productos/traspaso`.
-- La contraseña solo se compara (no se guarda ni se devuelve). 5 intentos fallidos bloquean la firma de ese vendedor por 5 minutos.
-- El vendedor debe estar activo, ser de la misma empresa, tener el rol `Vendedor` (configurable con la variable `ROL_VENDEDOR`) y ser distinto del encargado.
-- La firma es **obligatoria** si el origen está en `SUBALMACENES_MOTORZONE` (`productos.service.ts`, pendiente de completar con los códigos reales) y opcional en los demás traspasos.
-- Se registra en `SISTEMA_TRASPASO_AUTORIZACION` dentro de la misma transacción del traspaso. **Fecha y hora las genera SQL Server en hora de Bolivia (UTC-4)**, no la PC ni el backend.
-- En la remisión legacy: `REMISION_S.COD_USU` = encargado, `COD_USU_REB` = vendedor.
-- Se eliminó `POST /api/productos/verificar-cajero` (identificaba al usuario solo por contraseña).
+**HU-M.04 — Traspasos con firma digital** ✅
+- Reemplaza el talonario físico. Scripts: `sql/sistema_traspaso_autorizacion.sql` y `sql/roles_traspasos.sql`.
+- **Quién registra:** el usuario del token con rol `Encargado de Almacen` (o `Administrador`).
+- **Origen:** solo los almacenes que el encargado tiene asignados en `SISTEMA_USUARIO_ALMACEN` (se leen de la BD en cada traspaso). **Destino:** cualquiera de `ALMACENES_AUTORIZADOS_MAC`; por defecto MOTOR ZONE (`00011`).
+- `GET /api/productos/traspaso/contexto` devuelve orígenes del usuario, destinos, almacén principal y almacenes de la tienda.
+- **Tipo** (lo calcula el backend con `ALMACENES_TIENDA` = `00011`, `00005`):
+  - `SALIDA_VENTA`: almacén de la tienda → MOTOR ZONE. **Firma el vendedor** elegido en `GET /api/usuarios/vendedores` (rol `Vendedor`) con su contraseña. Estado `PENDIENTE` (luego `VENDIDO` / `DEVUELTO`).
+  - `INGRESO_TIENDA`: almacén externo → almacén de la tienda. **Firma el mismo encargado** con su contraseña. Estado `COMPLETADO`.
+  - `ENTRE_ALMACENES`: cualquier otro. Firma el encargado. Estado `COMPLETADO`.
+- Body de `POST /api/productos/traspaso`: `cod_suc_ori`, `cod_suc_des?`, `password_firma` (obligatorio), `cod_usu_vendedor` (solo salida a venta), `obs?`, `items`.
+- La contraseña solo se compara (no se guarda ni se devuelve). 5 intentos fallidos bloquean la firma de ese usuario 5 minutos.
+- Se registra en `SISTEMA_TRASPASO_AUTORIZACION` en la misma transacción. **Fecha y hora las genera SQL Server en hora de Bolivia (UTC-4).**
+- En la remisión legacy: `REMISION_S.COD_USU` = encargado, `COD_USU_REB` = firmante.
+- Se eliminó `POST /api/productos/verificar-cajero`.
 
 **HU-M.05 — Historial de Hojas de Remisión Digitales** ✅
 - `GET /api/productos/traspasos`
 - Lista el histórico de traspasos hacia Motor Zone con fecha, almacén origen, cajero responsable e ítems detallados.
-- Incluye la firma: encargado, vendedor, fecha y hora de Bolivia y estado (`PENDIENTE` / `VENDIDO` / `DEVUELTO`).
+- Incluye la firma: tipo, encargado, firmante, fecha y hora de Bolivia y estado.
 
 **Regla de Negocio en Ventas y Devoluciones:**
 - `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.
+- `POST /api/creditos`: La venta a crédito sigue la misma regla: valida y descuenta **solo de MOTOR ZONE (`00011`)**; se ignora `distribucion`.
 - `POST /api/devoluciones`: Permite devolver stock de forma flexible a cualquier almacén indicado mediante el campo opcional `cod_suc` (por defecto retorna a MOTOR ZONE `00011`).
 
 ---
@@ -464,6 +469,7 @@ export class Usuario {
 | POST | /api/devoluciones | Registrar devolución parcial | No* |
 | GET | /api/productos/almacenes-disponibles | Almacenes autorizados empresa MAC | No* |
 | GET | /api/usuarios/vendedores | Combo de vendedores para firmar traspasos | Sí |
+| GET | /api/productos/traspaso/contexto | Orígenes, destinos y almacenes de tienda para traspasos | Sí |
 | POST | /api/productos/traspaso | Movimiento de stock / Remisión digital | No* |
 | GET | /api/productos/traspasos | Historial de hojas de remisión digitales | No* |
 | POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |

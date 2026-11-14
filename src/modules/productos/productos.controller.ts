@@ -16,7 +16,13 @@ export class ProductosController {
     return this.productosService.getAlmacenesDisponibles();
   }
 
-  // El encargado que autoriza es el usuario del token; el vendedor firma en el body
+  // Almacenes de origen del usuario, destinos y almacenes de la tienda
+  @Get('traspaso/contexto')
+  async getContextoTraspaso(@Request() req: { user: JwtPayload }) {
+    return this.productosService.getContextoTraspaso(req.user);
+  }
+
+  // El encargado que registra es el usuario del token; la firma viene en el body
   @Post('traspaso')
   async registrarTraspaso(
     @Body() dto: TraspasoAlmacenDto,
