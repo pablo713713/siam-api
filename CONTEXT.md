@@ -149,6 +149,7 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 | `SISTEMA_ROLES` | — | Catálogo de roles del sistema |
 | `SISTEMA_USUARIO_ROL` | `USUARIO.COD_USU` | Asignación de roles a usuarios |
 | `CLIENTE_EXTENSION` | `CLIENTE.cod_cli` | Datos extendidos de clientes |
+| `SISTEMA_TRASPASO_AUTORIZACION` | `REMISION_S`, `USUARIO`, `SUCURSAL` | Firma digital de traspasos (reemplaza el talonario físico). Script: `sql/siam_scripts.sql` |
 
 ---
 
@@ -318,16 +319,29 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Permite ingresar stock a cualquiera de los almacenes autorizados de MAC.
 - Incrementa stock en `SUC_PRO_PROV` y genera `REMISION_E` / `DET_REMIE` para registrar el ingreso en el Kardex.
 
-**HU-M.04 — Verificación de Cajero por Contraseña** ✅
-- `POST /api/productos/verificar-cajero`
-- Valida la contraseña del cajero en la tabla `USUARIO` (en texto plano) y devuelve su identidad (`cod_usu`, `alias`, `nombreCompleto`) para firmar digitalmente la remisión.
+**HU-M.04 — Traspasos con firma digital** ✅
+- Reemplaza el talonario físico. Scripts: `sql/siam_scripts.sql` (archivo único con todos los scripts, en orden).
+- **Quién registra:** el usuario del token con rol `Encargado de Almacen` (o `Administrador`).
+- **Origen:** solo los almacenes que el encargado tiene asignados en `SISTEMA_USUARIO_ALMACEN` (se leen de la BD en cada traspaso). **Destino:** cualquiera de `ALMACENES_AUTORIZADOS_MAC`; por defecto MOTOR ZONE (`00011`).
+- `GET /api/productos/traspaso/contexto` devuelve orígenes del usuario, destinos, almacén principal y almacenes de la tienda.
+- **Tipo** (lo calcula el backend con `ALMACENES_TIENDA` = `00011`, `00005`):
+  - `SALIDA_VENTA`: almacén de la tienda → MOTOR ZONE. **Firma el vendedor** elegido en `GET /api/usuarios/vendedores` (rol `Vendedor`) con su contraseña. Estado `PENDIENTE` (luego `VENDIDO` / `DEVUELTO`).
+  - `INGRESO_TIENDA`: almacén externo → almacén de la tienda. **Firma el mismo encargado** con su contraseña. Estado `COMPLETADO`.
+  - `ENTRE_ALMACENES`: cualquier otro. Firma el encargado. Estado `COMPLETADO`.
+- Body de `POST /api/productos/traspaso`: `cod_suc_ori`, `cod_suc_des?`, `password_firma` (obligatorio), `cod_usu_vendedor` (solo salida a venta), `obs?`, `items`.
+- La contraseña solo se compara (no se guarda ni se devuelve). 5 intentos fallidos bloquean la firma de ese usuario 5 minutos.
+- Se registra en `SISTEMA_TRASPASO_AUTORIZACION` en la misma transacción. **Fecha y hora las genera SQL Server en hora de Bolivia (UTC-4).**
+- En la remisión legacy: `REMISION_S.COD_USU` = encargado, `COD_USU_REB` = firmante.
+- Se eliminó `POST /api/productos/verificar-cajero`.
 
 **HU-M.05 — Historial de Hojas de Remisión Digitales** ✅
 - `GET /api/productos/traspasos`
 - Lista el histórico de traspasos hacia Motor Zone con fecha, almacén origen, cajero responsable e ítems detallados.
+- Incluye la firma: tipo, encargado, firmante, fecha y hora de Bolivia y estado.
 
 **Regla de Negocio en Ventas y Devoluciones:**
 - `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.
+- `POST /api/creditos`: La venta a crédito sigue la misma regla: valida y descuenta **solo de MOTOR ZONE (`00011`)**; se ignora `distribucion`.
 - `POST /api/devoluciones`: Permite devolver stock de forma flexible a cualquier almacén indicado mediante el campo opcional `cod_suc` (por defecto retorna a MOTOR ZONE `00011`).
 
 ---
@@ -454,7 +468,8 @@ export class Usuario {
 | GET | /api/reportes/ganancia | Ganancia neta por rango | No* |
 | POST | /api/devoluciones | Registrar devolución parcial | No* |
 | GET | /api/productos/almacenes-disponibles | Almacenes autorizados empresa MAC | No* |
-| POST | /api/productos/verificar-cajero | Identificar cajero por contraseña | No* |
+| GET | /api/usuarios/vendedores | Combo de vendedores para firmar traspasos | Sí |
+| GET | /api/productos/traspaso/contexto | Orígenes, destinos y almacenes de tienda para traspasos | Sí |
 | POST | /api/productos/traspaso | Movimiento de stock / Remisión digital | No* |
 | GET | /api/productos/traspasos | Historial de hojas de remisión digitales | No* |
 | POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |
@@ -532,4 +547,4 @@ Para incorporar el trabajo de un compañero, pasale el PR o descripción de lo i
 | Ingeniería inversa para saldo Kardex | Saldo acumulado directo | La BD legacy no guarda saldo histórico; se calcula hacia atrás desde el stock físico actual |
 | `FEC_INICIO` en CREDITO en lugar de `FECHA` | `FECHA` | La tabla CREDITO usa `FEC_INICIO` para la fecha de inicio del crédito, no `FECHA` |
 | `CIF_CBBA` como costo en PROV_PRO | `PRECIO_COSTO` | No existe columna `PRECIO_COSTO`; el costo real de importación está en `CIF_CBBA` |
-| `Promise.all` en HU-6.03 | Llamadas secuenciales | Ejecuta ingresos y costos en paralelo para reducir tiempo de respuesta |
+| `Promise.all` en HU-6.03 | Llamadas secuenciales | Ejecuta ingresos y costos en paralelo para reducir tiempo de respuesta |
