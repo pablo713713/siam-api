@@ -10,6 +10,7 @@ import { KardexDto } from './dto/kardex.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
+import { HistorialTraspasosDto } from './dto/historial-traspasos.dto';
 import { UsuariosService, Firmante } from '../usuarios/usuarios.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -1255,95 +1256,158 @@ export class ProductosService {
   }
 
   // ─────────────────────────────────────────
-  // Historial de Traspasos (Hojas de Remisión Digitales)
+  // Historial de traspasos firmados (talonario digital)
   // ─────────────────────────────────────────
-  async getHistorialTraspasos(
-    fecha?: string,
-    cod_suc_ori?: string,
-    page = 1,
-    limit = 50,
-  ) {
-    const skip = (page - 1) * limit;
-    const params: any[] = [];
-    let whereClauses = "WHERE rs.SUC_DES = '00011'"; // Hacia Motor Zone
 
-    if (fecha) {
-      params.push(fecha);
-      whereClauses += ` AND CAST(rs.FECHA AS DATE) = @${params.length - 1}`;
+  // Qué puede ver el usuario: el Administrador todo; el Encargado de Almacén
+  // solo los traspasos que salieron de sus almacenes asignados.
+  private async getAlcanceHistorial(usuario: JwtPayload) {
+    const roles = usuario?.roles ?? [];
+    const esAdmin = roles.includes('Administrador');
+    if (!esAdmin && !roles.includes(ROL_ENCARGADO_ALMACEN)) {
+      throw new ForbiddenException(
+        `Solo el Administrador o un "${ROL_ENCARGADO_ALMACEN}" pueden ver el historial de traspasos.`,
+      );
+    }
+    const asignados = esAdmin ? [] : await this.getAlmacenesAsignados(usuario.cod_usu);
+    return { esAdmin, asignados };
+  }
+
+  // Opciones para el filtro "almacén de salida"
+  async getFiltrosHistorialTraspasos(usuario: JwtPayload, cod_emp: string) {
+    const { esAdmin, asignados } = await this.getAlcanceHistorial(usuario);
+    if (!esAdmin) {
+      return { alcance: 'MIS_ALMACENES' as const, almacenes: asignados };
+    }
+    const almacenes = await this.dataSource.query(`
+      SELECT COD_SUC as codSuc, NOM_SUC as nomSuc
+      FROM SUCURSAL
+      WHERE COD_EMP = CAST(@0 AS VARCHAR(3))
+      ORDER BY NOM_SUC ASC
+    `, [cod_emp]);
+    return { alcance: 'TODOS' as const, almacenes };
+  }
+
+  async getHistorialTraspasos(filtros: HistorialTraspasosDto, usuario: JwtPayload, cod_emp: string) {
+    const page = filtros.page ?? 1;
+    const limit = filtros.limit ?? 50;
+    const { esAdmin, asignados } = await this.getAlcanceHistorial(usuario);
+    const vacio = { data: [], meta: { page, limit, total: 0, totalPages: 0 } };
+
+    const params: (string | number)[] = [cod_emp];
+    const where: string[] = ['so.COD_EMP = CAST(@0 AS VARCHAR(3))'];
+    const param = (valor: string | number) => {
+      params.push(valor);
+      return `@${params.length - 1}`;
+    };
+
+    if (!esAdmin) {
+      const codigos = asignados.map((a) => a.codSuc);
+      if (codigos.length === 0) return vacio;
+      if (filtros.cod_suc_ori && !codigos.includes(filtros.cod_suc_ori)) {
+        throw new ForbiddenException('Solo puede ver los traspasos de sus almacenes asignados.');
+      }
+      where.push(`ta.SUC_ORI IN (${codigos.map((c) => param(c)).join(', ')})`);
+    }
+    if (filtros.cod_suc_ori) {
+      where.push(`ta.SUC_ORI = ${param(filtros.cod_suc_ori)}`);
+    }
+    if (filtros.fecha_desde) {
+      where.push(`ta.FECHA >= CAST(${param(filtros.fecha_desde)} AS DATE)`);
+    }
+    if (filtros.fecha_hasta) {
+      where.push(`ta.FECHA <= CAST(${param(filtros.fecha_hasta)} AS DATE)`);
+    }
+    const nombre = filtros.nombre?.trim();
+    if (nombre) {
+      // Se escapan los comodines de LIKE para buscar el texto tal cual
+      const p = param(`%${nombre.replace(/[[%_]/g, '[$&]')}%`);
+      const ci = 'COLLATE SQL_Latin1_General_CP1_CI_AI';
+      where.push(`(
+        (ue.NOM_USU + ' ' + ISNULL(ue.AP_USU, '')) LIKE ${p} ${ci} OR ue.ALIAS LIKE ${p} ${ci} OR
+        (uf.NOM_USU + ' ' + ISNULL(uf.AP_USU, '')) LIKE ${p} ${ci} OR uf.ALIAS LIKE ${p} ${ci}
+      )`);
     }
 
-    if (cod_suc_ori) {
-      params.push(cod_suc_ori);
-      whereClauses += ` AND rs.SUC_ORI = @${params.length - 1}`;
-    }
+    const from = `
+      FROM SISTEMA_TRASPASO_AUTORIZACION ta
+      INNER JOIN SUCURSAL so ON so.COD_SUC = ta.SUC_ORI
+      INNER JOIN SUCURSAL sd ON sd.COD_SUC = ta.SUC_DES
+      INNER JOIN USUARIO ue  ON ue.COD_USU = ta.COD_USU_ENCARGADO
+      INNER JOIN USUARIO uf  ON uf.COD_USU = ta.COD_USU_FIRMANTE
+      WHERE ${where.join(' AND ')}
+    `;
 
-    const remisiones = await this.dataSource.query(`
+    const conteo = await this.dataSource.query(`SELECT COUNT(*) as total ${from}`, params);
+    const total = Number(conteo[0]?.total ?? 0);
+    if (total === 0) return vacio;
+
+    const pOffset = param((page - 1) * limit);
+    const pLimit = param(limit);
+    const traspasos: Record<string, unknown>[] = await this.dataSource.query(`
       SELECT
-        rs.COD_REM    as codRemSalida,
-        re.COD_REM    as codRemEntrada,
-        rs.FECHA      as fecha,
-        rs.SUC_ORI    as codSucOri,
-        so.NOM_SUC    as nomSucOri,
-        rs.SUC_DES    as codSucDes,
-        sd.NOM_SUC    as nomSucDes,
-        rs.COD_USU    as codUsu,
-        ISNULL(u.NOM_USU + ' ' + u.AP_USU, rs.COD_USU) as nombreCajero,
-        rs.OBS_REM    as obs,
-        rs.TOTAL      as totalCif,
         ta.ID_TA      as idAutorizacion,
-        ta.COD_USU_ENCARGADO as codUsuEncargado,
-        ISNULL(ue.NOM_USU + ' ' + ue.AP_USU, ta.COD_USU_ENCARGADO) as nombreEncargado,
+        ta.COD_REM    as codRemSalida,
+        ta.COD_REM_E  as codRemEntrada,
         ta.TIPO       as tipo,
+        ta.ESTADO     as estado,
+        CONVERT(VARCHAR(10), ta.FECHA, 23) as fecha,
+        CONVERT(VARCHAR(8),  ta.HORA, 108) as hora,
+        ta.SUC_ORI    as codSucOri,
+        so.NOM_SUC    as nomSucOri,
+        ta.SUC_DES    as codSucDes,
+        sd.NOM_SUC    as nomSucDes,
+        ta.COD_USU_ENCARGADO as codUsuEncargado,
+        LTRIM(RTRIM(ue.NOM_USU + ' ' + ISNULL(ue.AP_USU, ''))) as nombreEncargado,
         ta.COD_USU_FIRMANTE  as codUsuFirmante,
-        ISNULL(uv.NOM_USU + ' ' + uv.AP_USU, ta.COD_USU_FIRMANTE) as nombreFirmante,
-        CONVERT(VARCHAR(10), ta.FECHA, 23) as fechaFirma,
-        CONVERT(VARCHAR(8),  ta.HORA, 108) as horaFirma,
-        ta.ESTADO     as estadoFirma
-      FROM REMISION_S rs
-      LEFT JOIN REMISION_E re ON re.COD_REMI = rs.COD_REM
-      LEFT JOIN SUCURSAL so ON so.COD_SUC = rs.SUC_ORI
-      LEFT JOIN SUCURSAL sd ON sd.COD_SUC = rs.SUC_DES
-      LEFT JOIN USUARIO u ON u.COD_USU = rs.COD_USU
-      LEFT JOIN SISTEMA_TRASPASO_AUTORIZACION ta ON ta.COD_REM = rs.COD_REM
-      LEFT JOIN USUARIO ue ON ue.COD_USU = ta.COD_USU_ENCARGADO
-      LEFT JOIN USUARIO uv ON uv.COD_USU = ta.COD_USU_FIRMANTE
-      ${whereClauses}
-      ORDER BY rs.FECHA DESC
-      OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY
+        LTRIM(RTRIM(uf.NOM_USU + ' ' + ISNULL(uf.AP_USU, ''))) as nombreFirmante,
+        ta.OBS        as obs
+      ${from}
+      ORDER BY ta.FECHA_HORA DESC, ta.ID_TA DESC
+      OFFSET ${pOffset} ROWS FETCH NEXT ${pLimit} ROWS ONLY
     `, params);
 
-    const cods = remisiones.map((r: any) => `'${r.codRemSalida}'`).join(',');
-    let itemsDetalle: any[] = [];
-    if (cods.length > 0) {
-      itemsDetalle = await this.dataSource.query(`
-        SELECT
-          ds.COD_REM   as codRemSalida,
-          ds.ID_FAB    as idFab,
-          ds.COD_FAB   as codFab,
-          ds.CANTIDAD  as cantidad,
-          p.DESC_PRO   as descPro
-        FROM DET_REMIS ds
-        LEFT JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
-        LEFT JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
-        WHERE ds.COD_REM IN (${cods})
-      `);
-    }
+    // Productos de cada traspaso (detalle de la remisión de salida)
+    const cods = traspasos.map((t) => String(t.codRemSalida));
+    const itemsDetalle: {
+      codRemSalida: string; nro: number; idFab: number; codFab: string;
+      cantidad: number; descPro: string | null; obs: string | null;
+    }[] = await this.dataSource.query(`
+      SELECT
+        ds.COD_REM   as codRemSalida,
+        ds.NRO       as nro,
+        ds.ID_FAB    as idFab,
+        ds.COD_FAB   as codFab,
+        ds.CANTIDAD  as cantidad,
+        ds.OBS       as obs,
+        p.DESC_PRO   as descPro
+      FROM DET_REMIS ds
+      LEFT JOIN PROV_PRO pp ON pp.ID_FAB = ds.ID_FAB
+      LEFT JOIN PRODUCTO p ON p.ID_PRO = pp.ID_PRO
+      WHERE ds.COD_REM IN (${cods.map((_, i) => `@${i}`).join(', ')})
+      ORDER BY ds.COD_REM, ds.NRO
+    `, cods);
 
-    const data = remisiones.map((r: any) => ({
-      ...r,
-      items: itemsDetalle
-        .filter((it: any) => it.codRemSalida === r.codRemSalida)
-        .map((it: any) => ({
+    const data = traspasos.map((t) => {
+      const items = itemsDetalle
+        .filter((it) => it.codRemSalida === t.codRemSalida)
+        .map((it) => ({
           idFab: it.idFab,
           codFab: it.codFab,
           descPro: it.descPro,
-          cantidad: it.cantidad,
-        })),
-    }));
+          cantidad: Number(it.cantidad),
+          obs: it.obs || null,
+        }));
+      return {
+        ...t,
+        totalUnidades: items.reduce((s, it) => s + it.cantidad, 0),
+        items,
+      };
+    });
 
     return {
       data,
-      meta: { page, limit, total: data.length },
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 }
