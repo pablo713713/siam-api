@@ -11,6 +11,8 @@ import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
 import { HistorialTraspasosDto } from './dto/historial-traspasos.dto';
+import { DevolucionTraspasoDto } from './dto/devolucion-traspaso.dto';
+import { TraspasoEstadosService } from './traspaso-estados.service';
 import { UsuariosService, Firmante } from '../usuarios/usuarios.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -39,7 +41,7 @@ export const ALMACENES_TIENDA = [
 export const ROL_ENCARGADO_ALMACEN = 'Encargado de Almacen';
 const ROLES_PUEDEN_TRASPASAR = [ROL_ENCARGADO_ALMACEN, 'Administrador'];
 
-export type TipoTraspaso = 'INGRESO_TIENDA' | 'SALIDA_VENTA' | 'ENTRE_ALMACENES';
+export type TipoTraspaso = 'INGRESO_TIENDA' | 'SALIDA_VENTA' | 'ENTRE_ALMACENES' | 'DEVOLUCION';
 
 /**
  * Tipo de traspaso según origen y destino (lo decide el sistema, no el usuario):
@@ -62,6 +64,7 @@ export class ProductosService {
     private readonly productoRepository: Repository<Producto>,
     private readonly dataSource: DataSource,
     private readonly usuariosService: UsuariosService,
+    private readonly traspasoEstados: TraspasoEstadosService,
   ) {}
 
   async search(searchDto: SearchProductoDto, cod_emp: string) {
@@ -765,6 +768,224 @@ export class ProductosService {
   // ─────────────────────────────────────────
   // Movimiento entre almacenes (Traspaso)
   // ─────────────────────────────────────────
+  /**
+   * Mueve stock de un almacén a otro dentro de la transacción recibida:
+   * valida el stock de origen, genera las remisiones legacy de salida y de
+   * entrada (REMISION_S / REMISION_E y sus detalles) y actualiza SUC_PRO_PROV.
+   * Lo usan el traspaso normal y la devolución al almacén de origen.
+   */
+  private async moverStock(
+    queryRunner: QueryRunner,
+    mov: {
+      cod_suc_ori: string;
+      cod_suc_des: string;
+      items: { id_fab: number; cantidad: number; obs?: string }[];
+      cod_usu: string;         // quien emite (COD_USU de la remisión)
+      cod_usu_recibe: string;  // quien recibe (COD_USU_REB)
+      obs?: string;
+    },
+  ) {
+    const { cod_suc_ori, cod_suc_des, items, cod_usu, cod_usu_recibe, obs } = mov;
+
+    // 1. Validar stock y recopilar datos de cada ítem
+    const itemsValidados: {
+      id_fab: number;
+      cod_fab: string;
+      cantidad: number;
+      cif: number;
+      obs?: string;
+    }[] = [];
+
+    for (const item of items) {
+      // Stock en origen
+      const stockOrigen = await queryRunner.query(
+        `
+        SELECT ISNULL(CANTIDAD, 0) as cantidad, COD_FAB
+        FROM SUC_PRO_PROV
+        WHERE ID_FAB = @0 AND COD_SUC = @1
+      `,
+        [item.id_fab, cod_suc_ori],
+      );
+
+      const disponible = stockOrigen.length > 0 ? Number(stockOrigen[0].cantidad) : 0;
+      if (disponible < item.cantidad) {
+        throw new BadRequestException(
+          `Stock insuficiente en almacén de origen (${cod_suc_ori}) para ID_FAB ${item.id_fab}. Disponible: ${disponible}, Solicitado: ${item.cantidad}`,
+        );
+      }
+
+      // Datos del producto
+      const provPro = await queryRunner.query(
+        `
+        SELECT COD_FAB, ISNULL(CIF_CBBA, 0) as cif
+        FROM PROV_PRO
+        WHERE ID_FAB = @0
+      `,
+        [item.id_fab],
+      );
+
+      const codFab = provPro[0]?.COD_FAB || stockOrigen[0]?.COD_FAB || '';
+      const cif = Number(provPro[0]?.cif || 0);
+
+      itemsValidados.push({
+        id_fab: item.id_fab,
+        cod_fab: codFab,
+        cantidad: item.cantidad,
+        cif,
+        obs: item.obs,
+      });
+    }
+
+    const totalCif = itemsValidados.reduce((sum, it) => sum + it.cantidad * it.cif, 0);
+    const fecha = new Date();
+
+    // 2. Generar códigos correlativos
+    const codRemS = await this.generarCodRemSalida(queryRunner, cod_suc_ori, cod_suc_des);
+    const codRemE = await this.generarCodRemEntrada(queryRunner, cod_suc_des);
+    const obsTexto = obs?.trim() ? obs : 'Traspaso entre almacenes';
+
+    // 3. Insertar REMISION_S (Salida del almacén origen)
+    await queryRunner.query(
+      `
+      INSERT INTO REMISION_S (
+        COD_REM, COD_USU, SUC_DES, SUC_ORI, FECHA, OBS_REM,
+        revisado, DESCARGADO, ACEPTADO, ESTADO, TOTAL,
+        COD_USU_REB, COD_USU_REB_DESC, COD_PEDIDO, MEDIO_ENVIO,
+        FECHA_ENVIO, NOMBRE_ENVIO, COD_USU_CIF, USUARIO_DESCARGA,
+        virtual, SUC_TRANSITO, nro_nota, usu_count
+      ) VALUES (
+        @0, @1, @2, @3, @4, @5,
+        'S', 'S', 'S', 'A', @6,
+        @7, @8, '1', 'INTERNO',
+        @9, 'SISTEMA', @10, 'SISTEMA',
+        0, '01000', '', '1'
+      )
+    `,
+      [
+        codRemS,
+        cod_usu,
+        cod_suc_des,
+        cod_suc_ori,
+        fecha,
+        obsTexto,
+        totalCif,
+        cod_usu_recibe, // COD_USU_REB
+        cod_usu_recibe, // COD_USU_REB_DESC
+        fecha,
+        cod_usu,        // COD_USU_CIF
+      ],
+    );
+
+    // 4. Insertar DET_REMIS y descontar stock de origen
+    for (let i = 0; i < itemsValidados.length; i++) {
+      const it = itemsValidados[i];
+      const cifTotal = it.cantidad * it.cif;
+
+      await queryRunner.query(
+        `
+        INSERT INTO DET_REMIS (
+          COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, OBS, NRO, FOB_TOTAL, ID_FAB
+        ) VALUES (
+          @0, @1, @2, @3, @4, @5, 0, @6
+        )
+      `,
+        [codRemS, it.cod_fab, it.cantidad, cifTotal, it.obs || '', i + 1, it.id_fab],
+      );
+
+      await queryRunner.query(
+        `
+        UPDATE SUC_PRO_PROV
+        SET CANTIDAD = CANTIDAD - @0
+        WHERE ID_FAB = @1 AND COD_SUC = @2
+      `,
+        [it.cantidad, it.id_fab, cod_suc_ori],
+      );
+    }
+
+    // 5. Insertar REMISION_E (Entrada en almacén destino)
+    await queryRunner.query(
+      `
+      INSERT INTO REMISION_E (
+        COD_REM, COD_REMI, COD_USU, COD_ORI, COD_DES, FECHA,
+        OBS_REM, estado, TOTAL, USUARIO_DESCARGA, saw, FECHA_DESCARGA
+      ) VALUES (
+        @0, @1, @2, @3, @4, @5,
+        @6, 'D', @7, 'SISTEMA', 'N', @8
+      )
+    `,
+      [
+        codRemE,
+        codRemS, // Link a la remisión de salida
+        cod_usu_recibe,
+        cod_suc_ori,
+        cod_suc_des,
+        fecha,
+        obsTexto,
+        totalCif,
+        fecha,
+      ],
+    );
+
+    // 6. Insertar DET_REMIE e incrementar stock en destino
+    for (let i = 0; i < itemsValidados.length; i++) {
+      const it = itemsValidados[i];
+      const cifTotal = it.cantidad * it.cif;
+
+      await queryRunner.query(
+        `
+        INSERT INTO DET_REMIE (
+          COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, NRO, existencia,
+          ID_FAB, cant_ctrl, fecha, cod_usu, obs, ok
+        ) VALUES (
+          @0, @1, @2, @3, @4, 0,
+          @5, @6, @7, @8, @9, 1
+        )
+      `,
+        [
+          codRemE,
+          it.cod_fab,
+          it.cantidad,
+          cifTotal,
+          i + 1,
+          it.id_fab,
+          it.cantidad,
+          fecha,
+          cod_usu_recibe,
+          it.obs || null,
+        ],
+      );
+
+      // Actualizar o crear stock en destino
+      const existeDestino = await queryRunner.query(
+        `
+        SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
+      `,
+        [it.id_fab, cod_suc_des],
+      );
+
+      if (existeDestino.length > 0) {
+        await queryRunner.query(
+          `
+          UPDATE SUC_PRO_PROV
+          SET CANTIDAD = CANTIDAD + @0
+          WHERE ID_FAB = @1 AND COD_SUC = @2
+        `,
+          [it.cantidad, it.id_fab, cod_suc_des],
+        );
+      } else {
+        await queryRunner.query(
+          `
+          INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
+          VALUES (@0, @1, @2, 0, 0, @3)
+        `,
+          [cod_suc_des, it.cod_fab, it.cantidad, it.id_fab],
+        );
+      }
+    }
+
+    return { codRemS, codRemE, itemsValidados, fecha, obsTexto };
+  }
+
   // Contexto para la pantalla de traspasos: almacenes de origen del usuario
   // (los que tiene asignados), destinos posibles y almacenes de la tienda.
   async getContextoTraspaso(usuario: JwtPayload) {
@@ -869,201 +1090,10 @@ export class ProductosService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Validar stock y recopilar datos de cada ítem
-      const itemsValidados: {
-        id_fab: number;
-        cod_fab: string;
-        cantidad: number;
-        cif: number;
-        obs?: string;
-      }[] = [];
-
-      for (const item of items) {
-        // Stock en origen
-        const stockOrigen = await queryRunner.query(
-          `
-          SELECT ISNULL(CANTIDAD, 0) as cantidad, COD_FAB
-          FROM SUC_PRO_PROV
-          WHERE ID_FAB = @0 AND COD_SUC = @1
-        `,
-          [item.id_fab, cod_suc_ori],
-        );
-
-        const disponible = stockOrigen.length > 0 ? Number(stockOrigen[0].cantidad) : 0;
-        if (disponible < item.cantidad) {
-          throw new BadRequestException(
-            `Stock insuficiente en almacén de origen (${cod_suc_ori}) para ID_FAB ${item.id_fab}. Disponible: ${disponible}, Solicitado: ${item.cantidad}`,
-          );
-        }
-
-        // Datos del producto
-        const provPro = await queryRunner.query(
-          `
-          SELECT COD_FAB, ISNULL(CIF_CBBA, 0) as cif
-          FROM PROV_PRO
-          WHERE ID_FAB = @0
-        `,
-          [item.id_fab],
-        );
-
-        const codFab = provPro[0]?.COD_FAB || stockOrigen[0]?.COD_FAB || '';
-        const cif = Number(provPro[0]?.cif || 0);
-
-        itemsValidados.push({
-          id_fab: item.id_fab,
-          cod_fab: codFab,
-          cantidad: item.cantidad,
-          cif,
-          obs: item.obs,
-        });
-      }
-
-      const totalCif = itemsValidados.reduce((sum, it) => sum + it.cantidad * it.cif, 0);
-      const fecha = new Date();
-
-      // 2. Generar códigos correlativos
-      const codRemS = await this.generarCodRemSalida(queryRunner, cod_suc_ori, cod_suc_des);
-      const codRemE = await this.generarCodRemEntrada(queryRunner, cod_suc_des);
-      const obsTexto = obs?.trim() ? obs : 'Traspaso entre almacenes';
-
-      // 3. Insertar REMISION_S (Salida del almacén origen)
-      await queryRunner.query(
-        `
-        INSERT INTO REMISION_S (
-          COD_REM, COD_USU, SUC_DES, SUC_ORI, FECHA, OBS_REM,
-          revisado, DESCARGADO, ACEPTADO, ESTADO, TOTAL,
-          COD_USU_REB, COD_USU_REB_DESC, COD_PEDIDO, MEDIO_ENVIO,
-          FECHA_ENVIO, NOMBRE_ENVIO, COD_USU_CIF, USUARIO_DESCARGA,
-          virtual, SUC_TRANSITO, nro_nota, usu_count
-        ) VALUES (
-          @0, @1, @2, @3, @4, @5,
-          'S', 'S', 'S', 'A', @6,
-          @7, @8, '1', 'INTERNO',
-          @9, 'SISTEMA', @10, 'SISTEMA',
-          0, '01000', '', '1'
-        )
-      `,
-        [
-          codRemS,
-          cod_usu,
-          cod_suc_des,
-          cod_suc_ori,
-          fecha,
-          obsTexto,
-          totalCif,
-          cod_usu_recibe, // COD_USU_REB
-          cod_usu_recibe, // COD_USU_REB_DESC
-          fecha,
-          cod_usu,        // COD_USU_CIF
-        ],
-      );
-
-      // 4. Insertar DET_REMIS y descontar stock de origen
-      for (let i = 0; i < itemsValidados.length; i++) {
-        const it = itemsValidados[i];
-        const cifTotal = it.cantidad * it.cif;
-
-        await queryRunner.query(
-          `
-          INSERT INTO DET_REMIS (
-            COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, OBS, NRO, FOB_TOTAL, ID_FAB
-          ) VALUES (
-            @0, @1, @2, @3, @4, @5, 0, @6
-          )
-        `,
-          [codRemS, it.cod_fab, it.cantidad, cifTotal, it.obs || '', i + 1, it.id_fab],
-        );
-
-        await queryRunner.query(
-          `
-          UPDATE SUC_PRO_PROV
-          SET CANTIDAD = CANTIDAD - @0
-          WHERE ID_FAB = @1 AND COD_SUC = @2
-        `,
-          [it.cantidad, it.id_fab, cod_suc_ori],
-        );
-      }
-
-      // 5. Insertar REMISION_E (Entrada en almacén destino)
-      await queryRunner.query(
-        `
-        INSERT INTO REMISION_E (
-          COD_REM, COD_REMI, COD_USU, COD_ORI, COD_DES, FECHA,
-          OBS_REM, estado, TOTAL, USUARIO_DESCARGA, saw, FECHA_DESCARGA
-        ) VALUES (
-          @0, @1, @2, @3, @4, @5,
-          @6, 'D', @7, 'SISTEMA', 'N', @8
-        )
-      `,
-        [
-          codRemE,
-          codRemS, // Link a la remisión de salida
-          cod_usu_recibe,
-          cod_suc_ori,
-          cod_suc_des,
-          fecha,
-          obsTexto,
-          totalCif,
-          fecha,
-        ],
-      );
-
-      // 6. Insertar DET_REMIE e incrementar stock en destino
-      for (let i = 0; i < itemsValidados.length; i++) {
-        const it = itemsValidados[i];
-        const cifTotal = it.cantidad * it.cif;
-
-        await queryRunner.query(
-          `
-          INSERT INTO DET_REMIE (
-            COD_REM, COD_FAB, CANTIDAD, CIF_TOTAL, NRO, existencia,
-            ID_FAB, cant_ctrl, fecha, cod_usu, obs, ok
-          ) VALUES (
-            @0, @1, @2, @3, @4, 0,
-            @5, @6, @7, @8, @9, 1
-          )
-        `,
-          [
-            codRemE,
-            it.cod_fab,
-            it.cantidad,
-            cifTotal,
-            i + 1,
-            it.id_fab,
-            it.cantidad,
-            fecha,
-            cod_usu_recibe,
-            it.obs || null,
-          ],
-        );
-
-        // Actualizar o crear stock en destino
-        const existeDestino = await queryRunner.query(
-          `
-          SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
-        `,
-          [it.id_fab, cod_suc_des],
-        );
-
-        if (existeDestino.length > 0) {
-          await queryRunner.query(
-            `
-            UPDATE SUC_PRO_PROV
-            SET CANTIDAD = CANTIDAD + @0
-            WHERE ID_FAB = @1 AND COD_SUC = @2
-          `,
-            [it.cantidad, it.id_fab, cod_suc_des],
-          );
-        } else {
-          await queryRunner.query(
-            `
-            INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
-            VALUES (@0, @1, @2, 0, 0, @3)
-          `,
-            [cod_suc_des, it.cod_fab, it.cantidad, it.id_fab],
-          );
-        }
-      }
+      // 1-6. Validar stock, generar remisiones legacy y mover el stock
+      const { codRemS, codRemE, itemsValidados, fecha, obsTexto } = await this.moverStock(queryRunner, {
+        cod_suc_ori, cod_suc_des, items, cod_usu, cod_usu_recibe, obs,
+      });
 
       // 7. Registrar la autorización firmada (reemplaza al talonario físico).
       //    Fecha y hora las genera SQL Server en hora de Bolivia (DEFAULT de la
@@ -1086,6 +1116,12 @@ export class ProductosService {
         ],
       );
       const autorizacion: { idTa: number; fecha: string; hora: string } | undefined = filasFirma[0];
+
+      // 8. Salida a venta: se guarda cuánto se llevó de cada producto para
+      //    seguir después cuánto se vendió y cuánto se devolvió
+      if (tipo === 'SALIDA_VENTA' && autorizacion) {
+        await this.traspasoEstados.registrarDetalle(queryRunner, autorizacion.idTa, itemsValidados);
+      }
 
       await queryRunner.commitTransaction();
 
@@ -1256,6 +1292,151 @@ export class ProductosService {
   }
 
   // ─────────────────────────────────────────
+  // Devolución al almacén de origen (lo que no se vendió de una salida a venta)
+  // ─────────────────────────────────────────
+  async registrarDevolucionTraspaso(
+    idTa: number,
+    dto: DevolucionTraspasoDto,
+    usuario: JwtPayload,
+    cod_emp: string,
+  ) {
+    if (!(await this.traspasoEstados.tablasDisponibles())) {
+      throw new BadRequestException('Falta ejecutar sql/siam_scripts.sql para registrar devoluciones.');
+    }
+
+    const originales: {
+      idTa: number; codRem: string; tipo: string; estado: string;
+      sucOri: string; sucDes: string; codEmp: string; nomSucOri: string;
+    }[] = await this.dataSource.query(`
+      SELECT ta.ID_TA as idTa, ta.COD_REM as codRem, ta.TIPO as tipo, ta.ESTADO as estado,
+             ta.SUC_ORI as sucOri, ta.SUC_DES as sucDes, so.COD_EMP as codEmp, so.NOM_SUC as nomSucOri
+      FROM SISTEMA_TRASPASO_AUTORIZACION ta
+      INNER JOIN SUCURSAL so ON so.COD_SUC = ta.SUC_ORI
+      WHERE ta.ID_TA = @0
+    `, [idTa]);
+    const original = originales[0];
+    if (!original || original.codEmp !== cod_emp) {
+      throw new NotFoundException('Traspaso no encontrado.');
+    }
+    if (original.tipo !== 'SALIDA_VENTA') {
+      throw new BadRequestException('Solo se puede devolver una salida a venta.');
+    }
+    if (original.estado !== 'PENDIENTE') {
+      throw new BadRequestException('Este traspaso ya no tiene productos pendientes de devolver.');
+    }
+
+    // Quien recibe la mercadería de vuelta: Administrador o encargado del almacén de origen
+    const roles = usuario?.roles ?? [];
+    const esAdmin = roles.includes('Administrador');
+    if (!esAdmin) {
+      const asignados = roles.includes(ROL_ENCARGADO_ALMACEN)
+        ? (await this.getAlmacenesAsignados(usuario.cod_usu)).map((a) => a.codSuc)
+        : [];
+      if (!asignados.includes(original.sucOri)) {
+        throw new ForbiddenException(
+          `Solo el encargado de ${original.nomSucOri} o un Administrador puede registrar esta devolución.`,
+        );
+      }
+    }
+
+    // Firma de quien recibe, con su propia contraseña
+    const firmante = await this.usuariosService.verificarFirma(
+      usuario.cod_usu, dto.password_firma, cod_emp, null,
+    );
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Pendiente por producto (bloqueado hasta terminar: no se cruza con una venta simultánea)
+      const detalle: { idTad: number; idFab: number; pendiente: number }[] = await queryRunner.query(`
+        SELECT ID_TAD as idTad, ID_FAB as idFab,
+               CANTIDAD - CANT_VENDIDA - CANT_DEVUELTA as pendiente
+        FROM SISTEMA_TRASPASO_DET WITH (UPDLOCK, ROWLOCK)
+        WHERE ID_TA = @0
+      `, [idTa]);
+
+      // Sin lista de productos se devuelve todo lo pendiente
+      const pedidos = dto.items
+        ?? detalle.filter((d) => Number(d.pendiente) > 0)
+                  .map((d) => ({ id_fab: Number(d.idFab), cantidad: Number(d.pendiente) }));
+      if (pedidos.length === 0) {
+        throw new BadRequestException('Este traspaso no tiene productos pendientes de devolver.');
+      }
+
+      const aDevolver: { idTad: number; id_fab: number; cantidad: number }[] = [];
+      for (const p of pedidos) {
+        const d = detalle.find((x) => Number(x.idFab) === p.id_fab);
+        if (!d) {
+          throw new BadRequestException(`El producto ${p.id_fab} no pertenece a este traspaso.`);
+        }
+        if (aDevolver.some((x) => x.id_fab === p.id_fab)) {
+          throw new BadRequestException(`El producto ${p.id_fab} está repetido en la devolución.`);
+        }
+        if (p.cantidad > Number(d.pendiente)) {
+          throw new BadRequestException(
+            `Solo quedan ${d.pendiente} unidades pendientes del producto ${p.id_fab}; no se pueden devolver ${p.cantidad}.`,
+          );
+        }
+        aDevolver.push({ idTad: Number(d.idTad), id_fab: p.id_fab, cantidad: p.cantidad });
+      }
+
+      // Movimiento inverso: del destino original (MOTOR ZONE) al almacén de origen
+      const obs = (dto.obs?.trim() || `Devolución del traspaso ${original.codRem}`).slice(0, 512);
+      const { codRemS, codRemE } = await this.moverStock(queryRunner, {
+        cod_suc_ori: original.sucDes,
+        cod_suc_des: original.sucOri,
+        items: aDevolver.map((x) => ({ id_fab: x.id_fab, cantidad: x.cantidad })),
+        cod_usu: usuario.cod_usu,
+        cod_usu_recibe: usuario.cod_usu,
+        obs,
+      });
+
+      const filasFirma: { idTa: number; fecha: string; hora: string }[] = await queryRunner.query(
+        `
+        INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
+          COD_REM, COD_REM_E, TIPO, SUC_ORI, SUC_DES,
+          COD_USU_ENCARGADO, COD_USU_FIRMANTE, ESTADO, ID_TA_ORIGEN, OBS
+        )
+        OUTPUT
+          INSERTED.ID_TA                             AS idTa,
+          CONVERT(VARCHAR(10), INSERTED.FECHA, 23)   AS fecha,
+          CONVERT(VARCHAR(8),  INSERTED.HORA, 108)   AS hora
+        VALUES (@0, @1, 'DEVOLUCION', @2, @3, @4, @5, 'COMPLETADO', @6, @7)
+      `,
+        [codRemS, codRemE, original.sucDes, original.sucOri, usuario.cod_usu, firmante.cod_usu, idTa, obs],
+      );
+
+      for (const x of aDevolver) {
+        await this.traspasoEstados.registrarDevuelto(queryRunner, x.idTad, x.cantidad);
+      }
+      const estado = await this.traspasoEstados.recalcularEstado(queryRunner, idTa);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message: 'Devolución registrada correctamente',
+        idAutorizacion: filasFirma[0]?.idTa ?? null,
+        codRemSalida: codRemS,
+        codRemEntrada: codRemE,
+        traspasoOriginal: { idAutorizacion: idTa, estado },
+        unidadesDevueltas: aDevolver.reduce((s, x) => s + x.cantidad, 0),
+        firma: {
+          firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
+          fechaBolivia: filasFirma[0]?.fecha ?? null,
+          horaBolivia: filasFirma[0]?.hora ?? null,
+        },
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // ─────────────────────────────────────────
   // Historial de traspasos firmados (talonario digital)
   // ─────────────────────────────────────────
 
@@ -1307,7 +1488,9 @@ export class ProductosService {
       if (filtros.cod_suc_ori && !codigos.includes(filtros.cod_suc_ori)) {
         throw new ForbiddenException('Solo puede ver los traspasos de sus almacenes asignados.');
       }
-      where.push(`ta.SUC_ORI IN (${codigos.map((c) => param(c)).join(', ')})`);
+      // Sus almacenes como origen, más las devoluciones que volvieron a ellos
+      const lista = codigos.map((c) => param(c)).join(', ');
+      where.push(`(ta.SUC_ORI IN (${lista}) OR (ta.TIPO = 'DEVOLUCION' AND ta.SUC_DES IN (${lista})))`);
     }
     if (filtros.cod_suc_ori) {
       where.push(`ta.SUC_ORI = ${param(filtros.cod_suc_ori)}`);
@@ -1361,11 +1544,15 @@ export class ProductosService {
         LTRIM(RTRIM(ue.NOM_USU + ' ' + ISNULL(ue.AP_USU, ''))) as nombreEncargado,
         ta.COD_USU_FIRMANTE  as codUsuFirmante,
         LTRIM(RTRIM(uf.NOM_USU + ' ' + ISNULL(uf.AP_USU, ''))) as nombreFirmante,
-        ta.OBS        as obs
+        ta.OBS        as obs,
+        ta.ID_TA_ORIGEN as idTaOrigen,
+        ta.COD_VENTA  as codVenta
       ${from}
       ORDER BY ta.FECHA_HORA DESC, ta.ID_TA DESC
       OFFSET ${pOffset} ROWS FETCH NEXT ${pLimit} ROWS ONLY
     `, params);
+
+    if (traspasos.length === 0) return { ...vacio, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 
     // Productos de cada traspaso (detalle de la remisión de salida)
     const cods = traspasos.map((t) => String(t.codRemSalida));
@@ -1388,20 +1575,63 @@ export class ProductosService {
       ORDER BY ds.COD_REM, ds.NRO
     `, cods);
 
+    // Seguimiento de las salidas a venta: vendido / devuelto por producto y
+    // los documentos (ventas o créditos) en que salió
+    const idsTa = traspasos.map((t) => Number(t.idAutorizacion));
+    const marcas = idsTa.map((_, i) => `@${i}`).join(', ');
+    let seguimiento: { idTa: number; idFab: number; vendida: number; devuelta: number }[] = [];
+    let documentos: { idTa: number; tipoDoc: string; codDoc: string; cantidad: number }[] = [];
+    if (await this.traspasoEstados.tablasDisponibles()) {
+      seguimiento = await this.dataSource.query(`
+        SELECT ID_TA as idTa, ID_FAB as idFab, CANT_VENDIDA as vendida, CANT_DEVUELTA as devuelta
+        FROM SISTEMA_TRASPASO_DET
+        WHERE ID_TA IN (${marcas})
+      `, idsTa);
+      documentos = await this.dataSource.query(`
+        SELECT d.ID_TA as idTa, v.TIPO_DOC as tipoDoc, v.COD_DOC as codDoc, SUM(v.CANTIDAD) as cantidad
+        FROM SISTEMA_TRASPASO_VENTA v
+        INNER JOIN SISTEMA_TRASPASO_DET d ON d.ID_TAD = v.ID_TAD
+        WHERE d.ID_TA IN (${marcas})
+        GROUP BY d.ID_TA, v.TIPO_DOC, v.COD_DOC
+        ORDER BY MIN(v.ID_TV)
+      `, idsTa);
+    }
+    const codigosAsignados = asignados.map((a) => a.codSuc);
+
     const data = traspasos.map((t) => {
+      const idTa = Number(t.idAutorizacion);
+      const conSeguimiento = t.tipo === 'SALIDA_VENTA';
       const items = itemsDetalle
         .filter((it) => it.codRemSalida === t.codRemSalida)
-        .map((it) => ({
-          idFab: it.idFab,
-          codFab: it.codFab,
-          descPro: it.descPro,
-          cantidad: Number(it.cantidad),
-          obs: it.obs || null,
-        }));
+        .map((it) => {
+          const cantidad = Number(it.cantidad);
+          const seg = seguimiento.find((s) => Number(s.idTa) === idTa && Number(s.idFab) === Number(it.idFab));
+          const vendida = Number(seg?.vendida ?? 0);
+          const devuelta = Number(seg?.devuelta ?? 0);
+          return {
+            idFab: it.idFab,
+            codFab: it.codFab,
+            descPro: it.descPro,
+            cantidad,
+            obs: it.obs || null,
+            // Solo en salidas a venta con detalle registrado; si no, null
+            vendida: conSeguimiento && seg ? vendida : null,
+            devuelta: conSeguimiento && seg ? devuelta : null,
+            pendiente: conSeguimiento && seg ? cantidad - vendida - devuelta : null,
+          };
+        });
+      const hayPendiente = items.some((it) => (it.pendiente ?? 0) > 0);
       return {
         ...t,
         totalUnidades: items.reduce((s, it) => s + it.cantidad, 0),
         items,
+        documentos: documentos
+          .filter((d) => Number(d.idTa) === idTa)
+          .map((d) => ({ tipoDoc: d.tipoDoc, codDoc: d.codDoc, cantidad: Number(d.cantidad) })),
+        // Puede registrar la devolución: Administrador o encargado del almacén de origen
+        puedeDevolver:
+          conSeguimiento && t.estado === 'PENDIENTE' && hayPendiente &&
+          (esAdmin || codigosAsignados.includes(String(t.codSucOri))),
       };
     });
 

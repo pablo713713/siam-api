@@ -17,6 +17,7 @@ import { VentasModule } from './modules/ventas/ventas.module';
 import { Producto } from './modules/productos/entities/producto.entity';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 
 
 import { Cliente } from './modules/clientes/entities/cliente.entity';
@@ -64,6 +65,8 @@ import { CreditosModule } from './modules/creditos/creditos.module';
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Después de JwtAuthGuard: aplica @Roles(...) usando los roles del token
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}
