@@ -349,7 +349,7 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Estado: `PENDIENTE` (queda algo sin resolver), `VENDIDO` (todo resuelto y algo vendido), `DEVUELTO` (todo resuelto y nada vendido).
 - `POST /api/productos/traspasos/:idTa/devolucion` — devuelve al almacén de origen lo no vendido (todo o parte). Lo registra y firma con su contraseña el Administrador o el encargado del almacén de origen. Genera el movimiento inverso y un registro `TIPO = 'DEVOLUCION'` enlazado por `ID_TA_ORIGEN`.
 - El historial devuelve por producto `vendida`, `devuelta` y `pendiente`, los documentos de venta y `puedeDevolver`.
-- Pendiente: anular una venta no revierte lo marcado como vendido.
+- `PUT /api/ventas/:cod_venta/anular` (solo `Administrador`): repone en MOTOR ZONE lo vendido (menos lo ya devuelto) y lo que había salido de una salida a venta lo mueve a su almacén de origen, con remisión legacy y registro `DEVOLUCION` (`COD_VENTA` = venta anulada). El seguimiento pasa de vendido a devuelto y `SISTEMA_TRASPASO_VENTA.CANT_ANULADA` guarda lo anulado.
 
 **HU-P.01 — Alta y edición de productos con auditoría** ✅
 - `GET /api/productos/catalogos` — marcas/proveedores, tipos y modelos para los formularios.

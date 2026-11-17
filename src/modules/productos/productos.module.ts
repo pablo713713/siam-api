@@ -13,6 +13,6 @@ import { ProductosGestionController } from './productos-gestion.controller';
   controllers: [ProductosGestionController, ProductosController],
   providers: [ProductosService, TraspasoEstadosService, ProductosGestionService],
   // Ventas y créditos lo usan para marcar como vendido lo que salió de un traspaso
-  exports: [TraspasoEstadosService],
+  exports: [TraspasoEstadosService, ProductosService],
 })
 export class ProductosModule {}

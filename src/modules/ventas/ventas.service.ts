@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
+import { ProductosService } from '../productos/productos.service';
 
 
 const COD_SUC_MOTORZONE = '00011';
@@ -17,6 +18,7 @@ export class VentasService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly traspasoEstados: TraspasoEstadosService,
+    private readonly productosService: ProductosService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -410,48 +412,84 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Anular venta
   // ─────────────────────────────────────────
-  async anular(cod_venta: string, cod_usu: string) {
-    const venta = await this.findOne(cod_venta);
+  // Anula la venta y devuelve el stock:
+  //  - lo que venía del stock propio de MOTOR ZONE vuelve a MOTOR ZONE;
+  //  - lo que había salido de una salida a venta (traspaso firmado desde un
+  //    almacén de la tienda) vuelve a ese almacén de origen.
+  // Solo se repone lo que no se devolvió antes por una devolución de venta.
+  async anular(cod_venta: string, cod_usu: string, cod_emp: string) {
+    const venta = await this.findOne(cod_venta, cod_emp);
 
     if (venta.estado === 'A') {
       throw new BadRequestException('La venta ya está anulada');
     }
+
+    // Cantidad vigente por producto (vendido menos lo ya devuelto)
+    const items: { id_fab: number; cod_fab: string; cantidad: number }[] = venta.items
+      .map((it: { idFab: number; codFab: string; cantidad: number }) => ({
+        id_fab: Number(it.idFab),
+        cod_fab: String(it.codFab ?? ''),
+        cantidad: Number(it.cantidad),
+      }))
+      .filter((it: { cantidad: number }) => it.cantidad > 0);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 1. Cambiar estado a anulado
-      await queryRunner.query(
-        `UPDATE VENTA SET ESTADO = 'A' WHERE COD_VENTA = @0`,
-        [cod_venta]
+      // 1. Marcar anulada (solo si sigue sin anular: evita anular dos veces a la vez)
+      const marcada: { codVenta: string }[] = await queryRunner.query(
+        `
+        UPDATE VENTA SET ESTADO = 'A'
+        OUTPUT INSERTED.COD_VENTA AS codVenta
+        WHERE COD_VENTA = @0 AND ESTADO <> 'A'
+      `,
+        [cod_venta],
       );
-
-      // 2. Revertir stock utilizando la sucursal de la venta guardada en memoria
-      // Asegúrate de pasar todos los identificadores que componen el producto
-      for (const item of venta.items) {
-        await queryRunner.query(
-          `
-          UPDATE SUC_PRO_PROV
-          SET CANTIDAD = CANTIDAD + @0
-          WHERE ID_FAB  = @1 
-            AND COD_PRO  = @2
-            AND COD_PROV = @3
-            AND COD_SUC  = @4
-          `,
-          [
-            item.cantidad, 
-            item.idFab, 
-            item.codPro,   // ID / Código del producto
-            item.codProv,  // Código del proveedor
-            venta.codIni   // Sucursal origen de la venta (o venta.codSuc)
-          ]
-        );
+      if (marcada.length === 0) {
+        throw new BadRequestException('La venta ya está anulada');
       }
 
+      // 2. Reponer todo en MOTOR ZONE (de ahí se descontó al vender)
+      for (const item of items) {
+        const existe = await queryRunner.query(
+          `SELECT 1 as ok FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1`,
+          [item.id_fab, COD_SUC_MOTORZONE],
+        );
+        if (existe.length > 0) {
+          await queryRunner.query(
+            `UPDATE SUC_PRO_PROV SET CANTIDAD = CANTIDAD + @0 WHERE ID_FAB = @1 AND COD_SUC = @2`,
+            [item.cantidad, item.id_fab, COD_SUC_MOTORZONE],
+          );
+        } else {
+          await queryRunner.query(
+            `
+            INSERT INTO SUC_PRO_PROV (COD_SUC, COD_FAB, CANTIDAD, STOCK_MIN, cantidad_virtual, ID_FAB)
+            VALUES (@0, @1, @2, 0, 0, @3)
+          `,
+            [COD_SUC_MOTORZONE, item.cod_fab, item.cantidad, item.id_fab],
+          );
+        }
+      }
+
+      // 3. Lo que salió de una salida a venta pasa de MOTOR ZONE a su almacén de origen
+      const regresos = await this.productosService.devolverPorAnulacion(queryRunner, {
+        tipoDoc: 'VENTA',
+        codDoc: cod_venta,
+        cod_usu,
+        items: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
+      });
+
       await queryRunner.commitTransaction();
-      return { message: `Venta ${cod_venta} anulada correctamente` };
+
+      const devueltoAOrigen = regresos.reduce((s, r) => s + r.unidades, 0);
+      const total = items.reduce((s, it) => s + it.cantidad, 0);
+      return {
+        message: `Venta ${cod_venta} anulada correctamente`,
+        unidadesMotorZone: total - devueltoAOrigen,
+        devueltoAOrigen: regresos,
+      };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -459,6 +497,7 @@ export class VentasService {
       await queryRunner.release();
     }
   }
+
   async getTipoCambioVigente() {
     const result = await this.dataSource.query(`
         SELECT TOP 1
