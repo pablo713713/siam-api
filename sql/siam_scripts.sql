@@ -9,6 +9,11 @@
    FK van solo desde las tablas nuevas hacia las legacy. Ningún script de este
    archivo modifica tablas legacy.
 
+   Cómo usarlo: copiar y ejecutar el archivo COMPLETO en BDSIAM. Cada bloque
+   revisa lo que ya existe, así que se puede ejecutar en una base nueva o en
+   una que ya tenga bloques anteriores. No ejecutar bloques sueltos: algunos
+   dependen de las tablas que crean los anteriores.
+
    Al agregar un script nuevo: añadirlo AL FINAL como un bloque numerado y
    anotarlo en el índice.
 
@@ -203,12 +208,14 @@ BEGIN
         TIPO_DOC    VARCHAR(7)   NOT NULL,   -- VENTA | CREDITO
         COD_DOC     VARCHAR(18)  NOT NULL,   -- VENTA.COD_VENTA o CREDITO.COD_CRE
         CANTIDAD    INT          NOT NULL,
+        CANT_ANULADA INT         NOT NULL CONSTRAINT DF_STV_ANULADA DEFAULT (0), -- ver bloque 8
         FECHA_HORA  DATETIME2(0) NOT NULL
             CONSTRAINT DF_STV_FECHA_HORA DEFAULT (DATEADD(HOUR, -4, SYSUTCDATETIME())),
 
         CONSTRAINT PK_SISTEMA_TRASPASO_VENTA PRIMARY KEY (ID_TV),
         CONSTRAINT CK_STV_TIPO_DOC CHECK (TIPO_DOC IN ('VENTA', 'CREDITO')),
         CONSTRAINT CK_STV_CANTIDAD CHECK (CANTIDAD > 0),
+        CONSTRAINT CK_STV_ANULADA  CHECK (CANT_ANULADA >= 0 AND CANT_ANULADA <= CANTIDAD),
         CONSTRAINT FK_STV_TAD FOREIGN KEY (ID_TAD) REFERENCES dbo.SISTEMA_TRASPASO_DET (ID_TAD)
     );
 
@@ -262,16 +269,20 @@ GO
    Al anular una venta, lo que había salido de una salida a venta vuelve a su
    almacén de origen. Aquí queda cuántas unidades de ese registro se anularon
    (el registro no se borra: se conserva el rastro de la venta original).
+   Las instalaciones nuevas ya la crean en el bloque 6; este bloque solo
+   actualiza tablas creadas antes de esa versión.
    ============================================================================= */
 
-IF COL_LENGTH('dbo.SISTEMA_TRASPASO_VENTA', 'CANT_ANULADA') IS NULL
+IF OBJECT_ID('dbo.SISTEMA_TRASPASO_VENTA', 'U') IS NOT NULL
+   AND COL_LENGTH('dbo.SISTEMA_TRASPASO_VENTA', 'CANT_ANULADA') IS NULL
 BEGIN
     ALTER TABLE dbo.SISTEMA_TRASPASO_VENTA
         ADD CANT_ANULADA INT NOT NULL CONSTRAINT DF_STV_ANULADA DEFAULT (0);
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_STV_ANULADA')
+IF OBJECT_ID('dbo.SISTEMA_TRASPASO_VENTA', 'U') IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_STV_ANULADA')
 BEGIN
     ALTER TABLE dbo.SISTEMA_TRASPASO_VENTA
         ADD CONSTRAINT CK_STV_ANULADA CHECK (CANT_ANULADA >= 0 AND CANT_ANULADA <= CANTIDAD);
