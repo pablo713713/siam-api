@@ -334,10 +334,11 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - En la remisión legacy: `REMISION_S.COD_USU` = encargado, `COD_USU_REB` = firmante.
 - Se eliminó `POST /api/productos/verificar-cajero`.
 
-**HU-M.05 — Historial de Hojas de Remisión Digitales** ✅
-- `GET /api/productos/traspasos`
-- Lista el histórico de traspasos hacia Motor Zone con fecha, almacén origen, cajero responsable e ítems detallados.
-- Incluye la firma: tipo, encargado, firmante, fecha y hora de Bolivia y estado.
+**HU-M.05 — Historial de traspasos firmados (talonario digital)** ✅
+- `GET /api/productos/traspasos` — lista los traspasos de `SISTEMA_TRASPASO_AUTORIZACION` con tipo, estado, fecha y hora de Bolivia, origen, destino, quién registró, quién firmó y los productos de cada uno.
+- Filtros (query, todos opcionales): `fecha_desde`, `fecha_hasta` (YYYY-MM-DD), `nombre` (de quien registró o firmó), `cod_suc_ori`, `page`, `limit`. Devuelve `meta` con `total` y `totalPages`.
+- `GET /api/productos/traspasos/filtros` — almacenes disponibles para el filtro y el alcance del usuario.
+- **Permisos:** `Administrador` ve todos los traspasos de su empresa; `Encargado de Almacen` solo los que salieron de sus almacenes asignados; el resto recibe 403.
 
 **Regla de Negocio en Ventas y Devoluciones:**
 - `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.
@@ -471,7 +472,8 @@ export class Usuario {
 | GET | /api/usuarios/vendedores | Combo de vendedores para firmar traspasos | Sí |
 | GET | /api/productos/traspaso/contexto | Orígenes, destinos y almacenes de tienda para traspasos | Sí |
 | POST | /api/productos/traspaso | Movimiento de stock / Remisión digital | No* |
-| GET | /api/productos/traspasos | Historial de hojas de remisión digitales | No* |
+| GET | /api/productos/traspasos | Historial de traspasos firmados (filtros por fecha, nombre y almacén) | Sí |
+| GET | /api/productos/traspasos/filtros | Almacenes y alcance para el historial | Sí |
 | POST | /api/productos/actualizar-mercaderia | Ingreso/actualización de mercadería | No* |
 
 > *Los guards JWT están implementados pero aún no aplicados globalmente. Se aplicarán cuando se definan las rutas protegidas.

@@ -4,6 +4,7 @@ import { SearchProductoDto } from './dto/search-producto.dto';
 import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
+import { HistorialTraspasosDto } from './dto/historial-traspasos.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { JwtPayload } from 'src/modules/auth/interfaces/jwt-payload.interface';
 
@@ -32,19 +33,23 @@ export class ProductosController {
     return this.productosService.registrarTraspasoAlmacenes(dto, req.user, cod_emp);
   }
 
+  // Historial de traspasos firmados: Administrador (todo) o Encargado (sus almacenes)
   @Get('traspasos')
   async getHistorialTraspasos(
-    @Query('fecha') fecha?: string,
-    @Query('cod_suc_ori') cod_suc_ori?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() filtros: HistorialTraspasosDto,
+    @Request() req: { user: JwtPayload },
+    @CodEmp() cod_emp: string,
   ) {
-    return this.productosService.getHistorialTraspasos(
-      fecha,
-      cod_suc_ori,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 50,
-    );
+    return this.productosService.getHistorialTraspasos(filtros, req.user, cod_emp);
+  }
+
+  // Almacenes disponibles para el filtro del historial
+  @Get('traspasos/filtros')
+  async getFiltrosHistorialTraspasos(
+    @Request() req: { user: JwtPayload },
+    @CodEmp() cod_emp: string,
+  ) {
+    return this.productosService.getFiltrosHistorialTraspasos(req.user, cod_emp);
   }
 
   @Post('actualizar-mercaderia')
