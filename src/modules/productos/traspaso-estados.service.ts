@@ -128,6 +128,89 @@ export class TraspasoEstadosService {
     }
   }
 
+  /**
+   * Al anular una venta o un crédito: las unidades que habían salido de una
+   * salida a venta se dan por devueltas a su almacén de origen.
+   * Actualiza el seguimiento (vendida → devuelta), marca lo anulado en
+   * SISTEMA_TRASPASO_VENTA y recalcula el estado de cada traspaso.
+   * Devuelve qué hay que mover físicamente de vuelta y a qué almacén; el
+   * movimiento de stock lo hace el llamador.
+   *
+   * `items` es lo que realmente se anula por producto (lo vendido menos lo
+   * que ya se devolvió por otra vía); nunca se revierte más que eso.
+   */
+  async revertirVenta(
+    qr: QueryRunner,
+    venta: { tipoDoc: 'VENTA' | 'CREDITO'; codDoc: string; items: { id_fab: number; cantidad: number }[] },
+  ): Promise<{ idTa: number; sucOri: string; sucDes: string; id_fab: number; cantidad: number }[]> {
+    if (!(await this.tablasDisponibles())) return [];
+    if (!(await this.columnaAnuladaDisponible(qr))) {
+      this.logger.warn('Falta la columna CANT_ANULADA (bloque 8 de sql/siam_scripts.sql): no se revierten traspasos.');
+      return [];
+    }
+
+    // Lo más reciente primero: se revierte en orden inverso a como se asignó
+    const filas: {
+      idTv: number; idTad: number; idTa: number; idFab: number; vigente: number; sucOri: string; sucDes: string;
+    }[] = await qr.query(
+      `
+      SELECT v.ID_TV as idTv, v.ID_TAD as idTad, d.ID_TA as idTa, d.ID_FAB as idFab,
+             v.CANTIDAD - v.CANT_ANULADA as vigente,
+             ta.SUC_ORI as sucOri, ta.SUC_DES as sucDes
+      FROM SISTEMA_TRASPASO_VENTA v WITH (UPDLOCK, ROWLOCK)
+      INNER JOIN SISTEMA_TRASPASO_DET d ON d.ID_TAD = v.ID_TAD
+      INNER JOIN SISTEMA_TRASPASO_AUTORIZACION ta ON ta.ID_TA = d.ID_TA
+      WHERE v.TIPO_DOC = @0 AND v.COD_DOC = @1
+        AND v.CANTIDAD - v.CANT_ANULADA > 0
+      ORDER BY v.ID_TV DESC
+    `,
+      [venta.tipoDoc, venta.codDoc],
+    );
+
+    const restante = new Map<number, number>();
+    for (const it of venta.items) {
+      restante.set(it.id_fab, (restante.get(it.id_fab) ?? 0) + Math.max(0, Number(it.cantidad)));
+    }
+
+    const regresos: { idTa: number; sucOri: string; sucDes: string; id_fab: number; cantidad: number }[] = [];
+    const afectados = new Set<number>();
+    for (const f of filas) {
+      const idFab = Number(f.idFab);
+      const disponible = restante.get(idFab) ?? 0;
+      const q = Math.min(disponible, Number(f.vigente));
+      if (q <= 0) continue;
+      await qr.query(
+        `UPDATE SISTEMA_TRASPASO_VENTA SET CANT_ANULADA = CANT_ANULADA + @0 WHERE ID_TV = @1`,
+        [q, f.idTv],
+      );
+      await qr.query(
+        `
+        UPDATE SISTEMA_TRASPASO_DET
+        SET CANT_VENDIDA = CANT_VENDIDA - @0, CANT_DEVUELTA = CANT_DEVUELTA + @0
+        WHERE ID_TAD = @1
+      `,
+        [q, f.idTad],
+      );
+      restante.set(idFab, disponible - q);
+      afectados.add(Number(f.idTa));
+      const previo = regresos.find((r) => r.idTa === Number(f.idTa) && r.id_fab === idFab);
+      if (previo) previo.cantidad += q;
+      else regresos.push({ idTa: Number(f.idTa), sucOri: f.sucOri, sucDes: f.sucDes, id_fab: idFab, cantidad: q });
+    }
+
+    for (const idTa of afectados) {
+      await this.recalcularEstado(qr, idTa);
+    }
+    return regresos;
+  }
+
+  private async columnaAnuladaDisponible(qr: QueryRunner): Promise<boolean> {
+    const r: { ok: number | null }[] = await qr.query(
+      `SELECT COL_LENGTH('dbo.SISTEMA_TRASPASO_VENTA', 'CANT_ANULADA') as ok`,
+    );
+    return r[0]?.ok != null;
+  }
+
   /** Registra unidades devueltas al almacén de origen (ya validadas por el llamador). */
   async registrarDevuelto(qr: QueryRunner, idTad: number, cantidad: number): Promise<void> {
     await qr.query(
