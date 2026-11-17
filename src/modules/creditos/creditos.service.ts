@@ -7,13 +7,17 @@ import { DataSource } from 'typeorm';
 import { CreateCreditoDto } from './dto/create-credito.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 import { CreateDevolucionCreditoDto } from './dto/create-devolucion-credito.dto';
+import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
 
 const COD_SUC_MOTORZONE = '00011';
 const PLAZO_DEFAULT_SEMANAS = 4;
 
 @Injectable()
 export class CreditosService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly traspasoEstados: TraspasoEstadosService,
+  ) {}
 
   // ─────────────────────────────────────────
   // Generar COD_CRE: {COD_USU(7)}{YY(2)}{secuencial(4)} = 13 chars
@@ -201,6 +205,15 @@ export class CreditosService {
           WHERE ID_FAB = @1 AND COD_SUC = @2
         `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
       }
+
+      // Igual que en la venta al contado: lo vendido se descuenta de las
+      // salidas a venta pendientes de este vendedor
+      await this.traspasoEstados.asignarVenta(queryRunner, {
+        cod_usu,
+        tipoDoc: 'CREDITO',
+        codDoc: cod_cre,
+        items: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+      });
 
       await queryRunner.commitTransaction();
 

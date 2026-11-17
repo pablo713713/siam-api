@@ -12,12 +12,14 @@ import { RolesService } from './roles.service';
 import { CreateRolDto } from './dto/create-rol.dto';
 import { UpdateRolDto } from './dto/update-rol.dto';
 import { AsignarRolDto } from './dto/asignar-rol.dto';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   // HU-2.01
+  @Roles('Administrador')
   @Post()
   create(@Body() dto: CreateRolDto) {
     return this.rolesService.create(dto);
@@ -36,18 +38,21 @@ export class RolesController {
   }
 
   // HU-2.01
+  @Roles('Administrador')
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRolDto) {
     return this.rolesService.update(id, dto);
   }
 
   // HU-2.01
+  @Roles('Administrador')
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.remove(id);
   }
 
   // HU-2.03
+  @Roles('Administrador')
   @Post('asignar')
   asignarRol(@Body() dto: AsignarRolDto) {
     return this.rolesService.asignarRol(dto);
@@ -60,6 +65,7 @@ getRolesDeUsuario(@Param('cod_usu') cod_usu: string) {
 }
 
 // HU-2.03 — Quitar rol de usuario
+@Roles('Administrador')
 @Delete('usuario/:cod_usu/rol/:id_rol')
 quitarRol(
   @Param('cod_usu') cod_usu: string,

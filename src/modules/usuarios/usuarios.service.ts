@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { timingSafeEqual } from 'crypto';
@@ -79,7 +79,9 @@ export class UsuariosService {
     // Mismo mensaje para "no existe" y "contraseña incorrecta": no revela cuál falló
     if (!u || u.COD_EMP !== cod_emp || !this.clavesIguales(u.clave ?? '', password)) {
       this.registrarFallo(cod_usu_firmante);
-      throw new UnauthorizedException(
+      // 403 y no 401: un 401 significa "sesión inválida" y el frontend cierra
+      // la sesión; aquí la sesión es válida, lo que falló es la firma.
+      throw new ForbiddenException(
         rolRequerido ? 'Usuario o contraseña del vendedor incorrectos.' : 'Contraseña incorrecta.',
       );
     }

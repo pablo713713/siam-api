@@ -16,6 +16,10 @@
      1. Roles para traspasos (Encargado de Almacen, Vendedor)
      2. SISTEMA_TRASPASO_AUTORIZACION (firma digital de traspasos)
      3. Ejemplo: asignar rol y almacén a un encargado (comentado)
+     4. Tipo de traspaso DEVOLUCION (actualiza CK_STA_TIPO)
+     5. SISTEMA_TRASPASO_DET (cantidades vendidas / devueltas por producto)
+     6. SISTEMA_TRASPASO_VENTA (en qué venta o crédito salió cada producto)
+     7. SISTEMA_PRODUCTO_AUDITORIA (creación y edición de productos)
    ============================================================================= */
 
 /* =============================================================================
@@ -48,6 +52,8 @@ GO
      SALIDA_VENTA     almacén DENTRO de la tienda -> principal (MOTOR ZONE 00011)
                       para vender. Firma el VENDEDOR que se lleva el producto.
      ENTRE_ALMACENES  cualquier otro traspaso. Firma el encargado que registra.
+     DEVOLUCION       regreso al almacén de origen de lo que no se vendió de una
+                      SALIDA_VENTA (ver bloque 4). Firma el encargado que recibe.
 
    Fecha y hora:
      Las calcula SQL Server desde su hora UTC menos 4 horas (Bolivia es UTC-4
@@ -81,7 +87,7 @@ BEGIN
         OBS                VARCHAR(512) NULL,
 
         CONSTRAINT PK_SISTEMA_TRASPASO_AUTORIZACION PRIMARY KEY (ID_TA),
-        CONSTRAINT CK_STA_TIPO   CHECK (TIPO IN ('INGRESO_TIENDA', 'SALIDA_VENTA', 'ENTRE_ALMACENES')),
+        CONSTRAINT CK_STA_TIPO   CHECK (TIPO IN ('INGRESO_TIENDA', 'SALIDA_VENTA', 'ENTRE_ALMACENES', 'DEVOLUCION')),
         CONSTRAINT CK_STA_ESTADO CHECK (ESTADO IN ('PENDIENTE', 'VENDIDO', 'DEVUELTO', 'COMPLETADO')),
         -- En una salida a venta firman dos personas distintas
         CONSTRAINT CK_STA_FIRMANTE CHECK (TIPO <> 'SALIDA_VENTA' OR COD_USU_FIRMANTE <> COD_USU_ENCARGADO),
@@ -120,3 +126,132 @@ GO
 -- -- Vendedor (para que aparezca en el combo de firma)
 -- INSERT INTO dbo.SISTEMA_USUARIO_ROL (cod_usu, id_rol, asignadoAt)
 -- SELECT '0000456', id, GETDATE() FROM dbo.SISTEMA_ROLES WHERE nombre = 'Vendedor';
+
+/* =============================================================================
+   4. Tipo de traspaso DEVOLUCION
+   Para instalaciones donde la tabla del bloque 2 ya existía: vuelve a crear
+   CK_STA_TIPO aceptando también 'DEVOLUCION'.
+   ============================================================================= */
+
+IF EXISTS (SELECT 1 FROM sys.check_constraints
+           WHERE name = 'CK_STA_TIPO'
+             AND parent_object_id = OBJECT_ID('dbo.SISTEMA_TRASPASO_AUTORIZACION')
+             AND definition NOT LIKE '%DEVOLUCION%')
+BEGIN
+    ALTER TABLE dbo.SISTEMA_TRASPASO_AUTORIZACION DROP CONSTRAINT CK_STA_TIPO;
+    ALTER TABLE dbo.SISTEMA_TRASPASO_AUTORIZACION ADD CONSTRAINT CK_STA_TIPO
+        CHECK (TIPO IN ('INGRESO_TIENDA', 'SALIDA_VENTA', 'ENTRE_ALMACENES', 'DEVOLUCION'));
+END
+GO
+
+/* =============================================================================
+   5. SISTEMA_TRASPASO_DET
+   Por cada producto de una SALIDA_VENTA: cuánto se llevó el vendedor, cuánto
+   ya vendió y cuánto devolvió al almacén de origen. El estado del traspaso
+   sale de aquí:
+     PENDIENTE  queda algo sin vender ni devolver
+     VENDIDO    todo resuelto y al menos una unidad vendida
+     DEVUELTO   todo resuelto y nada vendido (todo volvió al almacén)
+   ============================================================================= */
+
+IF OBJECT_ID('dbo.SISTEMA_TRASPASO_DET', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SISTEMA_TRASPASO_DET (
+        ID_TAD         INT IDENTITY(1,1) NOT NULL,
+        ID_TA          INT          NOT NULL,   -- SISTEMA_TRASPASO_AUTORIZACION
+        ID_FAB         INT          NOT NULL,   -- PROV_PRO.ID_FAB
+        COD_FAB        VARCHAR(50)  NOT NULL,
+        CANTIDAD       INT          NOT NULL,   -- unidades que se llevó
+        CANT_VENDIDA   INT          NOT NULL CONSTRAINT DF_STD_VENDIDA  DEFAULT (0),
+        CANT_DEVUELTA  INT          NOT NULL CONSTRAINT DF_STD_DEVUELTA DEFAULT (0),
+
+        CONSTRAINT PK_SISTEMA_TRASPASO_DET PRIMARY KEY (ID_TAD),
+        CONSTRAINT UQ_STD_TA_FAB UNIQUE (ID_TA, ID_FAB),
+        CONSTRAINT CK_STD_CANTIDADES CHECK (
+            CANTIDAD > 0 AND CANT_VENDIDA >= 0 AND CANT_DEVUELTA >= 0
+            AND CANT_VENDIDA + CANT_DEVUELTA <= CANTIDAD),
+        CONSTRAINT FK_STD_TA  FOREIGN KEY (ID_TA)  REFERENCES dbo.SISTEMA_TRASPASO_AUTORIZACION (ID_TA),
+        CONSTRAINT FK_STD_FAB FOREIGN KEY (ID_FAB) REFERENCES dbo.PROV_PRO (ID_FAB)
+    );
+
+    CREATE INDEX IX_STD_FAB ON dbo.SISTEMA_TRASPASO_DET (ID_FAB);
+END
+GO
+
+-- Detalle de las salidas a venta registradas antes de existir esta tabla
+INSERT INTO dbo.SISTEMA_TRASPASO_DET (ID_TA, ID_FAB, COD_FAB, CANTIDAD)
+SELECT ta.ID_TA, ds.ID_FAB, MAX(ds.COD_FAB), SUM(ds.CANTIDAD)
+FROM dbo.SISTEMA_TRASPASO_AUTORIZACION ta
+INNER JOIN dbo.DET_REMIS ds ON ds.COD_REM = ta.COD_REM
+WHERE ta.TIPO = 'SALIDA_VENTA'
+  AND ds.CANTIDAD > 0
+  AND NOT EXISTS (SELECT 1 FROM dbo.SISTEMA_TRASPASO_DET d WHERE d.ID_TA = ta.ID_TA)
+GROUP BY ta.ID_TA, ds.ID_FAB;
+GO
+
+/* =============================================================================
+   6. SISTEMA_TRASPASO_VENTA
+   Rastro de en qué venta (o crédito) salió cada producto de una SALIDA_VENTA.
+   ============================================================================= */
+
+IF OBJECT_ID('dbo.SISTEMA_TRASPASO_VENTA', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SISTEMA_TRASPASO_VENTA (
+        ID_TV       INT IDENTITY(1,1) NOT NULL,
+        ID_TAD      INT          NOT NULL,   -- SISTEMA_TRASPASO_DET
+        TIPO_DOC    VARCHAR(7)   NOT NULL,   -- VENTA | CREDITO
+        COD_DOC     VARCHAR(18)  NOT NULL,   -- VENTA.COD_VENTA o CREDITO.COD_CRE
+        CANTIDAD    INT          NOT NULL,
+        FECHA_HORA  DATETIME2(0) NOT NULL
+            CONSTRAINT DF_STV_FECHA_HORA DEFAULT (DATEADD(HOUR, -4, SYSUTCDATETIME())),
+
+        CONSTRAINT PK_SISTEMA_TRASPASO_VENTA PRIMARY KEY (ID_TV),
+        CONSTRAINT CK_STV_TIPO_DOC CHECK (TIPO_DOC IN ('VENTA', 'CREDITO')),
+        CONSTRAINT CK_STV_CANTIDAD CHECK (CANTIDAD > 0),
+        CONSTRAINT FK_STV_TAD FOREIGN KEY (ID_TAD) REFERENCES dbo.SISTEMA_TRASPASO_DET (ID_TAD)
+    );
+
+    CREATE INDEX IX_STV_TAD ON dbo.SISTEMA_TRASPASO_VENTA (ID_TAD);
+    CREATE INDEX IX_STV_DOC ON dbo.SISTEMA_TRASPASO_VENTA (TIPO_DOC, COD_DOC);
+END
+GO
+
+/* =============================================================================
+   7. SISTEMA_PRODUCTO_AUDITORIA
+   Rastro de auditoría de productos: quién creó o editó un producto, cuándo
+   (hora de Bolivia generada por SQL Server) y los datos antes y después.
+   DATOS_ANTERIORES y DATOS_NUEVOS guardan el producto en formato JSON.
+   ============================================================================= */
+
+IF OBJECT_ID('dbo.SISTEMA_PRODUCTO_AUDITORIA', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SISTEMA_PRODUCTO_AUDITORIA (
+        ID_PA             INT IDENTITY(1,1) NOT NULL,
+        ACCION            VARCHAR(6)    NOT NULL,   -- CREAR | EDITAR
+        ID_PRO            INT           NOT NULL,   -- PRODUCTO.ID_PRO
+        ID_FAB            INT           NOT NULL,   -- PROV_PRO.ID_FAB
+        COD_FAB           VARCHAR(50)   NOT NULL,   -- copia para buscar sin JOIN
+        DESC_PRO          VARCHAR(150)  NOT NULL,   -- descripción al momento del cambio
+        COD_USU           VARCHAR(7)    NOT NULL,   -- quien hizo el cambio
+        COD_EMP           VARCHAR(3)    NOT NULL,
+
+        FECHA_HORA        DATETIME2(0)  NOT NULL
+            CONSTRAINT DF_SPA_FECHA_HORA DEFAULT (DATEADD(HOUR, -4, SYSUTCDATETIME())),
+        FECHA             AS CAST(FECHA_HORA AS DATE)    PERSISTED,
+        HORA              AS CAST(FECHA_HORA AS TIME(0)) PERSISTED,
+
+        CAMPOS            VARCHAR(500)  NULL,       -- campos modificados, separados por coma
+        DATOS_ANTERIORES  NVARCHAR(MAX) NULL,       -- JSON; NULL al crear
+        DATOS_NUEVOS      NVARCHAR(MAX) NOT NULL,   -- JSON
+
+        CONSTRAINT PK_SISTEMA_PRODUCTO_AUDITORIA PRIMARY KEY (ID_PA),
+        CONSTRAINT CK_SPA_ACCION CHECK (ACCION IN ('CREAR', 'EDITAR')),
+        CONSTRAINT FK_SPA_PRODUCTO FOREIGN KEY (ID_PRO)  REFERENCES dbo.PRODUCTO (ID_PRO),
+        CONSTRAINT FK_SPA_PROV_PRO FOREIGN KEY (ID_FAB)  REFERENCES dbo.PROV_PRO (ID_FAB),
+        CONSTRAINT FK_SPA_USUARIO  FOREIGN KEY (COD_USU) REFERENCES dbo.USUARIO (COD_USU)
+    );
+
+    CREATE INDEX IX_SPA_FECHA  ON dbo.SISTEMA_PRODUCTO_AUDITORIA (FECHA);
+    CREATE INDEX IX_SPA_ID_FAB ON dbo.SISTEMA_PRODUCTO_AUDITORIA (ID_FAB);
+END
+GO

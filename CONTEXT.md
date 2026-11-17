@@ -150,6 +150,9 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 | `SISTEMA_USUARIO_ROL` | `USUARIO.COD_USU` | Asignación de roles a usuarios |
 | `CLIENTE_EXTENSION` | `CLIENTE.cod_cli` | Datos extendidos de clientes |
 | `SISTEMA_TRASPASO_AUTORIZACION` | `REMISION_S`, `USUARIO`, `SUCURSAL` | Firma digital de traspasos (reemplaza el talonario físico). Script: `sql/siam_scripts.sql` |
+| `SISTEMA_TRASPASO_DET` | `SISTEMA_TRASPASO_AUTORIZACION`, `PROV_PRO` | Por producto de una salida a venta: cantidad llevada, vendida y devuelta |
+| `SISTEMA_TRASPASO_VENTA` | `SISTEMA_TRASPASO_DET` | En qué venta o crédito salió cada producto de una salida a venta |
+| `SISTEMA_PRODUCTO_AUDITORIA` | `PRODUCTO`, `PROV_PRO`, `USUARIO` | Rastro de creación y edición de productos (datos antes y después en JSON) |
 
 ---
 
@@ -339,6 +342,27 @@ El backend hace JOIN entre ambas en el Service cuando necesita datos combinados.
 - Filtros (query, todos opcionales): `fecha_desde`, `fecha_hasta` (YYYY-MM-DD), `nombre` (de quien registró o firmó), `cod_suc_ori`, `page`, `limit`. Devuelve `meta` con `total` y `totalPages`.
 - `GET /api/productos/traspasos/filtros` — almacenes disponibles para el filtro y el alcance del usuario.
 - **Permisos:** `Administrador` ve todos los traspasos de su empresa; `Encargado de Almacen` solo los que salieron de sus almacenes asignados; el resto recibe 403.
+
+**HU-M.06 — Estados de la salida a venta y devolución al almacén** ✅
+- Al registrar una salida a venta se guarda el detalle en `SISTEMA_TRASPASO_DET`.
+- Al registrar una venta (`POST /api/ventas`) o un crédito (`POST /api/creditos`), lo vendido se descuenta de las salidas a venta `PENDIENTE` firmadas por ese mismo vendedor (primero las más antiguas) y queda el rastro en `SISTEMA_TRASPASO_VENTA`. Lógica en `TraspasoEstadosService`.
+- Estado: `PENDIENTE` (queda algo sin resolver), `VENDIDO` (todo resuelto y algo vendido), `DEVUELTO` (todo resuelto y nada vendido).
+- `POST /api/productos/traspasos/:idTa/devolucion` — devuelve al almacén de origen lo no vendido (todo o parte). Lo registra y firma con su contraseña el Administrador o el encargado del almacén de origen. Genera el movimiento inverso y un registro `TIPO = 'DEVOLUCION'` enlazado por `ID_TA_ORIGEN`.
+- El historial devuelve por producto `vendida`, `devuelta` y `pendiente`, los documentos de venta y `puedeDevolver`.
+- Pendiente: anular una venta no revierte lo marcado como vendido.
+
+**HU-P.01 — Alta y edición de productos con auditoría** ✅
+- `GET /api/productos/catalogos` — marcas/proveedores, tipos y modelos para los formularios.
+- `POST /api/productos` — registra un producto nuevo (`PRODUCTO` + `PROV_PRO`). Roles: `Administrador`, `Encargado de Almacen`. Valida código de producto y código de fábrica únicos en la empresa.
+- `GET /api/productos/fab/:idFab` y `PUT /api/productos/fab/:idFab` — datos y edición de un producto. Solo `Administrador`; el PUT exige `password` (la del propio usuario). No se editan `COD_PRO` ni `COD_FAB`.
+- `GET /api/productos/auditoria` — historial de cambios con filtros `fecha_desde`, `fecha_hasta`, `nombre`, `producto`, `accion`. Solo `Administrador`.
+- Cada alta o edición guarda en `SISTEMA_PRODUCTO_AUDITORIA` quién, cuándo (hora de Bolivia) y los datos antes y después.
+
+**Roles y seguridad**
+- `@Roles(...)` + `RolesGuard` (global) restringen endpoints por rol. Aplicado a: mutaciones de `/api/roles` y `/api/almacenes` (solo `Administrador`), alta/edición de productos y `GET /api/almacenes/encargados`.
+- `POST /api/usuarios/verificar-password` — confirma la contraseña del usuario en sesión antes de una acción sensible.
+- Una firma o contraseña incorrecta responde **403** (no 401, que el frontend interpreta como sesión vencida).
+- `GET /api/almacenes/encargados` — usuarios que pueden traspasar desde cada almacén.
 
 **Regla de Negocio en Ventas y Devoluciones:**
 - `POST /api/ventas`: La venta directa descarga **exclusivamente de MOTOR ZONE (`00011`)**. Si no hay stock, exige realizar previamente el traspaso digital.

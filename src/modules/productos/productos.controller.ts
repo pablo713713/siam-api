@@ -5,6 +5,7 @@ import { AdvancedSearchProductoDto } from './dto/advanced-search.dto';
 import { TraspasoAlmacenDto } from './dto/traspaso-almacen.dto';
 import { IngresoMercaderiaDto } from './dto/ingreso-mercaderia.dto';
 import { HistorialTraspasosDto } from './dto/historial-traspasos.dto';
+import { DevolucionTraspasoDto } from './dto/devolucion-traspaso.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { JwtPayload } from 'src/modules/auth/interfaces/jwt-payload.interface';
 
@@ -41,6 +42,17 @@ export class ProductosController {
     @CodEmp() cod_emp: string,
   ) {
     return this.productosService.getHistorialTraspasos(filtros, req.user, cod_emp);
+  }
+
+  // Devolución al almacén de origen de lo no vendido de una salida a venta
+  @Post('traspasos/:idTa/devolucion')
+  async registrarDevolucionTraspaso(
+    @Param('idTa', ParseIntPipe) idTa: number,
+    @Body() dto: DevolucionTraspasoDto,
+    @Request() req: { user: JwtPayload },
+    @CodEmp() cod_emp: string,
+  ) {
+    return this.productosService.registrarDevolucionTraspaso(idTa, dto, req.user, cod_emp);
   }
 
   // Almacenes disponibles para el filtro del historial

@@ -6,6 +6,7 @@ import {
 import { DataSource } from 'typeorm';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
+import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
 
 
 const COD_SUC_MOTORZONE = '00011';
@@ -15,6 +16,7 @@ export class VentasService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly traspasoEstados: TraspasoEstadosService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -121,6 +123,15 @@ export class VentasService {
           WHERE ID_FAB = @1 AND COD_SUC = @2
         `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
       }
+
+      // Lo vendido se descuenta de las salidas a venta pendientes de este vendedor
+      // (pasan a VENDIDO cuando ya no queda nada por vender ni devolver)
+      await this.traspasoEstados.asignarVenta(queryRunner, {
+        cod_usu,
+        tipoDoc: 'VENTA',
+        codDoc: cod_venta,
+        items: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+      });
 
       await queryRunner.commitTransaction();
 

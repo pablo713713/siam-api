@@ -47,6 +47,53 @@ export class AlmacenesService {
     return sucursales;
   }
 
+  // Encargados por almacén: usuarios activos con el almacén asignado y un rol
+  // que permite registrar traspasos (Encargado de Almacen o Administrador).
+  async getEncargadosPorAlmacen(cod_emp: string) {
+    const filas: {
+      codSuc: string; nomSuc: string; codUsu: string;
+      nomUsu: string | null; apUsu: string | null; alias: string; esEncargado: number;
+    }[] = await this.dataSource.query(`
+      SELECT
+        s.COD_SUC as codSuc,
+        s.NOM_SUC as nomSuc,
+        u.COD_USU as codUsu,
+        u.NOM_USU as nomUsu,
+        u.AP_USU  as apUsu,
+        u.ALIAS   as alias,
+        MAX(CASE WHEN r.nombre = 'Encargado de Almacen' THEN 1 ELSE 0 END) as esEncargado
+      FROM SISTEMA_USUARIO_ALMACEN ua
+      INNER JOIN SUCURSAL s             ON s.COD_SUC = ua.cod_suc
+      INNER JOIN USUARIO u              ON u.COD_USU = ua.cod_usu
+      INNER JOIN SISTEMA_USUARIO_ROL ur ON ur.cod_usu = ua.cod_usu
+      INNER JOIN SISTEMA_ROLES r        ON r.id = ur.id_rol
+      WHERE ua.activo = 1
+        AND u.baja = '0'
+        AND r.activo = 1
+        AND r.nombre IN ('Encargado de Almacen', 'Administrador')
+        AND s.COD_EMP = CAST(@0 AS VARCHAR(3))
+      GROUP BY s.COD_SUC, s.NOM_SUC, u.COD_USU, u.NOM_USU, u.AP_USU, u.ALIAS
+      ORDER BY s.NOM_SUC ASC, u.NOM_USU ASC
+    `, [cod_emp]);
+
+    const porAlmacen = new Map<string, {
+      codSuc: string; nomSuc: string;
+      encargados: { codUsu: string; nombre: string; alias: string; rol: string }[];
+    }>();
+    for (const f of filas) {
+      if (!porAlmacen.has(f.codSuc)) {
+        porAlmacen.set(f.codSuc, { codSuc: f.codSuc, nomSuc: f.nomSuc, encargados: [] });
+      }
+      porAlmacen.get(f.codSuc)!.encargados.push({
+        codUsu: f.codUsu,
+        nombre: `${f.nomUsu ?? ''} ${f.apUsu ?? ''}`.trim(),
+        alias: f.alias,
+        rol: Number(f.esEncargado) === 1 ? 'Encargado de Almacen' : 'Administrador',
+      });
+    }
+    return { data: [...porAlmacen.values()] };
+  }
+
   // Asignar almacén a usuario
   async asignarAlmacen(dto: AsignarAlmacenDto) {
     const existe = await this.usuarioAlmacenRepository.findOne({
