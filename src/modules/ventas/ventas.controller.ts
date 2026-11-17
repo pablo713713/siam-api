@@ -1,10 +1,11 @@
 import {
   Controller, Get, Post, Put,
-  Body, Param, Query,
+  Body, Param, Query, Request,
 } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 
 @Controller('ventas')
 export class VentasController {
@@ -74,8 +75,14 @@ export class VentasController {
     return this.ventasService.confirmar(cod_venta, items);
   }
 
+  // Anular venta: solo Administrador. Quien anula se toma del token.
+  @Roles('Administrador')
   @Put(':cod_venta/anular')
-  anular(@Param('cod_venta') cod_venta: string, @Body() body: any) {
-    return this.ventasService.anular(cod_venta, body?.cod_usu ?? '0000001');
+  anular(
+    @Param('cod_venta') cod_venta: string,
+    @Request() req: { user: { cod_usu: string } },
+    @CodEmp() cod_emp: string,
+  ) {
+    return this.ventasService.anular(cod_venta, req.user.cod_usu, cod_emp);
   }
 }

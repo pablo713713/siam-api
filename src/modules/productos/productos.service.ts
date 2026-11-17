@@ -1292,6 +1292,56 @@ export class ProductosService {
   }
 
   // ─────────────────────────────────────────
+  // Anulación de una venta o crédito: lo que había salido de una salida a
+  // venta vuelve a su almacén de origen. Se llama dentro de la transacción de
+  // la anulación, DESPUÉS de reponer el stock en MOTOR ZONE: aquí se mueve esa
+  // parte de MOTOR ZONE al almacén de origen, con su remisión legacy y un
+  // registro DEVOLUCION en el talonario digital.
+  // ─────────────────────────────────────────
+  async devolverPorAnulacion(
+    qr: QueryRunner,
+    anulacion: { tipoDoc: 'VENTA' | 'CREDITO'; codDoc: string; cod_usu: string; items: { id_fab: number; cantidad: number }[] },
+  ) {
+    const regresos = await this.traspasoEstados.revertirVenta(qr, anulacion);
+    const resultado: { idTa: number; almacen: string; codRemSalida: string; unidades: number }[] = [];
+
+    // Un movimiento por traspaso de origen
+    const porTraspaso = new Map<number, typeof regresos>();
+    for (const r of regresos) {
+      porTraspaso.set(r.idTa, [...(porTraspaso.get(r.idTa) ?? []), r]);
+    }
+    for (const [idTa, grupo] of porTraspaso) {
+      const { sucOri, sucDes } = grupo[0];
+      const obs = `Anulación de ${anulacion.tipoDoc === 'CREDITO' ? 'el crédito' : 'la venta'} ${anulacion.codDoc}`;
+      const { codRemS, codRemE } = await this.moverStock(qr, {
+        cod_suc_ori: sucDes,
+        cod_suc_des: sucOri,
+        items: grupo.map((g) => ({ id_fab: g.id_fab, cantidad: g.cantidad })),
+        cod_usu: anulacion.cod_usu,
+        cod_usu_recibe: anulacion.cod_usu,
+        obs,
+      });
+      await qr.query(
+        `
+        INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
+          COD_REM, COD_REM_E, TIPO, SUC_ORI, SUC_DES,
+          COD_USU_ENCARGADO, COD_USU_FIRMANTE, ESTADO, ID_TA_ORIGEN, COD_VENTA, OBS
+        )
+        VALUES (@0, @1, 'DEVOLUCION', @2, @3, @4, @4, 'COMPLETADO', @5, @6, @7)
+      `,
+        [codRemS, codRemE, sucDes, sucOri, anulacion.cod_usu, idTa, anulacion.codDoc.slice(0, 18), obs],
+      );
+      resultado.push({
+        idTa,
+        almacen: sucOri,
+        codRemSalida: codRemS,
+        unidades: grupo.reduce((s, g) => s + g.cantidad, 0),
+      });
+    }
+    return resultado;
+  }
+
+  // ─────────────────────────────────────────
   // Devolución al almacén de origen (lo que no se vendió de una salida a venta)
   // ─────────────────────────────────────────
   async registrarDevolucionTraspaso(

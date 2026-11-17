@@ -20,6 +20,7 @@
      5. SISTEMA_TRASPASO_DET (cantidades vendidas / devueltas por producto)
      6. SISTEMA_TRASPASO_VENTA (en qué venta o crédito salió cada producto)
      7. SISTEMA_PRODUCTO_AUDITORIA (creación y edición de productos)
+     8. CANT_ANULADA en SISTEMA_TRASPASO_VENTA (anulación de ventas)
    ============================================================================= */
 
 /* =============================================================================
@@ -253,5 +254,26 @@ BEGIN
 
     CREATE INDEX IX_SPA_FECHA  ON dbo.SISTEMA_PRODUCTO_AUDITORIA (FECHA);
     CREATE INDEX IX_SPA_ID_FAB ON dbo.SISTEMA_PRODUCTO_AUDITORIA (ID_FAB);
+END
+GO
+
+/* =============================================================================
+   8. CANT_ANULADA en SISTEMA_TRASPASO_VENTA
+   Al anular una venta, lo que había salido de una salida a venta vuelve a su
+   almacén de origen. Aquí queda cuántas unidades de ese registro se anularon
+   (el registro no se borra: se conserva el rastro de la venta original).
+   ============================================================================= */
+
+IF COL_LENGTH('dbo.SISTEMA_TRASPASO_VENTA', 'CANT_ANULADA') IS NULL
+BEGIN
+    ALTER TABLE dbo.SISTEMA_TRASPASO_VENTA
+        ADD CANT_ANULADA INT NOT NULL CONSTRAINT DF_STV_ANULADA DEFAULT (0);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_STV_ANULADA')
+BEGIN
+    ALTER TABLE dbo.SISTEMA_TRASPASO_VENTA
+        ADD CONSTRAINT CK_STV_ANULADA CHECK (CANT_ANULADA >= 0 AND CANT_ANULADA <= CANTIDAD);
 END
 GO
