@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AdvancedSearchProductoDto {
@@ -9,6 +9,12 @@ export class AdvancedSearchProductoDto {
   @IsOptional()
   @IsString()
   codigo?: string;
+
+  // Si se envía, cada producto trae su stock en ese almacén (stockAlmacen)
+  @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  cod_suc?: string;
 
   @IsOptional()
   @Type(() => Number)

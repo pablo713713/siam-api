@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsString,
   IsNotEmpty,
   IsOptional,
@@ -38,7 +39,8 @@ export class TraspasoAlmacenDto {
   // El encargado que registra y autoriza NO viene en el body: se toma del token JWT.
 
   // Firma (obligatoria en todo traspaso). Contraseña del login de quien firma:
-  //  - Salida a venta (almacén de tienda -> MOTOR ZONE): la del vendedor elegido.
+  //  - Salida a venta (cualquier almacén -> MOTOR ZONE): la del vendedor elegido
+  //    (además el encargado firma con password_encargado).
   //  - Otros traspasos: la del propio encargado que registra.
   // Solo se usa para verificar; no se guarda.
   @IsString({ message: 'password_firma debe ser un texto' })
@@ -46,7 +48,18 @@ export class TraspasoAlmacenDto {
   @MaxLength(100)
   password_firma: string;
 
-  // Vendedor que se lleva el producto (solo en salidas a venta)
+  // Salida a venta (paso 1 de 2): contraseña del encargado que entrega
+  @IsOptional()
+  @IsString({ message: 'password_encargado debe ser un texto' })
+  @MaxLength(100)
+  password_encargado?: string;
+
+  // Hacia MOTOR ZONE sin vendedor (reposición de tienda): firma solo el encargado
+  @IsOptional()
+  @IsBoolean()
+  reposicion?: boolean;
+
+  // Vendedor que se lleva el producto (solo en salidas a venta, paso 2 de 2)
   @IsOptional()
   @IsString({ message: 'cod_usu_vendedor debe ser un texto' })
   @MaxLength(7)
