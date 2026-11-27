@@ -1,19 +1,30 @@
 import {
   Controller, Get, Post,
-  Body, Param, Request,
+  Body, Param,
 } from '@nestjs/common';
 import { CreditosService } from './creditos.service';
 import { CreateCreditoDto } from './dto/create-credito.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 import { CreateDevolucionCreditoDto } from './dto/create-devolucion-credito.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { usuarioDelToken } from 'src/modules/auth/utils/usuario-del-token';
 
+// Área de créditos: Vendedor y Administrador. La devolución de crédito se
+// registra desde Devoluciones, que es solo del Administrador.
+@Roles('Vendedor', 'Administrador')
 @Controller('creditos')
 export class CreditosController {
   constructor(private readonly creditosService: CreditosService) {}
 
   @Post()
-  create(@Body() dto: CreateCreditoDto, @CodEmp() cod_emp: string) {
+  create(
+    @Body() dto: CreateCreditoDto,
+    @CurrentUser('cod_usu') cod_usu: string,
+    @CodEmp() cod_emp: string,
+  ) {
+    dto.cod_usu = usuarioDelToken(dto.cod_usu, cod_usu);
     return this.creditosService.create(dto, dto.cod_usu, cod_emp);
   }
 
@@ -45,20 +56,21 @@ export class CreditosController {
   registrarPago(
     @Param('cod_cre') cod_cre: string,
     @Body() dto: RegistrarPagoDto,
-    @Request() req: any,
+    @CurrentUser('cod_usu') cod_usu: string,
     @CodEmp() cod_emp: string,
   ) {
-    return this.creditosService.registrarPago(cod_cre, dto, req.user?.cod_usu ?? '0000001', cod_emp);
+    return this.creditosService.registrarPago(cod_cre, dto, cod_usu, cod_emp);
   }
 
+  @Roles('Administrador')
   @Post(':cod_cre/devolucion')
   registrarDevolucion(
     @Param('cod_cre') cod_cre: string,
     @Body() dto: CreateDevolucionCreditoDto,
-    @Request() req: any,
+    @CurrentUser('cod_usu') cod_usu: string,
     @CodEmp() cod_emp: string,
   ) {
-    return this.creditosService.registrarDevolucion(cod_cre, dto, req.user?.cod_usu ?? '0000001', cod_emp);
+    return this.creditosService.registrarDevolucion(cod_cre, dto, cod_usu, cod_emp);
   }
 
   @Post('cliente/:cod_cli/pago-multiple')

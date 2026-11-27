@@ -62,7 +62,8 @@ export class CreateCreditoDto {
   @Type(() => ItemCreditoDto)
   items: ItemCreditoDto[];
 
+  // Se ignora: el crédito se registra a nombre del usuario del token
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   cod_usu: string;
 }

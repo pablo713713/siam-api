@@ -75,7 +75,9 @@ export class CreateVentaDto {
   @Type(() => ItemVentaDto)
   items: ItemVentaDto[];
 
+  // Se ignora: la venta se registra a nombre del usuario del token.
+  // Si se envía y no coincide con el token, la API responde 403.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   cod_usu: string;
 }

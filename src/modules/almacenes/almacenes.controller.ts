@@ -15,6 +15,7 @@ import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 export class AlmacenesController {
   constructor(private readonly almacenesService: AlmacenesService) {}
 
+  @Roles('Administrador')
   @Get()
   findAll(@CodEmp() cod_emp: string) {
     return this.almacenesService.findAll(cod_emp);
@@ -27,6 +28,7 @@ export class AlmacenesController {
     return this.almacenesService.getEncargadosPorAlmacen(cod_emp);
   }
 
+  @Roles('Administrador')
   @Get('usuario/:cod_usu')
   getAlmacenesDeUsuario(@Param('cod_usu') cod_usu: string) {
     return this.almacenesService.getAlmacenesDeUsuario(cod_usu);

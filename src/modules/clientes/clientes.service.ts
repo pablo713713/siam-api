@@ -14,7 +14,21 @@ export class ClientesService {
     private readonly extensionRepository: Repository<ClienteExtension>,
   ) {}
 
-  async getPerfil(cod_cli: number) {
+  /** 404 si el cliente no existe o pertenece a otra empresa (no revela cuál de las dos). */
+  private async asegurarClienteDeEmpresa(cod_cli: number, cod_emp: string): Promise<void> {
+    const filas: unknown[] = await this.clienteRepository.manager.query(`
+      SELECT 1 as ok
+      FROM CLIENTE c
+      INNER JOIN SUCURSAL s ON s.COD_SUC = c.COD_SUC
+      WHERE c.cod_cli = @0 AND s.COD_EMP = @1
+    `, [cod_cli, cod_emp]);
+    if (filas.length === 0) {
+      throw new NotFoundException(`Cliente ${cod_cli} no encontrado`);
+    }
+  }
+
+  async getPerfil(cod_cli: number, cod_emp: string) {
+    await this.asegurarClienteDeEmpresa(cod_cli, cod_emp);
     const resultado = await this.clienteRepository.manager.query(`
       SELECT
         c.cod_cli            as codCli,
@@ -71,7 +85,8 @@ export class ClientesService {
     };
   }
 
-  async updateExtension(cod_cli: number, dto: UpdateClienteExtensionDto) {
+  async updateExtension(cod_cli: number, dto: UpdateClienteExtensionDto, cod_emp: string) {
+    await this.asegurarClienteDeEmpresa(cod_cli, cod_emp);
     const cliente = await this.clienteRepository.findOne({
       where: { cod_cli },
     });
@@ -93,7 +108,8 @@ export class ClientesService {
     return this.extensionRepository.save(extension);
   }
 
-  async getHistorialCompras(cod_cli: number) {
+  async getHistorialCompras(cod_cli: number, cod_emp: string) {
+    await this.asegurarClienteDeEmpresa(cod_cli, cod_emp);
     const cliente = await this.clienteRepository.findOne({
       where: { cod_cli },
     });
@@ -219,7 +235,8 @@ async getOcasional(cod_emp: string) {
 
   return resultado[0];
 }
-  async getDetalleCompra(cod_cli: number, cod_venta: string) {
+  async getDetalleCompra(cod_cli: number, cod_venta: string, cod_emp: string) {
+    await this.asegurarClienteDeEmpresa(cod_cli, cod_emp);
     const manager = this.clienteRepository.manager;
 
     // Intentar primero como venta contado

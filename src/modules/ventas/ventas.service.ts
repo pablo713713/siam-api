@@ -351,8 +351,8 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Confirmar venta pendiente
   // ─────────────────────────────────────────
-  async confirmar(cod_venta: string, items: { id_fab: number; precio_venta: number }[]) {
-    const venta = await this.findOne(cod_venta);
+  async confirmar(cod_venta: string, items: { id_fab: number; precio_venta: number }[], cod_emp: string) {
+    const venta = await this.findOne(cod_venta, cod_emp);
 
     if (venta.estado !== 'P') {
       throw new BadRequestException('La venta no está pendiente de confirmación.');

@@ -26,12 +26,14 @@ export class RolesController {
   }
 
   // HU-2.02
+  @Roles('Administrador')
   @Get()
   findAll() {
     return this.rolesService.findAll();
   }
 
   // HU-2.01
+  @Roles('Administrador')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.findOne(id);
@@ -59,6 +61,7 @@ export class RolesController {
   }
 
   // HU-2.03
+  @Roles('Administrador')
   @Get('usuario/:cod_usu')
 getRolesDeUsuario(@Param('cod_usu') cod_usu: string) {
   return this.rolesService.getRolesDeUsuario(cod_usu);

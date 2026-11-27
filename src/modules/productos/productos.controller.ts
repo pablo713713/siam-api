@@ -8,6 +8,8 @@ import { HistorialTraspasosDto } from './dto/historial-traspasos.dto';
 import { DevolucionTraspasoDto } from './dto/devolucion-traspaso.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { JwtPayload } from 'src/modules/auth/interfaces/jwt-payload.interface';
+import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { usuarioDelToken } from 'src/modules/auth/utils/usuario-del-token';
 
 @Controller('productos')
 export class ProductosController {
@@ -25,6 +27,7 @@ export class ProductosController {
   }
 
   // El encargado que registra es el usuario del token; la firma viene en el body
+  @Roles('Administrador', 'Encargado de Almacen')
   @Post('traspaso')
   async registrarTraspaso(
     @Body() dto: TraspasoAlmacenDto,
@@ -35,6 +38,7 @@ export class ProductosController {
   }
 
   // Historial de traspasos firmados: Administrador (todo) o Encargado (sus almacenes)
+  @Roles('Administrador', 'Encargado de Almacen')
   @Get('traspasos')
   async getHistorialTraspasos(
     @Query() filtros: HistorialTraspasosDto,
@@ -45,6 +49,7 @@ export class ProductosController {
   }
 
   // Devolución al almacén de origen de lo no vendido de una salida a venta
+  @Roles('Administrador', 'Encargado de Almacen')
   @Post('traspasos/:idTa/devolucion')
   async registrarDevolucionTraspaso(
     @Param('idTa', ParseIntPipe) idTa: number,
@@ -56,6 +61,7 @@ export class ProductosController {
   }
 
   // Almacenes disponibles para el filtro del historial
+  @Roles('Administrador', 'Encargado de Almacen')
   @Get('traspasos/filtros')
   async getFiltrosHistorialTraspasos(
     @Request() req: { user: JwtPayload },
@@ -64,8 +70,13 @@ export class ProductosController {
     return this.productosService.getFiltrosHistorialTraspasos(req.user, cod_emp);
   }
 
+  @Roles('Administrador', 'Encargado de Almacen')
   @Post('actualizar-mercaderia')
-  async registrarIngresoMercaderia(@Body() dto: IngresoMercaderiaDto) {
+  async registrarIngresoMercaderia(
+    @Body() dto: IngresoMercaderiaDto,
+    @Request() req: { user: JwtPayload },
+  ) {
+    dto.cod_usu = usuarioDelToken(dto.cod_usu, req.user.cod_usu);
     return this.productosService.registrarIngresoMercaderia(dto);
   }
 

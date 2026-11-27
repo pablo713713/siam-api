@@ -20,8 +20,9 @@ export class IngresoMercaderiaDto {
   @IsNotEmpty({ message: 'El almacén destino es requerido' })
   cod_suc: string;
 
+  // Se ignora: el ingreso se registra a nombre del usuario del token
+  @IsOptional()
   @IsString({ message: 'cod_usu debe ser un texto' })
-  @IsNotEmpty({ message: 'El código de usuario es requerido' })
   cod_usu: string;
 
   @IsOptional()

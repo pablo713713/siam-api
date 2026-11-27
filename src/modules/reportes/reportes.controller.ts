@@ -2,7 +2,10 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ReportesService } from './reportes.service';
 import { RangoFechasDto } from './dto/rango-fechas.dto';
 import { CodEmp } from '../auth/decorators/cod-emp.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
+// Reportes financieros del dashboard: solo Administrador
+@Roles('Administrador')
 @Controller('reportes')
 export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}

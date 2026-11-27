@@ -17,6 +17,8 @@ export class CreateDevolucionDto {
   @IsString()
   cod_venta: string;
 
+  // Se ignora: la devolución se registra a nombre del usuario del token
+  @IsOptional()
   @IsString()
   cod_usu: string;
 
