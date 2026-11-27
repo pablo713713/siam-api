@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
+import { RegistrarTipoCambioDto } from './dto/registrar-tipo-cambio.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
@@ -49,11 +50,10 @@ export class VentasController {
   @Roles('Administrador')
   @Post('tipo-cambio')
   registrarTipoCambio(
-    @Body('tipo_cambio') tipoCambio: number,
-    @Body('cod_usu') codUsuBody: string,
+    @Body() dto: RegistrarTipoCambioDto,
     @CurrentUser('cod_usu') cod_usu: string,
   ) {
-    return this.ventasService.registrarTipoCambio(tipoCambio, usuarioDelToken(codUsuBody, cod_usu));
+    return this.ventasService.registrarTipoCambio(dto.tipo_cambio, usuarioDelToken(dto.cod_usu, cod_usu));
   }
 
   @Get('dolar-paralelo/vigente')
@@ -64,12 +64,11 @@ export class VentasController {
   @Roles('Administrador')
   @Post('dolar-paralelo')
   registrarDolarParalelo(
-    @Body('tipo_cambio') tipoCambio: number,
-    @Body('cod_usu') codUsuBody: string,
+    @Body() dto: RegistrarTipoCambioDto,
     @CurrentUser('cod_usu') cod_usu: string,
     @CodEmp() cod_emp: string,
   ) {
-    return this.ventasService.registrarDolarParalelo(tipoCambio, usuarioDelToken(codUsuBody, cod_usu), cod_emp);
+    return this.ventasService.registrarDolarParalelo(dto.tipo_cambio, usuarioDelToken(dto.cod_usu, cod_usu), cod_emp);
   }
 
   @Get(':cod_venta')

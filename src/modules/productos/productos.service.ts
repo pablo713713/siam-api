@@ -57,6 +57,22 @@ export function calcularTipoTraspaso(origen: string, destino: string): TipoTrasp
   return 'ENTRE_ALMACENES';
 }
 
+/**
+ * Término para CONTAINS (full-text). Las comillas dobles rompen la sintaxis
+ * del predicado y daban 500 (BUG-F2.3 / SEC-S5.1): se quitan. Si no queda
+ * ninguna letra o número, no se usa full-text (null).
+ */
+export function terminoFullText(q: string | undefined | null): string | null {
+  const limpio = String(q ?? '').replace(/"/g, ' ').replace(/\s+/g, ' ').trim();
+  return /[\p{L}\p{N}]/u.test(limpio) ? `"${limpio}*"` : null;
+}
+
+/** Patrón LIKE "contiene" que trata %, _ y [ del usuario como texto literal. */
+export function patronLike(q: string | undefined | null): string {
+  const escapado = String(q ?? '').trim().replace(/[[%_]/g, (c) => `[${c}]`);
+  return `%${escapado}%`;
+}
+
 @Injectable()
 export class ProductosService {
   constructor(
@@ -70,8 +86,9 @@ export class ProductosService {
   async search(searchDto: SearchProductoDto, cod_emp: string) {
     const { q, limit } = searchDto;
     const take = limit || 20;
-    const term = `"${q}*"`;
-    const termLike = `%${q}%`;
+    const term = terminoFullText(q);
+    const termLike = patronLike(q);
+    const filtroDesc = term ? 'CONTAINS(p.DESC_PRO, @0) OR' : '';
 
     const items = await this.dataSource.query(`
       SELECT
@@ -101,7 +118,7 @@ export class ProductosService {
       AND pp.BAJA = 'N'
       AND p.COD_EMP = @3
       AND (
-        CONTAINS(p.DESC_PRO, @0) OR
+        ${filtroDesc}
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       ORDER BY p.DESC_PRO ASC, pp.ID_FAB ASC
@@ -158,10 +175,11 @@ export class ProductosService {
   async searchAdvanced(searchDto: AdvancedSearchProductoDto, cod_emp: string) {
     const { q, page = 1, limit = 20 } = searchDto;
     const skip = (page - 1) * limit;
-    const term = q ? `"${q}*"` : null;
-    const termLike = q ? `%${q}%` : null;
+    const term = terminoFullText(q);
+    const termLike = patronLike(q);
+    const filtroDesc = term ? 'CONTAINS(p.DESC_PRO, @0) OR' : '';
 
-    if (!term) {
+    if (!q || !String(q).trim()) {
       return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
     }
 
@@ -193,7 +211,7 @@ export class ProductosService {
       AND pp.BAJA = 'N'
       AND p.COD_EMP = @2
       AND (
-        CONTAINS(p.DESC_PRO, @0) OR
+        ${filtroDesc}
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
       ORDER BY p.DESC_PRO ASC, pp.ID_FAB ASC
@@ -208,7 +226,7 @@ export class ProductosService {
       AND pp.BAJA = 'N'
       AND p.COD_EMP = @2
       AND (
-        CONTAINS(p.DESC_PRO, @0) OR
+        ${filtroDesc}
         pp.COD_FAB LIKE @1 COLLATE SQL_Latin1_General_CP1_CI_AI
       )
     `, [term, termLike, cod_emp]);
@@ -410,10 +428,9 @@ export class ProductosService {
         SELECT MAX(v.FECHA) as fecha
         FROM DET_VENTA dv
         INNER JOIN VENTA v ON v.COD_VENTA = dv.COD_VENTA
-        INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
         WHERE dv.ID_FAB = pp.ID_FAB
-          AND u.COD_SUC = s.COD_SUC
-          AND v.ESTADO IN ('C', 'D')
+          AND s.COD_SUC = '00011'          -- las ventas salen de MOTOR ZONE (BUG-F8.1)
+          AND v.ESTADO IN ('P', 'C', 'D')
       ) ultimaVenta
       WHERE pp.ID_PRO = @0
         AND pp.BAJA = 'N'
@@ -559,8 +576,9 @@ export class ProductosService {
           0                       as entrada,
           dv.CANTIDAD             as salida,
           0                       as existencia,
-          u.COD_SUC               as codSucFiltro,
-          ISNULL(s.NOM_SUC, u.COD_SUC) as sucursal,
+          -- BUG-F8.1: las ventas descuentan de MOTOR ZONE, no de la sucursal del usuario
+          '00011'                 as codSucFiltro,
+          ISNULL(s.NOM_SUC, '00011') as sucursal,
           ISNULL(u.NOM_USU + ' ' + u.AP_USU, v.COD_USU) as usuario,
           ISNULL(c.RAZON_SOCIAL, c.NOM_CLI + ' ' + c.APE_CLI) as cliente,
           v.OBS                   as observacion
@@ -568,10 +586,11 @@ export class ProductosService {
         INNER JOIN VENTA v ON v.COD_VENTA = dv.COD_VENTA
         INNER JOIN PROV_PRO pp ON pp.ID_FAB = dv.ID_FAB
         INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
-        LEFT JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = '00011'
         LEFT JOIN CLIENTE c ON c.cod_cli = v.COD_CLI
         WHERE dv.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
-        AND v.ESTADO IN ('C', 'D')
+        -- la preventa (P) ya descuenta stock; la anulada (A) lo devolvió
+        AND v.ESTADO IN ('P', 'C', 'D')
 
         UNION ALL
 
@@ -584,19 +603,20 @@ export class ProductosService {
           0                       as entrada,
           dc.CANTIDAD             as salida,
           0                       as existencia,
-          u.COD_SUC               as codSucFiltro,
-          ISNULL(s.NOM_SUC, u.COD_SUC) as sucursal,
+          -- el crédito guarda de qué almacén salió (MOTOR ZONE en los nuevos)
+          ISNULL(cr.COD_SUC, '00011') as codSucFiltro,
+          ISNULL(s.NOM_SUC, ISNULL(cr.COD_SUC, '00011')) as sucursal,
           ISNULL(u.NOM_USU + ' ' + u.AP_USU, cr.COD_USU) as usuario,
           ISNULL(c.RAZON_SOCIAL, c.NOM_CLI + ' ' + c.APE_CLI) as cliente,
           NULL                    as observacion
         FROM DET_CREDITO dc
         INNER JOIN CREDITO cr ON cr.COD_CRE = dc.COD_CRE
         INNER JOIN PROV_PRO pp ON pp.ID_FAB = dc.ID_FAB
-        INNER JOIN USUARIO u ON u.COD_USU = cr.COD_USU
-        LEFT JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+        LEFT JOIN USUARIO u ON u.COD_USU = cr.COD_USU
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = ISNULL(cr.COD_SUC, '00011')
         LEFT JOIN CLIENTE c ON c.cod_cli = cr.COD_CLI
         WHERE dc.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
-        AND cr.ESTADO != 'A'
+        -- antes se excluían los créditos abiertos (A), pero su stock ya salió
 
         UNION ALL
 
@@ -609,8 +629,10 @@ export class ProductosService {
           dd.CANTIDAD             as entrada,
           0                       as salida,
           0                       as existencia,
-          u.COD_SUC               as codSucFiltro,
-          ISNULL(s.NOM_SUC, u.COD_SUC) as sucursal,
+          -- Reingresa a MOTOR ZONE salvo que se elija otro almacén; la BD legacy no
+          -- guarda cuál, eso llega con SISTEMA_DEVOLUCION_REGISTRO (parte 4)
+          '00011'                 as codSucFiltro,
+          ISNULL(s.NOM_SUC, '00011') as sucursal,
           ISNULL(u.NOM_USU + ' ' + u.AP_USU, d.COD_USU) as usuario,
           NULL                    as cliente,
           d.OBS                   as observacion
@@ -618,9 +640,34 @@ export class ProductosService {
         INNER JOIN DEVOLUCION d ON d.COD_VENTA = dd.COD_VENTA
         INNER JOIN PROV_PRO pp ON pp.ID_FAB = dd.ID_FAB
         INNER JOIN VENTA v ON v.COD_VENTA = d.COD_VENTA
-        INNER JOIN USUARIO u ON u.COD_USU = d.COD_USU
-        LEFT JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+        LEFT JOIN USUARIO u ON u.COD_USU = d.COD_USU
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = '00011'
         WHERE dd.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
+
+        UNION ALL
+
+        -- DEVOLUCION DE CREDITO (antes no aparecía en el kardex)
+        SELECT
+          dvc.FECHA               as fecha,
+          ddc.ID_FAB              as idFab,
+          pp.COD_FAB              as codigo,
+          'DEVOLUCION CREDITO'    as descripcion,
+          ddc.CANTIDAD            as entrada,
+          0                       as salida,
+          0                       as existencia,
+          '00011'                 as codSucFiltro,
+          ISNULL(s.NOM_SUC, '00011') as sucursal,
+          ISNULL(u.NOM_USU + ' ' + u.AP_USU, dvc.COD_USU) as usuario,
+          ISNULL(c.RAZON_SOCIAL, c.NOM_CLI + ' ' + c.APE_CLI) as cliente,
+          dvc.OBS                 as observacion
+        FROM DET_DEVOLUCION_CREDITO ddc
+        INNER JOIN DEVOLUCION_CREDITO dvc ON dvc.COD_DEVC = ddc.COD_DEVC
+        INNER JOIN PROV_PRO pp ON pp.ID_FAB = ddc.ID_FAB
+        INNER JOIN CREDITO cr ON cr.COD_CRE = dvc.COD_CRE
+        LEFT JOIN USUARIO u ON u.COD_USU = dvc.COD_USU
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = '00011'
+        LEFT JOIN CLIENTE c ON c.cod_cli = cr.COD_CLI
+        WHERE ddc.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
 
       ) AS kardex
       WHERE 1=1

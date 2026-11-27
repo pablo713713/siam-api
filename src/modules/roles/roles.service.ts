@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -73,7 +74,11 @@ export class RolesService {
 
   // HU-2.03 — Asignar rol a usuario
   async asignarRol(dto: AsignarRolDto): Promise<SistemaUsuarioRol> {
-  await this.findOne(dto.id_rol);
+  const rol = await this.findOne(dto.id_rol);
+  // BUG-F14.1: un rol desactivado no se puede asignar
+  if (!rol.activo) {
+    throw new BadRequestException(`El rol "${rol.nombre}" está desactivado y no se puede asignar.`);
+  }
 
   const existente = await this.usuarioRolRepository.findOne({
     where: { cod_usu: dto.cod_usu, id_rol: dto.id_rol },
