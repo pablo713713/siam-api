@@ -1,4 +1,6 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,8 +13,15 @@ import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AlmacenesService } from '../almacenes/almacenes.service';
 
+// Fuerza bruta en el login: tras 5 intentos fallidos seguidos con el mismo
+// alias, se bloquea ese alias 5 minutos (igual que la firma de traspasos).
+const MAX_FALLOS_LOGIN = 5;
+const BLOQUEO_LOGIN_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
+  private readonly fallosLogin = new Map<string, { fallos: number; bloqueadoHasta: number }>();
+
   constructor(
   @InjectRepository(Usuario)
   private readonly usuarioRepository: Repository<Usuario>,
@@ -23,6 +32,9 @@ export class AuthService {
 ) {}
 
   async login(dto: LoginDto): Promise<{ access_token: string; usuario: JwtPayload }> {
+    const clave = String(dto.alias ?? '').trim().toLowerCase();
+    this.verificarBloqueo(clave);
+
     const usuario = await this.usuarioRepository
       .createQueryBuilder('u')
       .addSelect('u.CONTRASEÑA')
@@ -30,14 +42,13 @@ export class AuthService {
       .andWhere('u.baja = :baja', { baja: '0' })
       .getOne();
 
-    if (!usuario) {
+    // Usuario inexistente y contraseña incorrecta cuentan igual y dan el mismo mensaje
+    // (contraseña en texto plano — sistema legacy)
+    if (!usuario || usuario.CONTRASEÑA !== dto.contrasena) {
+      this.registrarFallo(clave);
       throw new UnauthorizedException('Credenciales inválidas');
     }
-
-    // 2. Validar contraseña (texto plano — sistema legacy)
-    if (usuario.CONTRASEÑA !== dto.contrasena) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
+    this.fallosLogin.delete(clave);
 
     // 3. Buscar TODOS los roles asignados
     const usuarioRoles = await this.usuarioRolRepository.find({
@@ -79,5 +90,29 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       usuario: payload,
     };
+  }
+
+  private verificarBloqueo(clave: string): void {
+    const reg = this.fallosLogin.get(clave);
+    if (!reg) return;
+    const restante = reg.bloqueadoHasta - Date.now();
+    if (restante > 0) {
+      const minutos = Math.ceil(restante / 60000);
+      throw new HttpException(
+        `Demasiados intentos fallidos. Intente nuevamente en ${minutos} min.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    if (reg.bloqueadoHasta > 0) this.fallosLogin.delete(clave);
+  }
+
+  private registrarFallo(clave: string): void {
+    const reg = this.fallosLogin.get(clave) ?? { fallos: 0, bloqueadoHasta: 0 };
+    reg.fallos += 1;
+    if (reg.fallos >= MAX_FALLOS_LOGIN) {
+      reg.bloqueadoHasta = Date.now() + BLOQUEO_LOGIN_MS;
+      reg.fallos = 0;
+    }
+    this.fallosLogin.set(clave, reg);
   }
 }

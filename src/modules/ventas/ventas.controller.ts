@@ -6,16 +6,22 @@ import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { usuarioDelToken } from 'src/modules/auth/utils/usuario-del-token';
 
 @Controller('ventas')
 export class VentasController {
   constructor(private readonly ventasService: VentasService) {}
 
+  // La venta queda a nombre del usuario del token (no del body)
+  @Roles('Vendedor', 'Administrador')
   @Post()
-  create(@Body() dto: CreateVentaDto) {
+  create(@Body() dto: CreateVentaDto, @CurrentUser('cod_usu') cod_usu: string) {
+    dto.cod_usu = usuarioDelToken(dto.cod_usu, cod_usu);
     return this.ventasService.create(dto, dto.cod_usu);
   }
 
+  @Roles('Vendedor', 'Administrador')
   @Get()
   findAll(
     @Query('fecha') fecha: string,
@@ -40,12 +46,14 @@ export class VentasController {
     return this.ventasService.getTipoCambioVigente();
   }
 
+  @Roles('Administrador')
   @Post('tipo-cambio')
   registrarTipoCambio(
     @Body('tipo_cambio') tipoCambio: number,
-    @Body('cod_usu') cod_usu: string,
+    @Body('cod_usu') codUsuBody: string,
+    @CurrentUser('cod_usu') cod_usu: string,
   ) {
-    return this.ventasService.registrarTipoCambio(tipoCambio, cod_usu);
+    return this.ventasService.registrarTipoCambio(tipoCambio, usuarioDelToken(codUsuBody, cod_usu));
   }
 
   @Get('dolar-paralelo/vigente')
@@ -53,13 +61,15 @@ export class VentasController {
     return this.ventasService.getDolarParaleloVigente(cod_emp);
   }
 
+  @Roles('Administrador')
   @Post('dolar-paralelo')
   registrarDolarParalelo(
     @Body('tipo_cambio') tipoCambio: number,
-    @Body('cod_usu') cod_usu: string,
+    @Body('cod_usu') codUsuBody: string,
+    @CurrentUser('cod_usu') cod_usu: string,
     @CodEmp() cod_emp: string,
   ) {
-    return this.ventasService.registrarDolarParalelo(tipoCambio, cod_usu, cod_emp);
+    return this.ventasService.registrarDolarParalelo(tipoCambio, usuarioDelToken(codUsuBody, cod_usu), cod_emp);
   }
 
   @Get(':cod_venta')
@@ -67,12 +77,15 @@ export class VentasController {
     return this.ventasService.findOne(cod_venta, cod_emp);
   }
 
+  // Solo ventas de la empresa del token
+  @Roles('Vendedor', 'Administrador')
   @Put(':cod_venta/confirmar')
   confirmar(
     @Param('cod_venta') cod_venta: string,
     @Body('items') items: { id_fab: number; precio_venta: number }[],
+    @CodEmp() cod_emp: string,
   ) {
-    return this.ventasService.confirmar(cod_venta, items);
+    return this.ventasService.confirmar(cod_venta, items, cod_emp);
   }
 
   // Anular venta: solo Administrador. Quien anula se toma del token.
