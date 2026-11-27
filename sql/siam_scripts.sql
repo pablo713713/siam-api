@@ -22,6 +22,8 @@
      7. SISTEMA_PRODUCTO_AUDITORIA (creación y edición de productos)
      8. CANT_ANULADA en SISTEMA_TRASPASO_VENTA (anulación de ventas)
      9. SISTEMA_DEVOLUCION_REGISTRO (devoluciones firmadas y cambios de producto)
+    10. SISTEMA_AUDITORIA (auditoría general: ventas, créditos, pagos, devoluciones,
+        tipo de cambio, roles, almacenes, clientes y usuarios)
    ============================================================================= */
 
 /* =============================================================================
@@ -335,5 +337,50 @@ BEGIN
     CREATE INDEX IX_SDR_DOC    ON dbo.SISTEMA_DEVOLUCION_REGISTRO (TIPO_DOC, COD_DOC);
     CREATE INDEX IX_SDR_GRUPO  ON dbo.SISTEMA_DEVOLUCION_REGISTRO (ID_GRUPO);
     CREATE INDEX IX_SDR_ID_FAB ON dbo.SISTEMA_DEVOLUCION_REGISTRO (ID_FAB);
+END
+GO
+
+/* =============================================================================
+   10. SISTEMA_AUDITORIA
+   Rastro de auditoría general: una fila por operación, con quién la hizo, la
+   hora de Bolivia (la pone el servidor de BD), el módulo y la acción, el
+   documento afectado y el detalle antes → después en JSON.
+   Módulos: VENTA, CREDITO, PAGO, DEVOLUCION, TIPO_CAMBIO, ROL, ALMACEN,
+            CLIENTE, USUARIO.
+   La auditoría de productos sigue en SISTEMA_PRODUCTO_AUDITORIA (bloque 7) y
+   la de traspasos en SISTEMA_TRASPASO_AUTORIZACION (bloque 2).
+   La API solo inserta y consulta: no hay endpoint para editar ni borrar.
+   ============================================================================= */
+
+IF OBJECT_ID('dbo.SISTEMA_AUDITORIA', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SISTEMA_AUDITORIA (
+        ID_AUD            BIGINT IDENTITY(1,1) NOT NULL,
+        COD_EMP           VARCHAR(3)    NOT NULL,
+        COD_USU           VARCHAR(7)    NOT NULL,      -- usuario del token
+
+        -- Hora local de Bolivia generada por el servidor de BD (no editable desde la app)
+        FECHA_HORA        DATETIME2(0)  NOT NULL
+            CONSTRAINT DF_SAU_FECHA_HORA DEFAULT (DATEADD(HOUR, -4, SYSUTCDATETIME())),
+        FECHA             AS CAST(FECHA_HORA AS DATE)    PERSISTED,
+        HORA              AS CAST(FECHA_HORA AS TIME(0)) PERSISTED,
+
+        MODULO            VARCHAR(20)   NOT NULL,
+        ACCION            VARCHAR(20)   NOT NULL,      -- CREAR, CONFIRMAR, ANULAR, PAGAR, ASIGNAR, QUITAR, EDITAR…
+        DOCUMENTO         VARCHAR(40)   NULL,          -- COD_VENTA, COD_CRE, rol, alias…
+        DESCRIPCION       VARCHAR(400)  NOT NULL,
+        DATOS_ANTERIORES  NVARCHAR(MAX) NULL,          -- JSON
+        DATOS_NUEVOS      NVARCHAR(MAX) NULL,          -- JSON
+
+        CONSTRAINT PK_SISTEMA_AUDITORIA PRIMARY KEY (ID_AUD),
+        CONSTRAINT CK_SAU_MODULO CHECK (MODULO IN (
+            'VENTA', 'CREDITO', 'PAGO', 'DEVOLUCION', 'TIPO_CAMBIO',
+            'ROL', 'ALMACEN', 'CLIENTE', 'USUARIO')),
+        CONSTRAINT FK_SAU_USUARIO FOREIGN KEY (COD_USU) REFERENCES dbo.USUARIO (COD_USU)
+    );
+
+    CREATE INDEX IX_SAU_EMP_FECHA ON dbo.SISTEMA_AUDITORIA (COD_EMP, FECHA);
+    CREATE INDEX IX_SAU_MODULO    ON dbo.SISTEMA_AUDITORIA (MODULO, ACCION);
+    CREATE INDEX IX_SAU_DOCUMENTO ON dbo.SISTEMA_AUDITORIA (DOCUMENTO);
 END
 GO

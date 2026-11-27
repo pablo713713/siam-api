@@ -10,10 +10,15 @@ import { AlmacenesService } from './almacenes.service';
 import { AsignarAlmacenDto } from './dto/asignar-almacen.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 @Controller('almacenes')
 export class AlmacenesController {
-  constructor(private readonly almacenesService: AlmacenesService) {}
+  constructor(
+    private readonly almacenesService: AlmacenesService,
+    private readonly auditoria: AuditoriaService,
+  ) {}
 
   @Roles('Administrador')
   @Get()
@@ -36,16 +41,29 @@ export class AlmacenesController {
 
   @Roles('Administrador')
   @Post('asignar')
-  asignarAlmacen(@Body() dto: AsignarAlmacenDto) {
-    return this.almacenesService.asignarAlmacen(dto);
+  async asignarAlmacen(@Body() dto: AsignarAlmacenDto, @CurrentUser('cod_usu') cod_usu: string) {
+    const res = await this.almacenesService.asignarAlmacen(dto);
+    await this.auditoria.registrarSeguro({
+      cod_usu, modulo: 'ALMACEN', accion: 'ASIGNAR', documento: dto.cod_usu,
+      descripcion: `Asignó el almacén ${dto.cod_suc} al usuario ${dto.cod_usu}`,
+      despues: { cod_usu: dto.cod_usu, cod_suc: dto.cod_suc },
+    });
+    return res;
   }
 
   @Roles('Administrador')
   @Delete('usuario/:cod_usu/almacen/:cod_suc')
-  quitarAlmacen(
+  async quitarAlmacen(
     @Param('cod_usu') cod_usu: string,
     @Param('cod_suc') cod_suc: string,
+    @CurrentUser('cod_usu') quien: string,
   ) {
-    return this.almacenesService.quitarAlmacen(cod_usu, cod_suc);
+    const res = await this.almacenesService.quitarAlmacen(cod_usu, cod_suc);
+    await this.auditoria.registrarSeguro({
+      cod_usu: quien, modulo: 'ALMACEN', accion: 'QUITAR', documento: cod_usu,
+      descripcion: `Quitó el almacén ${cod_suc} al usuario ${cod_usu}`,
+      antes: { cod_usu, cod_suc },
+    });
+    return res;
   }
 }

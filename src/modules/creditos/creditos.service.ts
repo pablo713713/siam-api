@@ -10,6 +10,7 @@ import { CreateDevolucionCreditoDto } from './dto/create-devolucion-credito.dto'
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
 import { calcularCupo, CupoCredito, SQL_LIMITE_EFECTIVO } from './credito-cupo';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import {
   asegurarTablaRegistro, FilaRegistroDevolucion, guardarRegistroDevolucion, listarRegistroDevoluciones,
 } from '../devoluciones/registro-devolucion';
@@ -23,6 +24,7 @@ export class CreditosService {
     private readonly dataSource: DataSource,
     private readonly traspasoEstados: TraspasoEstadosService,
     private readonly usuariosService: UsuariosService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -220,6 +222,16 @@ export class CreditosService {
         codDoc: cod_cre,
         items: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
       });
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'CREDITO', accion: 'CREAR', documento: cod_cre,
+        descripcion: `Crédito ${cod_cre} al cliente ${dto.cod_cli} por Bs ${totalFinal.toFixed(2)}, vence en ${semanasPlazo} semana(s)`,
+        despues: {
+          cliente: dto.cod_cli, total: totalFinal, descuento, semanasPlazo,
+          cupoAntes: { limite: cupoActual.limite, deuda: cupoActual.deuda, disponible: cupoActual.disponible },
+          items: dto.items.map((i) => ({ id_fab: i.id_fab, cod_fab: i.cod_fab, cantidad: i.cantidad, precio: i.precio_cre })),
+        },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
 
@@ -548,6 +560,19 @@ export class CreditosService {
         codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs: dto.obs,
       }, registro);
 
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'DEVOLUCION', accion: lleva.length ? 'CAMBIO_CREDITO' : 'CREDITO', documento: cod_cre,
+        descripcion: (lleva.length ? `Cambio de producto en el crédito ${cod_cre}` : `Devolución en el crédito ${cod_cre}`) +
+          `: devuelve Bs ${totalDevolucion.toFixed(2)}` + (lleva.length ? `, lleva Bs ${totalLleva.toFixed(2)}` : '') +
+          `. Firmó ${firmante.nombreCompleto || firmante.cod_usu}`,
+        antes: { saldo: saldoActual },
+        despues: {
+          saldo: nuevoSaldo, estado: nuevoEstado, aFavorCliente, almacen: dto.cod_suc, firmante: firmante.cod_usu,
+          devuelve: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad, total: i.total })),
+          lleva: lleva.map((l) => ({ id_fab: l.id_fab, cantidad: l.cantidad, precio: l.precio })),
+        },
+      }, queryRunner);
+
       await queryRunner.commitTransaction();
 
       return {
@@ -623,6 +648,13 @@ export class CreditosService {
       await queryRunner.query(`
         UPDATE CREDITO SET SALDO = @0, ESTADO = @1 WHERE COD_CRE = @2
       `, [nuevoSaldo, nuevoEstado, cod_cre]);
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'PAGO', accion: 'PAGAR', documento: cod_cre,
+        descripcion: `Pago de Bs ${Number(dto.monto).toFixed(2)} al crédito ${cod_cre}: saldo Bs ${saldoActual.toFixed(2)} → Bs ${nuevoSaldo.toFixed(2)}`,
+        antes: { saldo: saldoActual },
+        despues: { saldo: nuevoSaldo, estado: nuevoEstado, monto: dto.monto, n_pago, tipoPago: dto.tipoPago ?? 'EFECTIVO' },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
 
@@ -704,7 +736,7 @@ export class CreditosService {
       devoluciones: await listarRegistroDevoluciones(this.dataSource, 'CREDITO', cod_cre),
     };
   }
-    async pagoMultiple(cod_cli: number, codCreList: string[], cod_emp: string) {
+    async pagoMultiple(cod_cli: number, codCreList: string[], cod_emp: string, cod_usu: string) {
       if (!Array.isArray(codCreList) || codCreList.length === 0) {
         throw new BadRequestException('Debe seleccionar al menos un crédito');
       }
@@ -767,7 +799,7 @@ export class CreditosService {
             ) VALUES (
               @0, @1, @2, 0, @3, @4, @5, 'A', @3, @6
             )
-          `, [cod_cre, n_pago, saldo, new Date(), 'SISTEMA', 'Pago múltiple', 'EFECTIVO']);
+          `, [cod_cre, n_pago, saldo, new Date(), cod_usu, 'Pago múltiple', 'EFECTIVO']);
 
           await queryRunner.query(`
             UPDATE CREDITO SET SALDO = 0, ESTADO = 'C' WHERE COD_CRE = @0
@@ -776,6 +808,12 @@ export class CreditosService {
           totalAbonado += saldo;
           detalles.push({ cod_cre, monto: saldo });
         }
+
+        await this.auditoria.registrar({
+          cod_usu, modulo: 'PAGO', accion: 'PAGO_MULTIPLE', documento: String(cod_cli),
+          descripcion: `Pago de Bs ${totalAbonado.toFixed(2)} que salda ${detalles.length} crédito(s) del cliente ${cod_cli}`,
+          despues: { cliente: cod_cli, totalAbonado, creditos: detalles },
+        }, queryRunner);
 
         await queryRunner.commitTransaction();
 

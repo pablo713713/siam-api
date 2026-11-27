@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { listarRegistroDevoluciones } from '../devoluciones/registro-devolucion';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
@@ -20,6 +21,7 @@ export class VentasService {
     private readonly configService: ConfigService,
     private readonly traspasoEstados: TraspasoEstadosService,
     private readonly productosService: ProductosService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -66,6 +68,16 @@ export class VentasService {
         factura: dto.factura,
         descuento: dto.descuento,
       });
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'VENTA', accion: (dto.estado ?? 'C') === 'P' ? 'PREVENTA' : 'CREAR',
+        documento: venta.cod_venta,
+        descripcion: `Venta ${venta.cod_venta} por Bs ${venta.total.toFixed(2)} (${dto.items.length} producto(s))`,
+        despues: {
+          cliente: dto.cod_cli, total: venta.total, estado: dto.estado ?? 'C', descuento: dto.descuento ?? 0,
+          items: dto.items.map((i) => ({ id_fab: i.id_fab, cod_fab: i.cod_fab, cantidad: i.cantidad, precio: i.precio_venta })),
+        },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
 
@@ -387,7 +399,7 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Confirmar venta pendiente
   // ─────────────────────────────────────────
-  async confirmar(cod_venta: string, items: { id_fab: number; precio_venta: number }[], cod_emp: string) {
+  async confirmar(cod_venta: string, items: { id_fab: number; precio_venta: number }[], cod_emp: string, cod_usu: string) {
     const venta = await this.findOne(cod_venta, cod_emp);
 
     if (venta.estado !== 'P') {
@@ -430,6 +442,22 @@ export class VentasService {
         SET TOTAL = @0, TOTAL_INI = @0, ESTADO = 'C'
         WHERE COD_VENTA = @1 AND ESTADO = 'P'
       `, [total, cod_venta]);
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'VENTA', accion: 'CONFIRMAR', documento: cod_venta,
+        descripcion: `Confirmó la venta ${cod_venta}: total Bs ${Number(venta.totalOriginal ?? venta.total).toFixed(2)} → Bs ${total.toFixed(2)}`,
+        antes: {
+          total: Number(venta.totalOriginal ?? venta.total),
+          precios: venta.items.map((it: any) => ({ id_fab: Number(it.idFab), precio: Number(it.precioVenta) })),
+        },
+        despues: {
+          total,
+          precios: venta.items.map((it: any) => ({
+            id_fab: Number(it.idFab),
+            precio: precios.has(Number(it.idFab)) ? precios.get(Number(it.idFab)) : Number(it.precioVenta),
+          })),
+        },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
       return {
@@ -517,6 +545,17 @@ export class VentasService {
         items: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
       });
 
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'VENTA', accion: 'ANULAR', documento: cod_venta,
+        descripcion: `Anuló la venta ${cod_venta} (Bs ${Number(venta.total).toFixed(2)})`,
+        antes: { estado: venta.estado, total: Number(venta.total) },
+        despues: {
+          estado: 'A',
+          repuesto: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
+          devueltoAOrigen: regresos,
+        },
+      }, queryRunner);
+
       await queryRunner.commitTransaction();
 
       const devueltoAOrigen = regresos.reduce((s, r) => s + r.unidades, 0);
@@ -563,10 +602,17 @@ export class VentasService {
         throw new BadRequestException('Ya existe un tipo de cambio registrado para hoy');
     }
 
+    const anterior = await this.dataSource.query(`SELECT TOP 1 TIPO_CAMBIO as tc FROM CAMBIO_DOLAR ORDER BY FECHA DESC`);
     await this.dataSource.query(`
         INSERT INTO CAMBIO_DOLAR (FECHA, TIPO_CAMBIO, cOD_USU)
         VALUES (@0, @1, @2)
     `, [fecha, tipoCambio, cod_usu]);
+    await this.auditoria.registrarSeguro({
+      cod_usu, modulo: 'TIPO_CAMBIO', accion: 'OFICIAL',
+      descripcion: `Tipo de cambio oficial: ${anterior[0]?.tc ?? '—'} → ${tipoCambio}`,
+      antes: anterior[0] ? { tipoCambio: Number(anterior[0].tc) } : null,
+      despues: { tipoCambio },
+    });
 
     return {
         fecha,
@@ -602,6 +648,16 @@ export class VentasService {
       WHERE CAST(FECHA AS DATE) = CAST(@0 AS DATE)
       AND COD_EMP = @1
     `, [fechaDia, cod_emp]);
+
+    const anteriorPar = await this.dataSource.query(
+      `SELECT TOP 1 TIPO_CAMBIO as tc FROM CAMBIO_DOLAR_PARALELO WHERE COD_EMP = @0 ORDER BY FECHA DESC, FECHA_INGRESO DESC`, [cod_emp],
+    );
+    await this.auditoria.registrarSeguro({
+      cod_usu, modulo: 'TIPO_CAMBIO', accion: 'PARALELO',
+      descripcion: `Dólar paralelo: ${anteriorPar[0]?.tc ?? '—'} → ${tipoCambio}`,
+      antes: anteriorPar[0] ? { tipoCambio: Number(anteriorPar[0].tc) } : null,
+      despues: { tipoCambio },
+    });
 
     if (existe.length > 0) {
       await this.dataSource.query(`

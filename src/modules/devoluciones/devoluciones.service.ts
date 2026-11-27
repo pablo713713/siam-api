@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { CreateDevolucionDto } from './dto/create-devolucion.dto';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { VentasService } from '../ventas/ventas.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import {
   asegurarTablaRegistro, FilaRegistroDevolucion, guardarRegistroDevolucion,
 } from './registro-devolucion';
@@ -15,6 +16,7 @@ export class DevolucionesService {
     private readonly dataSource: DataSource,
     private readonly usuariosService: UsuariosService,
     private readonly ventasService: VentasService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   /** El almacén de reingreso debe existir y ser de la empresa. */
@@ -195,6 +197,19 @@ export class DevolucionesService {
         codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs,
         codVentaCambio,
       }, registro);
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'DEVOLUCION', accion: codVentaCambio ? 'CAMBIO' : 'CONTADO', documento: cod_venta,
+        descripcion: (codVentaCambio ? `Cambio de producto de la venta ${cod_venta}` : `Devolución de la venta ${cod_venta}`) +
+          `: devuelve Bs ${granTotalDevuelto.toFixed(2)}` +
+          (codVentaCambio ? `, lleva Bs ${totalLleva.toFixed(2)} (venta ${codVentaCambio})` : '') +
+          `. Firmó ${firmante.nombreCompleto || firmante.cod_usu}`,
+        despues: {
+          almacen: sucDestino, firmante: firmante.cod_usu, totalDevuelto: granTotalDevuelto, codVentaCambio, totalLleva,
+          devuelve: items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+          lleva: lleva.map((l) => ({ id_fab: l.id_fab, cantidad: l.cantidad, precio: l.precio })),
+        },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
 

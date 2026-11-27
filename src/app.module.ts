@@ -24,6 +24,7 @@ import { Cliente } from './modules/clientes/entities/cliente.entity';
 import { Usuario } from './modules/auth/entities/usuario.entity';
 import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
 import { CreditosModule } from './modules/creditos/creditos.module';
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -51,6 +52,7 @@ import { CreditosModule } from './modules/creditos/creditos.module';
         logging: false,
       }),
     }),
+    AuditoriaModule,
     ProductosModule,
     RolesModule,
     AuthModule,

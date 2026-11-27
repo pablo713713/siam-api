@@ -1,12 +1,27 @@
-import { Controller, Get, Put, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
 import { UpdateClienteExtensionDto } from './dto/update-cliente-extension.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { CreateClienteDto } from './dto/create-cliente.dto';
 
 @Controller('clientes')
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
+
+  // Alta de cliente: solo Administrador
+  @Roles('Administrador')
+  @Post()
+  create(@Body() dto: CreateClienteDto, @CurrentUser('cod_usu') cod_usu: string, @CodEmp() cod_emp: string) {
+    return this.clientesService.create(dto, cod_usu, cod_emp);
+  }
+
+  @Roles('Administrador')
+  @Get('calificaciones')
+  getCalificaciones() {
+    return this.clientesService.getCalificaciones();
+  }
 
   @Get('ocasional')
   getOcasional(@CodEmp() cod_emp: string) {
@@ -25,8 +40,9 @@ export class ClientesController {
     @Param('cod_cli', ParseIntPipe) cod_cli: number,
     @Body() dto: UpdateClienteExtensionDto,
     @CodEmp() cod_emp: string,
+    @CurrentUser('cod_usu') cod_usu: string,
   ) {
-    return this.clientesService.updateExtension(cod_cli, dto, cod_emp);
+    return this.clientesService.updateExtension(cod_cli, dto, cod_emp, cod_usu);
   }
 
   @Get(':cod_cli/historial-compras')
