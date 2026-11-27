@@ -51,10 +51,11 @@ export class AuthService {
     this.fallosLogin.delete(clave);
 
     // 3. Buscar TODOS los roles asignados
-    const usuarioRoles = await this.usuarioRolRepository.find({
+    // Solo roles activos: un rol desactivado deja de dar permisos en el próximo login
+    const usuarioRoles = (await this.usuarioRolRepository.find({
       where: { cod_usu: usuario.COD_USU },
       relations: ['rol'],
-    });
+    })).filter((ur) => ur.rol?.activo !== false);
 
     const almacenes = await this.almacenesService.getAlmacenesDeUsuario(usuario.COD_USU);
 

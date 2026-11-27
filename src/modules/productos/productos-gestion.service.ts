@@ -172,6 +172,18 @@ export class ProductosGestionService {
   }
 
   // Marca / proveedor, modelo y tipo deben existir (y el proveedor ser de la empresa)
+  private async modeloPorDefecto(): Promise<number> {
+    const filas: { codMod: number }[] = await this.dataSource.query(`
+      SELECT TOP 1 COD_MODELO as codMod
+      FROM MODELO
+      ORDER BY
+        CASE WHEN UPPER(NOM_MODELO) IN ('GENERAL', 'GENERICO', 'GENÉRICO', 'VARIOS', 'SIN MODELO') THEN 0 ELSE 1 END,
+        COD_MODELO
+    `);
+    if (!filas.length) throw new BadRequestException('No hay modelos registrados: seleccione un modelo.');
+    return Number(filas[0].codMod);
+  }
+
   private async validarReferencias(
     db: Ejecutor,
     cod_emp: string,
@@ -237,7 +249,9 @@ export class ProductosGestionService {
     if (!descPro || !codPro || !codFab) {
       throw new BadRequestException('Descripción, código de producto y código de fábrica son obligatorios.');
     }
-    const codMod = dto.codMod ?? 1;         // valores por defecto de la BD legacy
+    // BUG-F3.2: el default fijo 1 no existe en MODELO. Sin modelo elegido se usa
+    // uno genérico (GENERAL / GENÉRICO / VARIOS / SIN MODELO) o, si no hay, el primero.
+    const codMod = dto.codMod ?? (await this.modeloPorDefecto());
     const codigoTipo = dto.codigoTipo ?? '1';
     await this.validarReferencias(this.dataSource, cod_emp, { codProv: dto.codProv, codMod, codigoTipo });
 
