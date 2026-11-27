@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Cliente } from './entities/cliente.entity';
 import { ClienteExtension } from './entities/cliente-extension.entity';
 import { UpdateClienteExtensionDto } from './dto/update-cliente-extension.dto';
+import { calcularCupo } from '../creditos/credito-cupo';
 
 @Injectable()
 export class ClientesService {
@@ -73,8 +74,13 @@ export class ClientesService {
       where: { cod_cli },
     });
 
+    // Límite efectivo, deuda y margen disponible
+    const credito = await calcularCupo(this.clienteRepository.manager, cod_cli);
+
     return {
       ...cliente,
+      puedeCredito: credito?.habilitado ? 1 : 0,
+      credito,
       activo: cliente.baja === '0',
       extension: extension ?? {
         acepta_devoluciones: false,
@@ -171,15 +177,17 @@ export class ClientesService {
         c.TEL_DOM          as telDom,
         c.CEL              as cel,
         c.DOMICILIO        as domicilio,
-        c.CREDITO_MAXIMO   as creditoMaximo,
+        ISNULL(NULLIF(ce.limite_credito, 0), ISNULL(c.CREDITO_MAXIMO, 0)) as creditoMaximo,
         c.codigo           as codigoCalificacion,
         cc.Tipo_cliente    as tipoCliente,
         cc.consignacion    as condicionCredito,
         cc.Calificacion    as calificacion,
         cc.tiempo          as tiempoCredito,
-        CASE WHEN ISNULL(c.CREDITO_MAXIMO, 0) > 0 THEN 1 ELSE 0 END as puedeCredito
+        -- límite efectivo: el del perfil y, si no está cargado, CREDITO_MAXIMO
+        CASE WHEN ISNULL(NULLIF(ce.limite_credito, 0), ISNULL(c.CREDITO_MAXIMO, 0)) > 0 THEN 1 ELSE 0 END as puedeCredito
       FROM CLIENTE c
       INNER JOIN SUCURSAL s ON s.COD_SUC = c.COD_SUC
+      LEFT JOIN CLIENTE_EXTENSION ce ON ce.cod_cli = c.cod_cli
       LEFT JOIN CLIENTE_CONSIGNACION cc ON cc.codigo = c.codigo
       WHERE c.baja = '0'
         AND s.COD_EMP = @1
