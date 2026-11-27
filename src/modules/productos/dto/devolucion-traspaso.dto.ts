@@ -29,6 +29,12 @@ export class DevolucionTraspasoDto {
   @MaxLength(100)
   password_firma: string;
 
+  // Firma del vendedor que se llevó los productos (el firmante de la salida a venta)
+  @IsString()
+  @IsNotEmpty({ message: 'El vendedor debe ingresar su contraseña para firmar la devolución' })
+  @MaxLength(100)
+  password_vendedor: string;
+
   // Si no se envía, se devuelve todo lo pendiente del traspaso
   @IsOptional()
   @IsArray()

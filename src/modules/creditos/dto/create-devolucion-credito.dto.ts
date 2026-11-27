@@ -1,7 +1,8 @@
 import { Type } from 'class-transformer';
+import { FirmaVendedorDto } from '../../devoluciones/dto/firma-vendedor.dto';
 import {
   IsString, IsNotEmpty, IsOptional, IsBoolean,
-  IsArray, ValidateNested, IsInt, IsPositive, IsNumber, Min,
+  IsArray, ArrayMinSize, ValidateNested, IsInt, IsPositive, IsNumber, Min,
 } from 'class-validator';
 
 export class ItemDevolucionCreditoDto {
@@ -17,12 +18,14 @@ export class ItemDevolucionCreditoDto {
   @IsPositive()
   cantidad: number;
 
+  // Se ignora: el total se calcula con el precio del crédito
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  total: number;
+  total?: number;
 }
 
-export class CreateDevolucionCreditoDto {
+export class CreateDevolucionCreditoDto extends FirmaVendedorDto {
   @IsString()
   @IsNotEmpty()
   cod_suc: string;
@@ -36,6 +39,7 @@ export class CreateDevolucionCreditoDto {
   obs?: string;
 
   @IsArray()
+  @ArrayMinSize(1, { message: 'Seleccione al menos un producto para devolver' })
   @ValidateNested({ each: true })
   @Type(() => ItemDevolucionCreditoDto)
   items: ItemDevolucionCreditoDto[];
