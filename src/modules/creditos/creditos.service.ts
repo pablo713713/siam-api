@@ -378,7 +378,7 @@ export class CreditosService {
 
   async registrarDevolucion(cod_cre: string, dto: CreateDevolucionCreditoDto, cod_usu: string, cod_emp: string) {
     const credito = await this.dataSource.query(`
-      SELECT c.SALDO, c.ESTADO, s.COD_EMP, ISNULL(c.descuento, 0) as DESCUENTO
+      SELECT c.SALDO, c.ESTADO, s.COD_EMP, ISNULL(c.descuento, 0) as DESCUENTO, c.COD_CLI
       FROM CREDITO c
       INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
       INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
@@ -466,18 +466,83 @@ export class CreditosService {
         `, [item.cantidad, item.id_fab, dto.cod_suc]);
       }
 
-      // Ajustar saldo del crédito, sin bajar de 0
-      const nuevoSaldo = Math.max(0, Number(credito[0].SALDO) - totalDevolucion);
+      // Cambio de producto: lo que el cliente se lleva se agrega a este mismo
+      // crédito (sale de MOTOR ZONE y cuenta como vendido por el vendedor que firma)
+      const lleva = dto.lleva ?? [];
+      let totalLleva = 0;
+      if (lleva.length > 0) {
+        for (const l of lleva) {
+          const pedido = lleva.filter((x) => x.id_fab === l.id_fab).reduce((s, x) => s + x.cantidad, 0);
+          const stock = await queryRunner.query(`
+            SELECT CANTIDAD FROM SUC_PRO_PROV WITH (UPDLOCK, ROWLOCK)
+            WHERE ID_FAB = @0 AND COD_SUC = @1
+          `, [l.id_fab, COD_SUC_MOTORZONE]);
+          const disponible = stock.length > 0 ? Number(stock[0].CANTIDAD) : 0;
+          if (disponible < pedido) {
+            throw new BadRequestException(
+              `Stock insuficiente en MOTOR ZONE para ID_FAB ${l.id_fab}. Disponible: ${disponible}, solicitado: ${pedido}. ` +
+              'Debe realizar un traspaso previo desde otro almacén.',
+            );
+          }
+        }
+        const ult = await queryRunner.query(
+          `SELECT ISNULL(MAX(nro_registro), 0) as n FROM DET_CREDITO WHERE COD_CRE = @0`, [cod_cre],
+        );
+        let nro = Number(ult[0]?.n ?? 0);
+        for (const l of lleva) {
+          nro += 1;
+          await queryRunner.query(`
+            INSERT INTO DET_CREDITO (COD_CRE, COD_FAB, CANTIDAD, PRECIO_CRE, DESCUENTO, nro_registro, ID_FAB)
+            VALUES (@0, @1, @2, @3, 0, @4, @5)
+          `, [cod_cre, l.cod_fab, l.cantidad, l.precio, nro, l.id_fab]);
+          await queryRunner.query(`
+            UPDATE SUC_PRO_PROV SET CANTIDAD = CANTIDAD - @0
+            WHERE ID_FAB = @1 AND COD_SUC = @2
+          `, [l.cantidad, l.id_fab, COD_SUC_MOTORZONE]);
+        }
+        totalLleva = redondear(lleva.reduce((s, l) => s + l.cantidad * l.precio, 0));
+        await this.traspasoEstados.asignarVenta(queryRunner, {
+          cod_usu: firmante.cod_usu,
+          tipoDoc: 'CREDITO',
+          codDoc: cod_cre,
+          items: lleva.map((l) => ({ id_fab: l.id_fab, cantidad: l.cantidad })),
+        });
+      }
+
+      // Nuevo saldo: saldo − devuelto + lo que se lleva. Nunca negativo; si lo
+      // devuelto supera la deuda, la diferencia se le devuelve al cliente.
+      const saldoActual = Number(credito[0].SALDO);
+      const neto = redondear(saldoActual - totalDevolucion + totalLleva);
+      const nuevoSaldo = Math.max(0, neto);
+      const aFavorCliente = Math.max(0, -neto);
       const nuevoEstado = nuevoSaldo <= 0 ? 'C' : 'A';
 
-      await queryRunner.query(`
-        UPDATE CREDITO SET SALDO = @0, ESTADO = @1 WHERE COD_CRE = @2
-      `, [nuevoSaldo, nuevoEstado, cod_cre]);
+      // Si el cambio aumenta la deuda, debe entrar en el límite de crédito
+      if (nuevoSaldo > saldoActual) {
+        const cupo = (await calcularCupo(queryRunner, Number(credito[0].COD_CLI), true))!;
+        const deudaOtros = cupo.deuda - saldoActual;
+        if (deudaOtros + nuevoSaldo > cupo.limite + 0.005) {
+          throw new BadRequestException(
+            `El cambio supera el límite de crédito del cliente. Límite: ${cupo.limite.toFixed(2)}, ` +
+            `deuda con el cambio: ${(deudaOtros + nuevoSaldo).toFixed(2)}.`,
+          );
+        }
+      }
 
-      const registro: FilaRegistroDevolucion[] = dto.items.map((i) => ({
-        movimiento: 'DEVUELVE', id_fab: i.id_fab, cod_fab: i.cod_fab,
-        cantidad: i.cantidad, precio: precios.get(i.id_fab)!, cod_suc: dto.cod_suc,
-      }));
+      await queryRunner.query(`
+        UPDATE CREDITO SET SALDO = @0, ESTADO = @1, TOTAL = TOTAL + @3 WHERE COD_CRE = @2
+      `, [nuevoSaldo, nuevoEstado, cod_cre, totalLleva]);
+
+      const registro: FilaRegistroDevolucion[] = [
+        ...dto.items.map((i): FilaRegistroDevolucion => ({
+          movimiento: 'DEVUELVE', id_fab: i.id_fab, cod_fab: i.cod_fab,
+          cantidad: i.cantidad, precio: precios.get(i.id_fab)!, cod_suc: dto.cod_suc,
+        })),
+        ...lleva.map((l): FilaRegistroDevolucion => ({
+          movimiento: 'LLEVA', id_fab: l.id_fab, cod_fab: l.cod_fab,
+          cantidad: l.cantidad, precio: l.precio, cod_suc: COD_SUC_MOTORZONE,
+        })),
+      ];
       const firma = await guardarRegistroDevolucion(queryRunner, {
         tipoDoc: 'CREDITO', codDoc: cod_cre, codDevc: Number(cod_devc), codEmp: cod_emp,
         codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs: dto.obs,
@@ -491,13 +556,15 @@ export class CreditosService {
         totalDevuelto: totalDevolucion,
         nuevoSaldo,
         estado: nuevoEstado,
+        totalLleva,
+        aFavorCliente,
         firma: {
           idGrupo: firma.idGrupo,
           firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
           fechaBolivia: firma.fecha,
           horaBolivia: firma.hora,
         },
-        message: 'Devolución de crédito registrada correctamente',
+        message: lleva.length ? 'Cambio de producto registrado en el crédito' : 'Devolución de crédito registrada correctamente',
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();

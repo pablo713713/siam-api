@@ -3,7 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { listarRegistroDevoluciones } from '../devoluciones/registro-devolucion';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
@@ -25,13 +25,14 @@ export class VentasService {
   // ─────────────────────────────────────────
   // Generar COD_VENTA: {COD_USU(7)}{YYYY(4)}{secuencial(3)}
   // ─────────────────────────────────────────
-  private async generarCodVenta(cod_usu: string): Promise<string> {
+  private async generarCodVenta(cod_usu: string, db: { query(sql: string, params?: unknown[]): Promise<any> } = this.dataSource): Promise<string> {
     const year = new Date().getFullYear().toString();
     const prefix = `${cod_usu}${year}`;
 
-    const result = await this.dataSource.query(`
+    // Dentro de una transacción, UPDLOCK evita que dos ventas tomen el mismo correlativo
+    const result = await db.query(`
       SELECT TOP 1 COD_VENTA
-      FROM VENTA
+      FROM VENTA WITH (UPDLOCK, HOLDLOCK)
       WHERE COD_VENTA LIKE @0
       ORDER BY COD_VENTA DESC
     `, [`${prefix}%`]);
@@ -51,96 +52,26 @@ export class VentasService {
   // Registrar venta contado
   // ─────────────────────────────────────────
   async create(dto: CreateVentaDto, cod_usu: string) {
-    // 1. Validar stock exclusivamente en MOTOR ZONE (00011)
-    for (const item of dto.items) {
-      const stock = await this.dataSource.query(`
-        SELECT CANTIDAD
-        FROM SUC_PRO_PROV
-        WHERE ID_FAB = @0 AND COD_SUC = @1
-      `, [item.id_fab, COD_SUC_MOTORZONE]);
-
-      const disponible = stock.length > 0 ? Number(stock[0].CANTIDAD) : 0;
-      if (disponible < item.cantidad) {
-        throw new BadRequestException(
-          `Stock insuficiente en MOTOR ZONE para ID_FAB ${item.id_fab}. ` +
-          `Disponible: ${disponible}, solicitado: ${item.cantidad}. Debe realizar un traspaso previo desde otro almacén.`
-        );
-      }
-    }
-
-    // 2. Calcular total
-    const descuento = dto.descuento ?? 0;
-    const totalBruto = dto.items.reduce((sum, i) => sum + i.precio_venta * i.cantidad, 0);
-    const totalFinal = totalBruto * (1 - descuento / 100);
-
-    // 3. Generar código
-    const cod_venta = await this.generarCodVenta(cod_usu);
-    const fecha = new Date();
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Insertar cabecera VENTA
-      await queryRunner.query(`
-        INSERT INTO VENTA (
-          COD_VENTA, FECHA, COD_USU, TIPO, TOTAL, OBS,
-          COD_CLI, ESTADO, FACTURA, DESC_PROF, COD_INI,
-          TIPO_VENTA, TOTAL_INI, saw, fecha_envio, dolarParalelo
-        ) VALUES (
-          @0, @1, @2, @3, @4, @5,
-          @6, @7, @8, @9, @10,
-          @11, @12, @13, @14, @15
-        )
-      `, [
-        cod_venta, fecha, cod_usu, 'CONTADO', totalFinal, dto.obs ?? '',
-        dto.cod_cli, dto.estado ?? 'C', dto.factura ? 1 : 0, descuento, cod_usu,
-        'CO', totalFinal, 'N', fecha, 0,
-      ]);
-
-      // Insertar items y descontar stock por distribución
-      for (let i = 0; i < dto.items.length; i++) {
-        const item = dto.items[i];
-
-        await queryRunner.query(`
-          INSERT INTO DET_VENTA (
-            COD_VENTA, COD_FAB, CANTIDAD, PRECIO_VENTA,
-            PREC_LISTA, DOLAR, DESC_UNIT, NRO,
-            PLIS_BS, p_fob, existencia, ID_FAB
-          ) VALUES (
-            @0, @1, @2, @3,
-            @4, @5, @6, @7,
-            @8, @9, @10, @11
-          )
-        `, [
-          cod_venta, item.cod_fab, item.cantidad, item.precio_venta,
-          item.prec_lista, item.precio_venta, 0, i + 1,
-          0, 0, item.existencia, item.id_fab,
-        ]);
-
-        // Descontar stock exclusivamente de MOTOR ZONE (00011)
-        await queryRunner.query(`
-          UPDATE SUC_PRO_PROV
-          SET CANTIDAD = CANTIDAD - @0
-          WHERE ID_FAB = @1 AND COD_SUC = @2
-        `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
-      }
-
-      // Lo vendido se descuenta de las salidas a venta pendientes de este vendedor
-      // (pasan a VENDIDO cuando ya no queda nada por vender ni devolver)
-      await this.traspasoEstados.asignarVenta(queryRunner, {
+      const venta = await this.registrarVentaEnTransaccion(queryRunner, {
         cod_usu,
-        tipoDoc: 'VENTA',
-        codDoc: cod_venta,
-        items: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+        cod_cli: dto.cod_cli,
+        items: dto.items,
+        obs: dto.obs,
+        estado: dto.estado,
+        factura: dto.factura,
+        descuento: dto.descuento,
       });
 
       await queryRunner.commitTransaction();
 
       return {
-        cod_venta,
-        total: totalFinal,
+        cod_venta: venta.cod_venta,
+        total: venta.total,
         items: dto.items.length,
         message: 'Venta registrada correctamente',
       };
@@ -150,6 +81,108 @@ export class VentasService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Registra una venta al contado dentro de la transacción del llamador (la usa
+   * también el cambio de producto en una devolución): valida stock en MOTOR ZONE
+   * con bloqueo, inserta cabecera y detalle, descuenta stock y lo asigna a las
+   * salidas a venta pendientes del vendedor.
+   */
+  async registrarVentaEnTransaccion(
+    queryRunner: QueryRunner,
+    v: {
+      cod_usu: string;
+      cod_cli: number;
+      items: { id_fab: number; cod_fab: string; cantidad: number; precio_venta: number; prec_lista: number; existencia?: number }[];
+      obs?: string;
+      estado?: string;
+      factura?: boolean;
+      descuento?: number;
+    },
+  ): Promise<{ cod_venta: string; total: number }> {
+    // 1. Validar stock exclusivamente en MOTOR ZONE (00011), bloqueando la fila
+    for (const item of v.items) {
+      const stock = await queryRunner.query(`
+        SELECT CANTIDAD
+        FROM SUC_PRO_PROV WITH (UPDLOCK, ROWLOCK)
+        WHERE ID_FAB = @0 AND COD_SUC = @1
+      `, [item.id_fab, COD_SUC_MOTORZONE]);
+
+      const disponible = stock.length > 0 ? Number(stock[0].CANTIDAD) : 0;
+      const pedido = v.items.filter((x) => x.id_fab === item.id_fab).reduce((s, x) => s + x.cantidad, 0);
+      if (disponible < pedido) {
+        throw new BadRequestException(
+          `Stock insuficiente en MOTOR ZONE para ID_FAB ${item.id_fab}. ` +
+          `Disponible: ${disponible}, solicitado: ${pedido}. Debe realizar un traspaso previo desde otro almacén.`
+        );
+      }
+    }
+
+    // 2. Calcular total
+    const descuento = v.descuento ?? 0;
+    const totalBruto = v.items.reduce((sum, i) => sum + i.precio_venta * i.cantidad, 0);
+    const totalFinal = totalBruto * (1 - descuento / 100);
+
+    // 3. Generar código
+    const cod_venta = await this.generarCodVenta(v.cod_usu, queryRunner);
+    const fecha = new Date();
+
+    // Insertar cabecera VENTA
+    await queryRunner.query(`
+      INSERT INTO VENTA (
+        COD_VENTA, FECHA, COD_USU, TIPO, TOTAL, OBS,
+        COD_CLI, ESTADO, FACTURA, DESC_PROF, COD_INI,
+        TIPO_VENTA, TOTAL_INI, saw, fecha_envio, dolarParalelo
+      ) VALUES (
+        @0, @1, @2, @3, @4, @5,
+        @6, @7, @8, @9, @10,
+        @11, @12, @13, @14, @15
+      )
+    `, [
+      cod_venta, fecha, v.cod_usu, 'CONTADO', totalFinal, v.obs ?? '',
+      v.cod_cli, v.estado ?? 'C', v.factura ? 1 : 0, descuento, v.cod_usu,
+      'CO', totalFinal, 'N', fecha, 0,
+    ]);
+
+    // Insertar items y descontar stock
+    for (let i = 0; i < v.items.length; i++) {
+      const item = v.items[i];
+
+      await queryRunner.query(`
+        INSERT INTO DET_VENTA (
+          COD_VENTA, COD_FAB, CANTIDAD, PRECIO_VENTA,
+          PREC_LISTA, DOLAR, DESC_UNIT, NRO,
+          PLIS_BS, p_fob, existencia, ID_FAB
+        ) VALUES (
+          @0, @1, @2, @3,
+          @4, @5, @6, @7,
+          @8, @9, @10, @11
+        )
+      `, [
+        cod_venta, item.cod_fab, item.cantidad, item.precio_venta,
+        item.prec_lista, item.precio_venta, 0, i + 1,
+        0, 0, item.existencia ?? item.cantidad, item.id_fab,
+      ]);
+
+      // Descontar stock exclusivamente de MOTOR ZONE (00011)
+      await queryRunner.query(`
+        UPDATE SUC_PRO_PROV
+        SET CANTIDAD = CANTIDAD - @0
+        WHERE ID_FAB = @1 AND COD_SUC = @2
+      `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
+    }
+
+    // Lo vendido se descuenta de las salidas a venta pendientes de este vendedor
+    // (pasan a VENDIDO cuando ya no queda nada por vender ni devolver)
+    await this.traspasoEstados.asignarVenta(queryRunner, {
+      cod_usu: v.cod_usu,
+      tipoDoc: 'VENTA',
+      codDoc: cod_venta,
+      items: v.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+    });
+
+    return { cod_venta, total: totalFinal };
   }
 
   // ─────────────────────────────────────────
