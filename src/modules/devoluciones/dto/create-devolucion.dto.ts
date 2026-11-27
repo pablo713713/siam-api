@@ -1,5 +1,6 @@
-import { IsString, IsArray, ValidateNested, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsArray, ArrayMinSize, ValidateNested, IsOptional, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { FirmaVendedorDto } from './firma-vendedor.dto';
 
 export class DevolucionItemDto {
   @IsInt()
@@ -13,7 +14,7 @@ export class DevolucionItemDto {
   cantidad: number;
 }
 
-export class CreateDevolucionDto {
+export class CreateDevolucionDto extends FirmaVendedorDto {
   @IsString()
   cod_venta: string;
 
@@ -31,6 +32,7 @@ export class CreateDevolucionDto {
   obs?: string;
 
   @IsArray()
+  @ArrayMinSize(1, { message: 'Seleccione al menos un producto para devolver' })
   @ValidateNested({ each: true })
   @Type(() => DevolucionItemDto)
   items: DevolucionItemDto[];

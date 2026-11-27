@@ -492,6 +492,44 @@ export class ProductosService {
       fechaFiltro = `AND fecha >= @${params.length - 1}`;
     }
 
+    // Con SISTEMA_DEVOLUCION_REGISTRO (bloque 9) cada devolución firmada sale con
+    // su fecha, almacén de reingreso y firmante reales; lo legacy no registrado
+    // ahí se sigue mostrando en MOTOR ZONE.
+    const conRegistro = (await this.dataSource.query(
+      `SELECT OBJECT_ID('dbo.SISTEMA_DEVOLUCION_REGISTRO', 'U') as ok`,
+    ))[0]?.ok != null;
+    const regContado = conRegistro
+      ? `- ISNULL((SELECT SUM(r.CANTIDAD) FROM SISTEMA_DEVOLUCION_REGISTRO r
+                   WHERE r.TIPO_DOC = 'VENTA' AND r.COD_DOC = dd.COD_VENTA
+                     AND r.ID_FAB = dd.ID_FAB AND r.MOVIMIENTO = 'DEVUELVE'), 0)`
+      : '';
+    const regCredito = conRegistro
+      ? `AND NOT EXISTS (SELECT 1 FROM SISTEMA_DEVOLUCION_REGISTRO r
+                       WHERE r.TIPO_DOC = 'CREDITO' AND r.COD_DEVC = ddc.COD_DEVC)`
+      : '';
+    const unionRegistro = conRegistro ? `
+        UNION ALL
+
+        -- DEVOLUCION FIRMADA (contado o crédito): almacén real y vendedor que firmó
+        SELECT
+          CAST(r.FECHA_HORA AS DATETIME) as fecha,
+          r.ID_FAB                as idFab,
+          r.COD_FAB               as codigo,
+          CASE WHEN r.TIPO_DOC = 'CREDITO' THEN 'DEVOLUCION CREDITO' ELSE 'DEVOLUCION' END as descripcion,
+          r.CANTIDAD              as entrada,
+          0                       as salida,
+          0                       as existencia,
+          r.COD_SUC               as codSucFiltro,
+          ISNULL(s.NOM_SUC, r.COD_SUC) as sucursal,
+          ISNULL(uf.NOM_USU + ' ' + uf.AP_USU, r.COD_USU_FIRMANTE) as usuario,
+          NULL                    as cliente,
+          r.OBS                   as observacion
+        FROM SISTEMA_DEVOLUCION_REGISTRO r
+        LEFT JOIN SUCURSAL s ON s.COD_SUC = r.COD_SUC
+        LEFT JOIN USUARIO uf ON uf.COD_USU = r.COD_USU_FIRMANTE
+        WHERE r.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
+          AND r.MOVIMIENTO = 'DEVUELVE'` : '';
+
     const movimientos = await this.dataSource.query(`
       WITH productos_fab AS (
         SELECT ID_FAB FROM PROV_PRO WHERE ID_PRO = @0
@@ -626,11 +664,11 @@ export class ProductosService {
           dd.ID_FAB               as idFab,
           pp.COD_FAB              as codigo,
           'DEVOLUCION'            as descripcion,
-          dd.CANTIDAD             as entrada,
+          dd.CANTIDAD ${regContado} as entrada,
           0                       as salida,
           0                       as existencia,
-          -- Reingresa a MOTOR ZONE salvo que se elija otro almacén; la BD legacy no
-          -- guarda cuál, eso llega con SISTEMA_DEVOLUCION_REGISTRO (parte 4)
+          -- Solo lo que no está en SISTEMA_DEVOLUCION_REGISTRO (devoluciones legacy):
+          -- la BD legacy no guarda el almacén, se asume MOTOR ZONE (destino por defecto)
           '00011'                 as codSucFiltro,
           ISNULL(s.NOM_SUC, '00011') as sucursal,
           ISNULL(u.NOM_USU + ' ' + u.AP_USU, d.COD_USU) as usuario,
@@ -643,6 +681,7 @@ export class ProductosService {
         LEFT JOIN USUARIO u ON u.COD_USU = d.COD_USU
         LEFT JOIN SUCURSAL s ON s.COD_SUC = '00011'
         WHERE dd.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
+          AND dd.CANTIDAD ${regContado} > 0
 
         UNION ALL
 
@@ -668,6 +707,8 @@ export class ProductosService {
         LEFT JOIN SUCURSAL s ON s.COD_SUC = '00011'
         LEFT JOIN CLIENTE c ON c.cod_cli = cr.COD_CLI
         WHERE ddc.ID_FAB IN (SELECT ID_FAB FROM productos_fab)
+          ${regCredito}
+${unionRegistro}
 
       ) AS kardex
       WHERE 1=1
@@ -1403,10 +1444,11 @@ export class ProductosService {
 
     const originales: {
       idTa: number; codRem: string; tipo: string; estado: string;
-      sucOri: string; sucDes: string; codEmp: string; nomSucOri: string;
+      sucOri: string; sucDes: string; codEmp: string; nomSucOri: string; codUsuVendedor: string;
     }[] = await this.dataSource.query(`
       SELECT ta.ID_TA as idTa, ta.COD_REM as codRem, ta.TIPO as tipo, ta.ESTADO as estado,
-             ta.SUC_ORI as sucOri, ta.SUC_DES as sucDes, so.COD_EMP as codEmp, so.NOM_SUC as nomSucOri
+             ta.SUC_ORI as sucOri, ta.SUC_DES as sucDes, so.COD_EMP as codEmp, so.NOM_SUC as nomSucOri,
+             ta.COD_USU_FIRMANTE as codUsuVendedor
       FROM SISTEMA_TRASPASO_AUTORIZACION ta
       INNER JOIN SUCURSAL so ON so.COD_SUC = ta.SUC_ORI
       WHERE ta.ID_TA = @0
@@ -1436,10 +1478,22 @@ export class ProductosService {
       }
     }
 
-    // Firma de quien recibe, con su propia contraseña
-    const firmante = await this.usuariosService.verificarFirma(
+    // Doble firma: el encargado que recibe (su contraseña) y el vendedor que se
+    // llevó los productos en la salida original (la contraseña de ese vendedor)
+    const encargado = await this.usuariosService.verificarFirma(
       usuario.cod_usu, dto.password_firma, cod_emp, null,
     );
+    let firmante;
+    try {
+      firmante = await this.usuariosService.verificarFirma(
+        original.codUsuVendedor, dto.password_vendedor, cod_emp, null,
+      );
+    } catch (e) {
+      if (e instanceof ForbiddenException) {
+        throw new ForbiddenException('Contraseña del vendedor incorrecta.');
+      }
+      throw e;
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -1520,6 +1574,7 @@ export class ProductosService {
         traspasoOriginal: { idAutorizacion: idTa, estado },
         unidadesDevueltas: aDevolver.reduce((s, x) => s + x.cantidad, 0),
         firma: {
+          encargado: { codUsu: encargado.cod_usu, alias: encargado.alias, nombre: encargado.nombreCompleto },
           firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
           fechaBolivia: filasFirma[0]?.fecha ?? null,
           horaBolivia: filasFirma[0]?.hora ?? null,

@@ -9,6 +9,10 @@ import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 import { CreateDevolucionCreditoDto } from './dto/create-devolucion-credito.dto';
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
 import { calcularCupo, CupoCredito, SQL_LIMITE_EFECTIVO } from './credito-cupo';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import {
+  asegurarTablaRegistro, FilaRegistroDevolucion, guardarRegistroDevolucion, listarRegistroDevoluciones,
+} from '../devoluciones/registro-devolucion';
 
 const COD_SUC_MOTORZONE = '00011';
 const PLAZO_DEFAULT_SEMANAS = 4;
@@ -18,6 +22,7 @@ export class CreditosService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly traspasoEstados: TraspasoEstadosService,
+    private readonly usuariosService: UsuariosService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -373,7 +378,7 @@ export class CreditosService {
 
   async registrarDevolucion(cod_cre: string, dto: CreateDevolucionCreditoDto, cod_usu: string, cod_emp: string) {
     const credito = await this.dataSource.query(`
-      SELECT c.SALDO, c.ESTADO, s.COD_EMP
+      SELECT c.SALDO, c.ESTADO, s.COD_EMP, ISNULL(c.descuento, 0) as DESCUENTO
       FROM CREDITO c
       INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
       INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
@@ -390,10 +395,23 @@ export class CreditosService {
       throw new BadRequestException('Solo se pueden devolver ítems de créditos activos');
     }
 
-    // Validar cantidad disponible a devolver por cada ítem
+    const suc = await this.dataSource.query(
+      `SELECT 1 as ok FROM SUCURSAL WHERE COD_SUC = @0 AND COD_EMP = @1`, [dto.cod_suc, cod_emp],
+    );
+    if (!suc.length) throw new BadRequestException(`El almacén ${dto.cod_suc} no es válido.`);
+
+    // Firma digital: el vendedor elige su usuario y pone su contraseña
+    const firmante = await this.usuariosService.verificarFirma(
+      dto.cod_usu_vendedor, dto.password_vendedor, cod_emp, this.usuariosService.rolVendedor,
+    );
+
+    // Validar cantidad disponible a devolver por cada ítem. El total sale del
+    // precio del crédito (con su descuento), no del que manda el cliente.
+    const descuentoPct = Number(credito[0].DESCUENTO) || 0;
+    const precios = new Map<number, number>();
     for (const item of dto.items) {
       const original = await this.dataSource.query(`
-        SELECT dc.CANTIDAD,
+        SELECT dc.CANTIDAD, dc.PRECIO_CRE,
           ISNULL((SELECT SUM(ddc.CANTIDAD) FROM DET_DEVOLUCION_CREDITO ddc
                   WHERE ddc.COD_CRE = @0 AND ddc.ID_FAB = @1), 0) as yaDevuelto
         FROM DET_CREDITO dc
@@ -404,6 +422,7 @@ export class CreditosService {
         throw new BadRequestException(`El ítem ID_FAB ${item.id_fab} no pertenece a este crédito`);
       }
 
+      precios.set(item.id_fab, Number(original[0].PRECIO_CRE) * (1 - descuentoPct / 100));
       const disponibleADevolver = Number(original[0].CANTIDAD) - Number(original[0].yaDevuelto);
       if (item.cantidad > disponibleADevolver) {
         throw new BadRequestException(
@@ -413,13 +432,17 @@ export class CreditosService {
       }
     }
 
-    const totalDevolucion = dto.items.reduce((sum, i) => sum + i.total, 0);
+    const redondear = (n: number) => Math.round(n * 100) / 100;
+    for (const i of dto.items) i.total = redondear(i.cantidad * precios.get(i.id_fab)!);
+    const totalDevolucion = redondear(dto.items.reduce((sum, i) => sum + i.total!, 0));
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
+      await asegurarTablaRegistro(queryRunner);
+
       // Cabecera — COD_DEVC es IDENTITY, lo recuperamos con OUTPUT INSERTED
       const insertHeader = await queryRunner.query(`
         INSERT INTO DEVOLUCION_CREDITO (COD_CRE, COD_USU, FECHA, TOTAL, OBS, Tipo)
@@ -451,6 +474,15 @@ export class CreditosService {
         UPDATE CREDITO SET SALDO = @0, ESTADO = @1 WHERE COD_CRE = @2
       `, [nuevoSaldo, nuevoEstado, cod_cre]);
 
+      const registro: FilaRegistroDevolucion[] = dto.items.map((i) => ({
+        movimiento: 'DEVUELVE', id_fab: i.id_fab, cod_fab: i.cod_fab,
+        cantidad: i.cantidad, precio: precios.get(i.id_fab)!, cod_suc: dto.cod_suc,
+      }));
+      const firma = await guardarRegistroDevolucion(queryRunner, {
+        tipoDoc: 'CREDITO', codDoc: cod_cre, codDevc: Number(cod_devc), codEmp: cod_emp,
+        codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs: dto.obs,
+      }, registro);
+
       await queryRunner.commitTransaction();
 
       return {
@@ -459,6 +491,12 @@ export class CreditosService {
         totalDevuelto: totalDevolucion,
         nuevoSaldo,
         estado: nuevoEstado,
+        firma: {
+          idGrupo: firma.idGrupo,
+          firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
+          fechaBolivia: firma.fecha,
+          horaBolivia: firma.hora,
+        },
         message: 'Devolución de crédito registrada correctamente',
       };
     } catch (err) {
@@ -596,6 +634,7 @@ export class CreditosService {
       alerta: this.calcularAlerta(credito[0].diasRestantes),
       items,
       cupo: await calcularCupo(this.dataSource, Number(credito[0].codCli)),
+      devoluciones: await listarRegistroDevoluciones(this.dataSource, 'CREDITO', cod_cre),
     };
   }
     async pagoMultiple(cod_cli: number, codCreList: string[], cod_emp: string) {

@@ -1,22 +1,47 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CreateDevolucionDto } from './dto/create-devolucion.dto';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import {
+  asegurarTablaRegistro, FilaRegistroDevolucion, guardarRegistroDevolucion,
+} from './registro-devolucion';
 
 const COD_SUC_MOTORZONE = '00011';
 
 @Injectable()
 export class DevolucionesService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly usuariosService: UsuariosService,
+  ) {}
+
+  /** El almacén de reingreso debe existir y ser de la empresa. */
+  private async validarAlmacen(cod_suc: string, cod_emp: string): Promise<void> {
+    const r = await this.dataSource.query(
+      `SELECT 1 as ok FROM SUCURSAL WHERE COD_SUC = @0 AND COD_EMP = @1`, [cod_suc, cod_emp],
+    );
+    if (!r.length) throw new BadRequestException(`El almacén ${cod_suc} no es válido.`);
+  }
 
   async create(dto: CreateDevolucionDto, cod_emp: string) {
     const { cod_venta, cod_usu, obs, items } = dto;
     const fecha = new Date();
+    const sucDestino = dto.cod_suc || COD_SUC_MOTORZONE;
+    await this.validarAlmacen(sucDestino, cod_emp);
+
+    // Firma digital: el vendedor elige su usuario y pone su contraseña
+    const firmante = await this.usuariosService.verificarFirma(
+      dto.cod_usu_vendedor, dto.password_vendedor, cod_emp, this.usuariosService.rolVendedor,
+    );
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
+      await asegurarTablaRegistro(queryRunner);
+      const registro: FilaRegistroDevolucion[] = [];
+
       // 1. Validar que la venta exista, sea de la empresa correcta, y no esté anulada
       const ventaResult = await queryRunner.query(`
         SELECT v.ESTADO, v.FECHA
@@ -93,8 +118,12 @@ export class DevolucionesService {
           `, [item.cantidad, totalDevuelto, cod_venta, item.id_fab]);
         }
 
+        registro.push({
+          movimiento: 'DEVUELVE', id_fab: item.id_fab, cod_fab: item.cod_fab,
+          cantidad: item.cantidad, precio: precioVenta, cod_suc: sucDestino,
+        });
+
         // 4. Restaurar stock al almacén indicado (por defecto Motor Zone 00011)
-        const sucDestino = dto.cod_suc || COD_SUC_MOTORZONE;
         const existeStock = await queryRunner.query(`
           SELECT CANTIDAD FROM SUC_PRO_PROV WHERE ID_FAB = @0 AND COD_SUC = @1
         `, [item.id_fab, sucDestino]);
@@ -133,12 +162,24 @@ export class DevolucionesService {
         }
       }
 
+      const firma = await guardarRegistroDevolucion(queryRunner, {
+        tipoDoc: 'VENTA', codDoc: cod_venta, codEmp: cod_emp,
+        codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs,
+      }, registro);
+
       await queryRunner.commitTransaction();
 
       return {
-        message: 'Devolución parcial registrada correctamente',
+        message: 'Devolución registrada correctamente',
         cod_venta,
-        itemsProcesados: items.length
+        itemsProcesados: items.length,
+        totalDevuelto: granTotalDevuelto,
+        firma: {
+          idGrupo: firma.idGrupo,
+          firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
+          fechaBolivia: firma.fecha,
+          horaBolivia: firma.hora,
+        },
       };
 
     } catch (error) {

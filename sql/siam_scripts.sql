@@ -21,6 +21,7 @@
      6. SISTEMA_TRASPASO_VENTA (en qué venta o crédito salió cada producto)
      7. SISTEMA_PRODUCTO_AUDITORIA (creación y edición de productos)
      8. CANT_ANULADA en SISTEMA_TRASPASO_VENTA (anulación de ventas)
+     9. SISTEMA_DEVOLUCION_REGISTRO (devoluciones firmadas y cambios de producto)
    ============================================================================= */
 
 /* =============================================================================
@@ -275,5 +276,64 @@ IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_STV_ANULADA'
 BEGIN
     ALTER TABLE dbo.SISTEMA_TRASPASO_VENTA
         ADD CONSTRAINT CK_STV_ANULADA CHECK (CANT_ANULADA >= 0 AND CANT_ANULADA <= CANTIDAD);
+END
+GO
+
+/* =============================================================================
+   9. SISTEMA_DEVOLUCION_REGISTRO
+   Una fila por producto en cada devolución (de contado o de crédito).
+   Las filas de una misma operación comparten ID_GRUPO. Guarda lo que la BD
+   legacy no guarda:
+     - quién la registró y qué vendedor la firmó con su contraseña
+     - fecha y hora de Bolivia de cada devolución (DET_DEVOLUCION acumula)
+     - a qué almacén reingresó cada producto (para el kardex)
+     - en un cambio de producto (parte 5): los productos que el cliente se
+       lleva (MOVIMIENTO = 'LLEVA') y la venta que se generó (COD_VENTA_CAMBIO)
+   ============================================================================= */
+
+IF OBJECT_ID('dbo.SISTEMA_DEVOLUCION_REGISTRO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SISTEMA_DEVOLUCION_REGISTRO (
+        ID_DR             INT IDENTITY(1,1) NOT NULL,
+        ID_GRUPO          UNIQUEIDENTIFIER NOT NULL,   -- una operación = un grupo
+        TIPO_DOC          VARCHAR(8)    NOT NULL,      -- VENTA | CREDITO (documento original)
+        COD_DOC           VARCHAR(18)   NOT NULL,      -- VENTA.COD_VENTA o CREDITO.COD_CRE
+        COD_DEVC          INT           NULL,          -- DEVOLUCION_CREDITO.COD_DEVC (solo crédito)
+        MOVIMIENTO        VARCHAR(8)    NOT NULL       -- DEVUELVE (entra al almacén) | LLEVA (sale, cambio)
+            CONSTRAINT DF_SDR_MOVIMIENTO DEFAULT ('DEVUELVE'),
+
+        ID_FAB            INT           NOT NULL,
+        COD_FAB           VARCHAR(50)   NOT NULL,
+        CANTIDAD          INT           NOT NULL,
+        PRECIO            DECIMAL(18,4) NOT NULL,      -- precio unitario en Bs
+        TOTAL             DECIMAL(18,4) NOT NULL,
+        COD_SUC           VARCHAR(5)    NOT NULL,      -- almacén al que reingresa / del que sale
+
+        COD_EMP           VARCHAR(3)    NOT NULL,
+        COD_USU_REGISTRA  VARCHAR(7)    NOT NULL,      -- usuario del token
+        COD_USU_FIRMANTE  VARCHAR(7)    NOT NULL,      -- vendedor que firmó con su contraseña
+
+        -- Hora local de Bolivia generada por el servidor de BD (no editable desde la app)
+        FECHA_HORA        DATETIME2(0)  NOT NULL
+            CONSTRAINT DF_SDR_FECHA_HORA DEFAULT (DATEADD(HOUR, -4, SYSUTCDATETIME())),
+        FECHA             AS CAST(FECHA_HORA AS DATE)    PERSISTED,
+        HORA              AS CAST(FECHA_HORA AS TIME(0)) PERSISTED,
+
+        COD_VENTA_CAMBIO  VARCHAR(18)   NULL,          -- venta generada en un cambio de producto
+        OBS               VARCHAR(512)  NULL,
+
+        CONSTRAINT PK_SISTEMA_DEVOLUCION_REGISTRO PRIMARY KEY (ID_DR),
+        CONSTRAINT CK_SDR_TIPO_DOC   CHECK (TIPO_DOC IN ('VENTA', 'CREDITO')),
+        CONSTRAINT CK_SDR_MOVIMIENTO CHECK (MOVIMIENTO IN ('DEVUELVE', 'LLEVA')),
+        CONSTRAINT CK_SDR_CANTIDAD   CHECK (CANTIDAD > 0),
+        CONSTRAINT FK_SDR_PROV_PRO   FOREIGN KEY (ID_FAB)           REFERENCES dbo.PROV_PRO (ID_FAB),
+        CONSTRAINT FK_SDR_SUCURSAL   FOREIGN KEY (COD_SUC)          REFERENCES dbo.SUCURSAL (COD_SUC),
+        CONSTRAINT FK_SDR_REGISTRA   FOREIGN KEY (COD_USU_REGISTRA) REFERENCES dbo.USUARIO (COD_USU),
+        CONSTRAINT FK_SDR_FIRMANTE   FOREIGN KEY (COD_USU_FIRMANTE) REFERENCES dbo.USUARIO (COD_USU)
+    );
+
+    CREATE INDEX IX_SDR_DOC    ON dbo.SISTEMA_DEVOLUCION_REGISTRO (TIPO_DOC, COD_DOC);
+    CREATE INDEX IX_SDR_GRUPO  ON dbo.SISTEMA_DEVOLUCION_REGISTRO (ID_GRUPO);
+    CREATE INDEX IX_SDR_ID_FAB ON dbo.SISTEMA_DEVOLUCION_REGISTRO (ID_FAB);
 END
 GO

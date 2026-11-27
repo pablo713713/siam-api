@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { listarRegistroDevoluciones } from '../devoluciones/registro-devolucion';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { ConfigService } from '@nestjs/config';
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
@@ -345,7 +346,9 @@ export class VentasService {
       WHERE dv.COD_VENTA = @0
     `, [cod_venta]);
 
-    return { ...venta[0], items };
+    // Devoluciones firmadas de esta venta: quién registró, qué vendedor firmó, cuándo y a qué almacén
+    const devoluciones = await listarRegistroDevoluciones(this.dataSource, 'VENTA', cod_venta);
+    return { ...venta[0], items, devoluciones };
   }
 
   // ─────────────────────────────────────────
