@@ -4,10 +4,29 @@ import { SearchUsuarioDto } from './dto/search-usuario.dto';
 import { VerificarPasswordDto } from './dto/verificar-password.dto';
 import { CodEmp } from 'src/modules/auth/decorators/cod-emp.decorator';
 import { Roles } from 'src/modules/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import { CreateUsuarioDto } from './dto/create-usuario.dto';
+import { UsuariosGestionService } from './usuarios-gestion.service';
 
 @Controller('usuarios')
 export class UsuariosController {
-  constructor(private readonly usuariosService: UsuariosService) {}
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly gestion: UsuariosGestionService,
+  ) {}
+
+  // Alta de usuario con roles y almacenes: solo Administrador
+  @Roles('Administrador')
+  @Post()
+  create(@Body() dto: CreateUsuarioDto, @CurrentUser('cod_usu') cod_usu: string, @CodEmp() cod_emp: string) {
+    return this.gestion.create(dto, cod_usu, cod_emp);
+  }
+
+  @Roles('Administrador')
+  @Get('catalogos')
+  catalogos(@CodEmp() cod_emp: string) {
+    return this.gestion.catalogos(cod_emp);
+  }
 
   @Roles('Administrador')
   @Get()

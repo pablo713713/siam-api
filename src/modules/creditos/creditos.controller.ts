@@ -83,8 +83,9 @@ export class CreditosController {
   pagoMultiple(
     @Param('cod_cli') cod_cli: number,
     @Body('cod_cre') cod_cre: string[],
+    @CurrentUser('cod_usu') cod_usu: string,
     @CodEmp() cod_emp: string,
   ) {
-    return this.creditosService.pagoMultiple(Number(cod_cli), cod_cre, cod_emp);
+    return this.creditosService.pagoMultiple(Number(cod_cli), cod_cre, cod_emp, cod_usu);
   }
 }

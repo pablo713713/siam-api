@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cliente } from './entities/cliente.entity';
 import { ClienteExtension } from './entities/cliente-extension.entity';
 import { UpdateClienteExtensionDto } from './dto/update-cliente-extension.dto';
 import { calcularCupo } from '../creditos/credito-cupo';
+import { CreateClienteDto } from './dto/create-cliente.dto';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 @Injectable()
 export class ClientesService {
@@ -13,7 +15,92 @@ export class ClientesService {
     private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(ClienteExtension)
     private readonly extensionRepository: Repository<ClienteExtension>,
+    private readonly auditoria: AuditoriaService,
   ) {}
+
+  /** Calificaciones de cliente (CLIENTE_CONSIGNACION) para el alta. */
+  async getCalificaciones() {
+    return this.clienteRepository.manager.query(`
+      SELECT codigo, Tipo_cliente as tipoCliente, consignacion, Calificacion as calificacion, tiempo
+      FROM CLIENTE_CONSIGNACION
+      ORDER BY codigo
+    `);
+  }
+
+  /**
+   * Alta de cliente. Queda en la sucursal del usuario que lo registra (eso
+   * define su empresa). Los campos legacy obligatorios que no se piden toman
+   * los mismos valores por defecto que usa la BD ('NINGUNO', '0').
+   */
+  async create(dto: CreateClienteDto, cod_usu: string, cod_emp: string) {
+    const manager = this.clienteRepository.manager;
+    const suc: { codSuc: string }[] = await manager.query(`
+      SELECT u.COD_SUC as codSuc FROM USUARIO u
+      INNER JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
+      WHERE u.COD_USU = @0 AND s.COD_EMP = @1
+    `, [cod_usu, cod_emp]);
+    if (!suc.length) throw new BadRequestException('Su usuario no tiene una sucursal válida para registrar clientes.');
+
+    const doc = (dto.num_ci_nit ?? '').trim();
+    if (doc && doc !== '0') {
+      const dup = await manager.query(`
+        SELECT TOP 1 c.cod_cli as codCli, c.NOM_CLI as nom, c.APE_CLI as ape
+        FROM CLIENTE c INNER JOIN SUCURSAL s ON s.COD_SUC = c.COD_SUC
+        WHERE LTRIM(RTRIM(c.NUM_CI_NIT)) = @0 AND s.COD_EMP = @1 AND c.baja = '0'
+      `, [doc, cod_emp]);
+      if (dup.length) {
+        throw new ConflictException(`Ya existe un cliente con CI/NIT ${doc}: ${dup[0].nom} ${dup[0].ape} (código ${dup[0].codCli}).`);
+      }
+    }
+
+    const codigo = dto.codigo?.trim() || '0';
+    const calif = await manager.query(`SELECT 1 as ok FROM CLIENTE_CONSIGNACION WHERE codigo = @0`, [codigo]);
+    if (!calif.length) throw new BadRequestException(`La calificación ${codigo} no existe.`);
+
+    const n = (v: string | undefined) => (v && v.trim() ? v.trim() : 'NINGUNO');
+    const qr = this.clienteRepository.manager.connection.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const ins: { codCli: number }[] = await qr.query(`
+        INSERT INTO CLIENTE (
+          NOM_CLI, APE_CLI, COD_SUC, FONO, FECHA_INGRESO,
+          NUM_CI_NIT, CI_NIT, RAZON_SOCIAL, TEL_DOM, CEL, DOMICILIO,
+          NOM_COLAB, AP_COLAB, codigo, celular, email, ciudad, baja
+        )
+        OUTPUT INSERTED.cod_cli AS codCli
+        VALUES (@0, @1, @2, @3, GETDATE(), @4, @5, @6, @7, @8, @9, 'NINGUNO', 'NINGUNO', @10, @11, @12, @13, '0')
+      `, [
+        dto.nom_cli.toUpperCase(), dto.ape_cli.toUpperCase(), suc[0].codSuc, dto.telefono?.trim() || '0',
+        doc || '0', dto.tipo_doc ?? (doc ? 'CI' : 'NIN'),
+        (dto.razon_social?.trim() || `${dto.nom_cli} ${dto.ape_cli}`).toUpperCase(),
+        n(dto.telefono), n(dto.celular), n(dto.domicilio),
+        codigo, dto.celular?.trim() || null, dto.email?.trim() || null, dto.ciudad?.trim() || null,
+      ]);
+      const cod_cli = Number(ins[0].codCli);
+
+      if (dto.limite_credito !== undefined || dto.acepta_devoluciones !== undefined) {
+        await qr.query(`
+          INSERT INTO CLIENTE_EXTENSION (cod_cli, acepta_devoluciones, limite_credito, nivel_fidelidad, createdAt, updatedAt)
+          VALUES (@0, @1, @2, 0, GETDATE(), GETDATE())
+        `, [cod_cli, dto.acepta_devoluciones ?? true, dto.limite_credito ?? null]);
+      }
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'CLIENTE', accion: 'CREAR', documento: String(cod_cli),
+        descripcion: `Registró al cliente ${dto.nom_cli} ${dto.ape_cli} (código ${cod_cli})`,
+        despues: { cod_cli, ...dto },
+      }, qr);
+
+      await qr.commitTransaction();
+      return { cod_cli, message: 'Cliente registrado correctamente' };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
 
   /** 404 si el cliente no existe o pertenece a otra empresa (no revela cuál de las dos). */
   private async asegurarClienteDeEmpresa(cod_cli: number, cod_emp: string): Promise<void> {
@@ -91,7 +178,7 @@ export class ClientesService {
     };
   }
 
-  async updateExtension(cod_cli: number, dto: UpdateClienteExtensionDto, cod_emp: string) {
+  async updateExtension(cod_cli: number, dto: UpdateClienteExtensionDto, cod_emp: string, cod_usu: string) {
     await this.asegurarClienteDeEmpresa(cod_cli, cod_emp);
     const cliente = await this.clienteRepository.findOne({
       where: { cod_cli },
@@ -105,13 +192,26 @@ export class ClientesService {
       where: { cod_cli },
     });
 
+    const campos = ['acepta_devoluciones', 'limite_credito', 'nivel_fidelidad', 'observaciones'] as const;
+    const antes = extension
+      ? Object.fromEntries(campos.map((c) => [c, extension![c] ?? null]))
+      : null;
+
     if (extension) {
       Object.assign(extension, dto);
     } else {
       extension = this.extensionRepository.create({ cod_cli, ...dto });
     }
 
-    return this.extensionRepository.save(extension);
+    const guardada = await this.extensionRepository.save(extension);
+    await this.auditoria.registrarSeguro({
+      cod_usu, modulo: 'CLIENTE', accion: 'EDITAR', documento: String(cod_cli),
+      descripcion: `Editó la configuración del cliente ${cod_cli}` +
+        (dto.limite_credito !== undefined ? ` (límite de crédito: ${dto.limite_credito || 'del sistema anterior'})` : ''),
+      antes,
+      despues: Object.fromEntries(campos.map((c) => [c, guardada[c] ?? null])),
+    });
+    return guardada;
   }
 
   async getHistorialCompras(cod_cli: number, cod_emp: string) {

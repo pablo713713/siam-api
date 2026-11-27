@@ -83,8 +83,9 @@ export class VentasController {
     @Param('cod_venta') cod_venta: string,
     @Body('items') items: { id_fab: number; precio_venta: number }[],
     @CodEmp() cod_emp: string,
+    @CurrentUser('cod_usu') cod_usu: string,
   ) {
-    return this.ventasService.confirmar(cod_venta, items, cod_emp);
+    return this.ventasService.confirmar(cod_venta, items, cod_emp, cod_usu);
   }
 
   // Anular venta: solo Administrador. Quien anula se toma del token.

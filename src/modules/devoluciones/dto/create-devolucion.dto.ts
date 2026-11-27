@@ -1,6 +1,7 @@
 import { IsString, IsArray, ArrayMinSize, ValidateNested, IsOptional, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FirmaVendedorDto } from './firma-vendedor.dto';
+import { ItemLlevaDto } from './item-lleva.dto';
 
 export class DevolucionItemDto {
   @IsInt()
@@ -36,4 +37,11 @@ export class CreateDevolucionDto extends FirmaVendedorDto {
   @ValidateNested({ each: true })
   @Type(() => DevolucionItemDto)
   items: DevolucionItemDto[];
+
+  // Cambio de producto: lo que el cliente se lleva en la misma operación
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemLlevaDto)
+  lleva?: ItemLlevaDto[];
 }

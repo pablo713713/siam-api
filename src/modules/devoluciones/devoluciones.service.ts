@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { DataSource } from 'typeorm';
 import { CreateDevolucionDto } from './dto/create-devolucion.dto';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { VentasService } from '../ventas/ventas.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import {
   asegurarTablaRegistro, FilaRegistroDevolucion, guardarRegistroDevolucion,
 } from './registro-devolucion';
@@ -13,6 +15,8 @@ export class DevolucionesService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly usuariosService: UsuariosService,
+    private readonly ventasService: VentasService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   /** El almacén de reingreso debe existir y ser de la empresa. */
@@ -44,7 +48,7 @@ export class DevolucionesService {
 
       // 1. Validar que la venta exista, sea de la empresa correcta, y no esté anulada
       const ventaResult = await queryRunner.query(`
-        SELECT v.ESTADO, v.FECHA
+        SELECT v.ESTADO, v.FECHA, v.COD_CLI
         FROM VENTA v
         INNER JOIN USUARIO u ON u.COD_USU = v.COD_USU
         INNER JOIN SUCURSAL s ON s.COD_SUC = u.COD_SUC
@@ -162,18 +166,62 @@ export class DevolucionesService {
         }
       }
 
+      // 6. Cambio de producto: lo que el cliente se lleva es una venta nueva (mismo
+      //    cliente, a nombre del vendedor que firma), con el mismo ciclo de una
+      //    venta: valida y descuenta stock de MOTOR ZONE y suma a las ganancias.
+      const lleva = dto.lleva ?? [];
+      let codVentaCambio: string | null = null;
+      let totalLleva = 0;
+      if (lleva.length > 0) {
+        const nueva = await this.ventasService.registrarVentaEnTransaccion(queryRunner, {
+          cod_usu: firmante.cod_usu,
+          cod_cli: Number(ventaResult[0].COD_CLI),
+          items: lleva.map((l) => ({
+            id_fab: l.id_fab, cod_fab: l.cod_fab, cantidad: l.cantidad,
+            precio_venta: l.precio, prec_lista: l.prec_lista || l.precio,
+          })),
+          obs: `Cambio de producto de la venta ${cod_venta}`,
+        });
+        codVentaCambio = nueva.cod_venta;
+        totalLleva = nueva.total;
+        for (const l of lleva) {
+          registro.push({
+            movimiento: 'LLEVA', id_fab: l.id_fab, cod_fab: l.cod_fab,
+            cantidad: l.cantidad, precio: l.precio, cod_suc: COD_SUC_MOTORZONE,
+          });
+        }
+      }
+
       const firma = await guardarRegistroDevolucion(queryRunner, {
         tipoDoc: 'VENTA', codDoc: cod_venta, codEmp: cod_emp,
         codUsuRegistra: cod_usu, codUsuFirmante: firmante.cod_usu, obs,
+        codVentaCambio,
       }, registro);
+
+      await this.auditoria.registrar({
+        cod_usu, modulo: 'DEVOLUCION', accion: codVentaCambio ? 'CAMBIO' : 'CONTADO', documento: cod_venta,
+        descripcion: (codVentaCambio ? `Cambio de producto de la venta ${cod_venta}` : `Devolución de la venta ${cod_venta}`) +
+          `: devuelve Bs ${granTotalDevuelto.toFixed(2)}` +
+          (codVentaCambio ? `, lleva Bs ${totalLleva.toFixed(2)} (venta ${codVentaCambio})` : '') +
+          `. Firmó ${firmante.nombreCompleto || firmante.cod_usu}`,
+        despues: {
+          almacen: sucDestino, firmante: firmante.cod_usu, totalDevuelto: granTotalDevuelto, codVentaCambio, totalLleva,
+          devuelve: items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
+          lleva: lleva.map((l) => ({ id_fab: l.id_fab, cantidad: l.cantidad, precio: l.precio })),
+        },
+      }, queryRunner);
 
       await queryRunner.commitTransaction();
 
       return {
-        message: 'Devolución registrada correctamente',
+        message: codVentaCambio ? 'Cambio de producto registrado correctamente' : 'Devolución registrada correctamente',
         cod_venta,
         itemsProcesados: items.length,
         totalDevuelto: granTotalDevuelto,
+        // Cambio: venta generada y diferencia (> 0 paga el cliente, < 0 se le devuelve)
+        codVentaCambio,
+        totalLleva,
+        diferencia: Math.round((totalLleva - granTotalDevuelto) * 100) / 100,
         firma: {
           idGrupo: firma.idGrupo,
           firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
