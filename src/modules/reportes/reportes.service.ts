@@ -55,9 +55,25 @@ export class ReportesService {
       .andWhere('s.COD_EMP = :cod_emp', { cod_emp })
       .getRawOne();
 
+    // Devoluciones de los mismos créditos (CREDITO.TOTAL no baja al devolver,
+    // solo el SALDO): un crédito cerrado por devolución no es ingreso real
+    const devolucionesCredito = await manager
+      .createQueryBuilder()
+      .select('ISNULL(SUM(ddc.TOTAL), 0)', 'total')
+      .from('DET_DEVOLUCION_CREDITO', 'ddc')
+      .innerJoin('CREDITO', 'c', 'c.COD_CRE = ddc.COD_CRE')
+      .innerJoin('CLIENTE', 'cl', 'cl.cod_cli = c.COD_CLI')
+      .innerJoin('SUCURSAL', 's', 's.COD_SUC = cl.COD_SUC')
+      .where('c.FEC_INICIO >= :inicio', { inicio: dto.fecha_inicio })
+      .andWhere('c.FEC_INICIO <= :fin', { fin: dto.fecha_fin })
+      .andWhere("c.ESTADO = 'C'")
+      .andWhere('s.COD_EMP = :cod_emp', { cod_emp })
+      .getRawOne();
+    const totalDevolucionesCredito = parseFloat(devolucionesCredito.total) || 0;
+
     const totalVentasOriginal = parseFloat(ventas.total) || 0;
     const totalVentasNetas = Math.max(0, totalVentasOriginal - totalDevoluciones);
-    const totalCreditos = parseFloat(creditos.total) || 0;
+    const totalCreditos = Math.max(0, (parseFloat(creditos.total) || 0) - totalDevolucionesCredito);
 
     return {
       rango: dto,
@@ -65,6 +81,7 @@ export class ReportesService {
       ventas_credito: { total: totalCreditos, cantidad: parseInt(creditos.cantidad) || 0 },
       total_bruto: totalVentasNetas + totalCreditos,
       total_devoluciones: totalDevoluciones,
+      total_devoluciones_credito: totalDevolucionesCredito,
     };
   }
 
@@ -113,8 +130,23 @@ async getCostosMercancia(dto: RangoFechasDto, cod_emp: string) {
     .andWhere('s.COD_EMP = :cod_emp', { cod_emp })
     .getRawOne();
 
+  // Costo de lo devuelto en esos mismos créditos (la mercadería volvió al almacén)
+  const costosDevCredito = await manager
+    .createQueryBuilder()
+    .select('ISNULL(SUM(ddc.CANTIDAD * pp.CIF_CBBA), 0)', 'costo_total')
+    .from('DET_DEVOLUCION_CREDITO', 'ddc')
+    .innerJoin('CREDITO', 'c', 'c.COD_CRE = ddc.COD_CRE')
+    .innerJoin('PROV_PRO', 'pp', 'pp.ID_FAB = ddc.ID_FAB')
+    .innerJoin('CLIENTE', 'cl', 'cl.cod_cli = c.COD_CLI')
+    .innerJoin('SUCURSAL', 's', 's.COD_SUC = cl.COD_SUC')
+    .where('c.FEC_INICIO >= :inicio', { inicio: dto.fecha_inicio })
+    .andWhere('c.FEC_INICIO <= :fin', { fin: dto.fecha_fin })
+    .andWhere("c.ESTADO = 'C'")
+    .andWhere('s.COD_EMP = :cod_emp', { cod_emp })
+    .getRawOne();
+
   const costoVentasNeto = Math.max(0, (parseFloat(costosVentas.costo_total) || 0) - (parseFloat(costosDevoluciones.costo_total) || 0));
-  const costoCreditos = parseFloat(creditos.costo_total) || 0;
+  const costoCreditos = Math.max(0, (parseFloat(creditos.costo_total) || 0) - (parseFloat(costosDevCredito.costo_total) || 0));
 
   return {
     rango: dto,

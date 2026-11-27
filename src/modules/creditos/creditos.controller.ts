@@ -42,6 +42,12 @@ export class CreditosController {
     return this.creditosService.findClientesHabilitados(cod_emp);
   }
 
+  // Límite, deuda y disponible del cliente
+  @Get('cliente/:cod_cli/cupo')
+  getCupo(@Param('cod_cli') cod_cli: number, @CodEmp() cod_emp: string) {
+    return this.creditosService.getCupo(Number(cod_cli), cod_emp);
+  }
+
   @Get('cliente/:cod_cli')
   findCreditosPorCliente(@Param('cod_cli') cod_cli: number, @CodEmp() cod_emp: string) {
     return this.creditosService.findCreditosPorCliente(Number(cod_cli), cod_emp);

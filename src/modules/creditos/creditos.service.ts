@@ -8,6 +8,7 @@ import { CreateCreditoDto } from './dto/create-credito.dto';
 import { RegistrarPagoDto } from './dto/registrar-pago.dto';
 import { CreateDevolucionCreditoDto } from './dto/create-devolucion-credito.dto';
 import { TraspasoEstadosService } from '../productos/traspaso-estados.service';
+import { calcularCupo, CupoCredito, SQL_LIMITE_EFECTIVO } from './credito-cupo';
 
 const COD_SUC_MOTORZONE = '00011';
 const PLAZO_DEFAULT_SEMANAS = 4;
@@ -65,29 +66,24 @@ export class CreditosService {
     }
 
   // ─────────────────────────────────────────
-  // Cupo disponible de un cliente:
-  // CREDITO_MAXIMO - suma de SALDO de sus créditos activos
+  // Cupo del cliente (límite del perfil o, si no, CREDITO_MAXIMO legacy)
   // ─────────────────────────────────────────
-  private async getCupoDisponible(cod_cli: number): Promise<{ maximo: number; usado: number; disponible: number }> {
-    const cliente = await this.dataSource.query(`
-      SELECT CREDITO_MAXIMO FROM CLIENTE WHERE cod_cli = @0
+  async getCupo(cod_cli: number, cod_emp: string): Promise<CupoCredito> {
+    const emp = await this.dataSource.query(`
+      SELECT s.COD_EMP FROM CLIENTE cl
+      INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      WHERE cl.cod_cli = @0
     `, [cod_cli]);
-
-    if (cliente.length === 0) {
-      throw new NotFoundException(`Cliente ${cod_cli} no existe`);
+    if (!emp.length || emp[0].COD_EMP !== cod_emp) {
+      throw new NotFoundException(`Cliente ${cod_cli} no encontrado`);
     }
+    return (await calcularCupo(this.dataSource, cod_cli))!;
+  }
 
-    const maximo = Number(cliente[0].CREDITO_MAXIMO ?? 0);
-
-    const usado = await this.dataSource.query(`
-      SELECT ISNULL(SUM(SALDO), 0) as usado
-      FROM CREDITO
-      WHERE COD_CLI = @0 AND ESTADO = 'A'
-    `, [cod_cli]);
-
-    const usadoNum = Number(usado[0].usado);
-
-    return { maximo, usado: usadoNum, disponible: maximo - usadoNum };
+  private mensajeLimite(cupo: CupoCredito, monto: number): string {
+    return `El cliente alcanzó su límite de crédito. Límite: ${cupo.limite.toFixed(2)}, ` +
+      `deuda pendiente: ${cupo.deuda.toFixed(2)}, disponible: ${cupo.disponible.toFixed(2)}, ` +
+      `monto de este crédito: ${monto.toFixed(2)}. No se puede registrar.`;
   }
 
   // ─────────────────────────────────────────
@@ -110,9 +106,9 @@ export class CreditosService {
       throw new BadRequestException('Este cliente no pertenece a su empresa');
     }
 
-    // 1. Validar que el cliente pueda comprar a crédito
-    const cupo = await this.getCupoDisponible(dto.cod_cli);
-    if (cupo.maximo <= 0) {
+    // 1. Validar que el cliente pueda comprar a crédito (tiene un límite > 0)
+    const cupo = (await calcularCupo(this.dataSource, dto.cod_cli))!;
+    if (!cupo.habilitado) {
       throw new BadRequestException('Este cliente no tiene habilitada la compra a crédito');
     }
 
@@ -140,11 +136,9 @@ export class CreditosService {
     const totalFinal = totalBruto * (1 - descuento / 100);
 
     // 4. Validar que el crédito nuevo no exceda el cupo disponible del cliente
-    if (totalFinal > cupo.disponible) {
-      throw new BadRequestException(
-        `El cliente excede su límite de crédito. ` +
-        `Cupo disponible: ${cupo.disponible.toFixed(2)}, monto solicitado: ${totalFinal.toFixed(2)}`
-      );
+    //    (se vuelve a validar dentro de la transacción, con bloqueo)
+    if (totalFinal > cupo.disponible + 0.005) {
+      throw new BadRequestException(this.mensajeLimite(cupo, totalFinal));
     }
 
     // 5. Calcular fecha de vencimiento (plazo default 4 semanas, editable)
@@ -160,6 +154,13 @@ export class CreditosService {
     await queryRunner.startTransaction();
 
     try {
+      // Revalidar el cupo bloqueando los créditos activos del cliente: dos créditos
+      // registrados a la vez no pueden pasar juntos el límite
+      const cupoActual = (await calcularCupo(queryRunner, dto.cod_cli, true))!;
+      if (totalFinal > cupoActual.disponible + 0.005) {
+        throw new BadRequestException(this.mensajeLimite(cupoActual, totalFinal));
+      }
+
       // Insertar cabecera CREDITO — directo en estado 'A' (activo), sin pasos intermedios
       await queryRunner.query(`
         INSERT INTO CREDITO (
@@ -222,6 +223,8 @@ export class CreditosService {
         total: totalFinal,
         fecFin,
         items: dto.items.length,
+        // cupo después de este crédito (para la pantalla y la boleta)
+        cupo: { ...cupoActual, deuda: cupoActual.deuda + totalFinal, disponible: Math.max(0, cupoActual.disponible - totalFinal) },
         message: 'Crédito registrado correctamente',
       };
     } catch (err) {
@@ -314,24 +317,26 @@ export class CreditosService {
         cl.NOM_CLI      as nomCliente,
         cl.APE_CLI      as apeCliente,
         cl.RAZON_SOCIAL as razonSocial,
-        cl.CREDITO_MAXIMO as creditoMaximo,
+        ${SQL_LIMITE_EFECTIVO} as creditoMaximo,
         ISNULL(uso.usado, 0) as usado
       FROM CLIENTE cl
       INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      LEFT JOIN CLIENTE_EXTENSION ce ON ce.cod_cli = cl.cod_cli
       LEFT JOIN (
         SELECT COD_CLI, SUM(SALDO) as usado
         FROM CREDITO
         WHERE ESTADO = 'A'
         GROUP BY COD_CLI
       ) uso ON uso.COD_CLI = cl.cod_cli
-      WHERE cl.CREDITO_MAXIMO > 0
+      WHERE ${SQL_LIMITE_EFECTIVO} > 0
         AND s.COD_EMP = @0
       ORDER BY cl.NOM_CLI ASC
     `, [cod_emp]);
 
     return clientes.map((c: any) => ({
       ...c,
-      disponible: Number(c.creditoMaximo) - Number(c.usado),
+      // límite = creditoMaximo (efectivo), deuda = usado
+      disponible: Math.max(0, Number(c.creditoMaximo) - Number(c.usado)),
     }));
   }
 
@@ -362,7 +367,8 @@ export class CreditosService {
 
     const totalSeleccionable = items.reduce((sum: number, c: any) => sum + Number(c.saldo), 0);
 
-    return { creditos: items, totalSaldos: totalSeleccionable };
+    const cupo = await calcularCupo(this.dataSource, cod_cli);
+    return { creditos: items, totalSaldos: totalSeleccionable, cupo };
   }
 
   async registrarDevolucion(cod_cre: string, dto: CreateDevolucionCreditoDto, cod_usu: string, cod_emp: string) {
@@ -548,11 +554,14 @@ export class CreditosService {
         c.ESTADO       as estado,
         c.COD_SUC      as codSuc,
         c.COD_USU      as codUsu,
+        LTRIM(RTRIM(ISNULL(u.NOM_USU, '') + ' ' + ISNULL(u.AP_USU, ''))) as nomVendedor,
+        c.descuento    as descuento,
         c.OBS          as obs,
         DATEDIFF(DAY, GETDATE(), c.FEC_FIN) as diasRestantes
       FROM CREDITO c
       INNER JOIN CLIENTE cl ON cl.cod_cli = c.COD_CLI
       INNER JOIN SUCURSAL s ON s.COD_SUC = cl.COD_SUC
+      LEFT JOIN USUARIO u ON u.COD_USU = c.COD_USU
       WHERE c.COD_CRE = @0 AND s.COD_EMP = @1
     `, [cod_cre, cod_emp]);
 
@@ -586,6 +595,7 @@ export class CreditosService {
       ...credito[0],
       alerta: this.calcularAlerta(credito[0].diasRestantes),
       items,
+      cupo: await calcularCupo(this.dataSource, Number(credito[0].codCli)),
     };
   }
     async pagoMultiple(cod_cli: number, codCreList: string[], cod_emp: string) {
