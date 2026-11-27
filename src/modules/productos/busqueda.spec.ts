@@ -39,3 +39,22 @@ describe('RegistrarTipoCambioDto (BUG-F13.3)', () => {
     expect(errores('6.96')).toBe(0);
   });
 });
+
+import { calcularTipoTraspaso } from './productos.service';
+
+describe('calcularTipoTraspaso', () => {
+  it('de cualquier almacén a MOTOR ZONE es salida a venta (doble firma)', () => {
+    expect(calcularTipoTraspaso('00005', '00011')).toBe('SALIDA_VENTA');
+    expect(calcularTipoTraspaso('00007', '00011')).toBe('SALIDA_VENTA');
+  });
+  it('a MOTOR ZONE marcado como reposición es ingreso a tienda', () => {
+    expect(calcularTipoTraspaso('00007', '00011', true)).toBe('INGRESO_TIENDA');
+  });
+  it('de un almacén externo a otro de la tienda es ingreso a tienda', () => {
+    expect(calcularTipoTraspaso('00007', '00005')).toBe('INGRESO_TIENDA');
+  });
+  it('el resto es entre almacenes', () => {
+    expect(calcularTipoTraspaso('00005', '00006')).toBe('ENTRE_ALMACENES');
+    expect(calcularTipoTraspaso('00011', '00005')).toBe('ENTRE_ALMACENES');
+  });
+});

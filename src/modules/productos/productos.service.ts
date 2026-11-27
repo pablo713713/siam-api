@@ -44,15 +44,21 @@ const ROLES_PUEDEN_TRASPASAR = [ROL_ENCARGADO_ALMACEN, 'Administrador'];
 export type TipoTraspaso = 'INGRESO_TIENDA' | 'SALIDA_VENTA' | 'ENTRE_ALMACENES' | 'DEVOLUCION';
 
 /**
- * Tipo de traspaso según origen y destino (lo decide el sistema, no el usuario):
- *  - SALIDA_VENTA:    de un almacén de la tienda al principal, para vender. Firma el vendedor.
- *  - INGRESO_TIENDA:  de un almacén externo a uno de la tienda. Firma el encargado.
+ * Tipo de traspaso según origen y destino (lo decide el sistema):
+ *  - SALIDA_VENTA:    de cualquier almacén a MOTOR ZONE: el vendedor se lleva los
+ *                     productos a su puesto de venta. Doble firma: el encargado
+ *                     que entrega y el vendedor que se los lleva.
+ *  - INGRESO_TIENDA:  reposición de tienda sin vendedor (a MOTOR ZONE marcando
+ *                     `reposicion`, o de un almacén externo a otro de la tienda).
+ *                     Firma el encargado.
  *  - ENTRE_ALMACENES: cualquier otro caso. Firma el encargado.
  */
-export function calcularTipoTraspaso(origen: string, destino: string): TipoTraspaso {
+export function calcularTipoTraspaso(origen: string, destino: string, reposicion = false): TipoTraspaso {
   const origenEnTienda = ALMACENES_TIENDA.includes(origen);
   const destinoEnTienda = ALMACENES_TIENDA.includes(destino);
-  if (origenEnTienda && destino === COD_SUC_PRINCIPAL) return 'SALIDA_VENTA';
+  if (destino === COD_SUC_PRINCIPAL && origen !== COD_SUC_PRINCIPAL) {
+    return reposicion ? 'INGRESO_TIENDA' : 'SALIDA_VENTA';
+  }
   if (!origenEnTienda && destinoEnTienda) return 'INGRESO_TIENDA';
   return 'ENTRE_ALMACENES';
 }
@@ -173,8 +179,11 @@ export class ProductosService {
   }
 
   async searchAdvanced(searchDto: AdvancedSearchProductoDto, cod_emp: string) {
-    const { q, page = 1, limit = 20 } = searchDto;
+    const { q, page = 1, limit = 20, cod_suc } = searchDto;
     const skip = (page - 1) * limit;
+    // Stock en el almacén elegido (p. ej. el de origen de un traspaso)
+    const colStock = cod_suc ? ', ISNULL(spa.CANTIDAD, 0) as stockAlmacen' : '';
+    const joinStock = cod_suc ? 'LEFT JOIN SUC_PRO_PROV spa ON spa.ID_FAB = pp.ID_FAB AND spa.COD_SUC = @5' : '';
     const term = terminoFullText(q);
     const termLike = patronLike(q);
     const filtroDesc = term ? 'CONTAINS(p.DESC_PRO, @0) OR' : '';
@@ -203,10 +212,12 @@ export class ProductosService {
         pp.PLIS_BS    as plisBs,
         pp.PMIN_BS    as pminBs,
         pp.PMAY_BS    as pmayBs
+        ${colStock}
       FROM PRODUCTO p
       INNER JOIN PROV_PRO pp ON pp.ID_PRO = p.ID_PRO
       LEFT JOIN MODELO mo ON mo.COD_MODELO = p.COD_MOD
       LEFT JOIN PROVEEDOR pr ON pr.COD_PROV = pp.COD_PROV
+      ${joinStock}
       WHERE p.ESTADO = 'A'
       AND pp.BAJA = 'N'
       AND p.COD_EMP = @2
@@ -216,7 +227,7 @@ export class ProductosService {
       )
       ORDER BY p.DESC_PRO ASC, pp.ID_FAB ASC
       OFFSET @3 ROWS FETCH NEXT @4 ROWS ONLY
-    `, [term, termLike, cod_emp, skip, limit]);
+    `, [term, termLike, cod_emp, skip, limit, ...(cod_suc ? [cod_suc] : [])]);
 
     const countResult = await this.dataSource.query(`
       SELECT COUNT(*) as total
@@ -1127,16 +1138,25 @@ ${unionRegistro}
     }
 
     // 3. Tipo de traspaso y firma (siempre obligatoria)
-    const tipo = calcularTipoTraspaso(cod_suc_ori, cod_suc_des);
+    const tipo = calcularTipoTraspaso(cod_suc_ori, cod_suc_des, dto.reposicion === true);
     if (!dto.password_firma) {
       throw new BadRequestException('Debe firmar el traspaso ingresando la contraseña.');
     }
 
     let firmante: Firmante;
+    let encargadoFirma: Firmante | null = null;
     if (tipo === 'SALIDA_VENTA') {
-      // Salida a venta: firma el vendedor que se lleva el producto
+      // Salida a venta: doble firma.
+      // Paso 1: el encargado que entrega confirma con su contraseña.
+      if (!dto.password_encargado) {
+        throw new BadRequestException('Paso 1 de 2: el encargado debe firmar con su contraseña.');
+      }
+      encargadoFirma = await this.usuariosService.verificarFirma(
+        cod_usu_encargado, dto.password_encargado, cod_emp, null,
+      );
+      // Paso 2: el vendedor que se lleva los productos firma con la suya.
       if (!dto.cod_usu_vendedor) {
-        throw new BadRequestException('Seleccione el vendedor que se lleva los productos.');
+        throw new BadRequestException('Paso 2 de 2: seleccione el vendedor que se lleva los productos.');
       }
       if (dto.cod_usu_vendedor === cod_usu_encargado) {
         throw new BadRequestException('El vendedor que firma no puede ser el mismo encargado que registra.');
@@ -1225,6 +1245,9 @@ ${unionRegistro}
         autorizadoPor: cod_usu_encargado,
         firma: {
           idAutorizacion: autorizacion?.idTa ?? null,
+          encargado: encargadoFirma
+            ? { codUsu: encargadoFirma.cod_usu, alias: encargadoFirma.alias, nombre: encargadoFirma.nombreCompleto }
+            : null,
           firmante: { codUsu: firmante.cod_usu, alias: firmante.alias, nombre: firmante.nombreCompleto },
           fechaBolivia: autorizacion?.fecha ?? null,
           horaBolivia: autorizacion?.hora ?? null,
