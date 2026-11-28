@@ -214,15 +214,6 @@ export class CreditosService {
         `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
       }
 
-      // Igual que en la venta al contado: lo vendido se descuenta de las
-      // salidas a venta pendientes de este vendedor
-      await this.traspasoEstados.asignarVenta(queryRunner, {
-        cod_usu,
-        tipoDoc: 'CREDITO',
-        codDoc: cod_cre,
-        items: dto.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
-      });
-
       await this.auditoria.registrar({
         cod_usu, modulo: 'CREDITO', accion: 'CREAR', documento: cod_cre,
         descripcion: `Crédito ${cod_cre} al cliente ${dto.cod_cli} por Bs ${totalFinal.toFixed(2)}, vence en ${semanasPlazo} semana(s)`,
@@ -513,12 +504,6 @@ export class CreditosService {
           `, [l.cantidad, l.id_fab, COD_SUC_MOTORZONE]);
         }
         totalLleva = redondear(lleva.reduce((s, l) => s + l.cantidad * l.precio, 0));
-        await this.traspasoEstados.asignarVenta(queryRunner, {
-          cod_usu: firmante.cod_usu,
-          tipoDoc: 'CREDITO',
-          codDoc: cod_cre,
-          items: lleva.map((l) => ({ id_fab: l.id_fab, cantidad: l.cantidad })),
-        });
       }
 
       // Nuevo saldo: saldo − devuelto + lo que se lleva. Nunca negativo; si lo
