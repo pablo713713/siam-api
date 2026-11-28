@@ -1175,7 +1175,9 @@ ${unionRegistro}
     // COD_USU_REB = quien recibe / se lleva el producto (firmante)
     const cod_usu = cod_usu_encargado;
     const cod_usu_recibe = firmante.cod_usu;
-    const estadoFirma = tipo === 'SALIDA_VENTA' ? 'PENDIENTE' : 'COMPLETADO';
+    // Firmaron encargado y vendedor: la salida queda concluida (el almacén no
+    // sigue la venta). Solo cambia si después se registra una devolución.
+    const estadoFirma = 'COMPLETADO';
 
     if (!ALMACENES_AUTORIZADOS_MAC.includes(cod_suc_ori)) {
       throw new BadRequestException(
@@ -1403,56 +1405,6 @@ ${unionRegistro}
   }
 
   // ─────────────────────────────────────────
-  // Anulación de una venta o crédito: lo que había salido de una salida a
-  // venta vuelve a su almacén de origen. Se llama dentro de la transacción de
-  // la anulación, DESPUÉS de reponer el stock en MOTOR ZONE: aquí se mueve esa
-  // parte de MOTOR ZONE al almacén de origen, con su remisión legacy y un
-  // registro DEVOLUCION en el talonario digital.
-  // ─────────────────────────────────────────
-  async devolverPorAnulacion(
-    qr: QueryRunner,
-    anulacion: { tipoDoc: 'VENTA' | 'CREDITO'; codDoc: string; cod_usu: string; items: { id_fab: number; cantidad: number }[] },
-  ) {
-    const regresos = await this.traspasoEstados.revertirVenta(qr, anulacion);
-    const resultado: { idTa: number; almacen: string; codRemSalida: string; unidades: number }[] = [];
-
-    // Un movimiento por traspaso de origen
-    const porTraspaso = new Map<number, typeof regresos>();
-    for (const r of regresos) {
-      porTraspaso.set(r.idTa, [...(porTraspaso.get(r.idTa) ?? []), r]);
-    }
-    for (const [idTa, grupo] of porTraspaso) {
-      const { sucOri, sucDes } = grupo[0];
-      const obs = `Anulación de ${anulacion.tipoDoc === 'CREDITO' ? 'el crédito' : 'la venta'} ${anulacion.codDoc}`;
-      const { codRemS, codRemE } = await this.moverStock(qr, {
-        cod_suc_ori: sucDes,
-        cod_suc_des: sucOri,
-        items: grupo.map((g) => ({ id_fab: g.id_fab, cantidad: g.cantidad })),
-        cod_usu: anulacion.cod_usu,
-        cod_usu_recibe: anulacion.cod_usu,
-        obs,
-      });
-      await qr.query(
-        `
-        INSERT INTO SISTEMA_TRASPASO_AUTORIZACION (
-          COD_REM, COD_REM_E, TIPO, SUC_ORI, SUC_DES,
-          COD_USU_ENCARGADO, COD_USU_FIRMANTE, ESTADO, ID_TA_ORIGEN, COD_VENTA, OBS
-        )
-        VALUES (@0, @1, 'DEVOLUCION', @2, @3, @4, @4, 'COMPLETADO', @5, @6, @7)
-      `,
-        [codRemS, codRemE, sucDes, sucOri, anulacion.cod_usu, idTa, anulacion.codDoc.slice(0, 18), obs],
-      );
-      resultado.push({
-        idTa,
-        almacen: sucOri,
-        codRemSalida: codRemS,
-        unidades: grupo.reduce((s, g) => s + g.cantidad, 0),
-      });
-    }
-    return resultado;
-  }
-
-  // ─────────────────────────────────────────
   // Devolución al almacén de origen (lo que no se vendió de una salida a venta)
   // ─────────────────────────────────────────
   async registrarDevolucionTraspaso(
@@ -1481,10 +1433,10 @@ ${unionRegistro}
       throw new NotFoundException('Traspaso no encontrado.');
     }
     if (original.tipo !== 'SALIDA_VENTA') {
-      throw new BadRequestException('Solo se puede devolver una salida a venta.');
+      throw new BadRequestException('Solo se puede registrar la devolución de una salida.');
     }
-    if (original.estado !== 'PENDIENTE') {
-      throw new BadRequestException('Este traspaso ya no tiene productos pendientes de devolver.');
+    if (original.estado === 'DEVUELTO') {
+      throw new BadRequestException('Esta salida ya fue devuelta por completo.');
     }
 
     // Quien recibe la mercadería de vuelta: Administrador o encargado del almacén de origen
@@ -1523,10 +1475,11 @@ ${unionRegistro}
     await queryRunner.startTransaction();
 
     try {
-      // Pendiente por producto (bloqueado hasta terminar: no se cruza con una venta simultánea)
+      // Lo que aún se puede devolver por producto: lo que salió menos lo ya devuelto
+      // (bloqueado hasta terminar: dos devoluciones a la vez no se cruzan)
       const detalle: { idTad: number; idFab: number; pendiente: number }[] = await queryRunner.query(`
         SELECT ID_TAD as idTad, ID_FAB as idFab,
-               CANTIDAD - CANT_VENDIDA - CANT_DEVUELTA as pendiente
+               CANTIDAD - CANT_DEVUELTA as pendiente
         FROM SISTEMA_TRASPASO_DET WITH (UPDLOCK, ROWLOCK)
         WHERE ID_TA = @0
       `, [idTa]);
@@ -1536,7 +1489,7 @@ ${unionRegistro}
         ?? detalle.filter((d) => Number(d.pendiente) > 0)
                   .map((d) => ({ id_fab: Number(d.idFab), cantidad: Number(d.pendiente) }));
       if (pedidos.length === 0) {
-        throw new BadRequestException('Este traspaso no tiene productos pendientes de devolver.');
+        throw new BadRequestException('Esta salida ya no tiene productos por devolver.');
       }
 
       const aDevolver: { idTad: number; id_fab: number; cantidad: number }[] = [];
@@ -1550,7 +1503,7 @@ ${unionRegistro}
         }
         if (p.cantidad > Number(d.pendiente)) {
           throw new BadRequestException(
-            `Solo quedan ${d.pendiente} unidades pendientes del producto ${p.id_fab}; no se pueden devolver ${p.cantidad}.`,
+            `Del producto ${p.id_fab} solo quedan ${d.pendiente} unidades por devolver; no se pueden devolver ${p.cantidad}.`,
           );
         }
         aDevolver.push({ idTad: Number(d.idTad), id_fab: p.id_fab, cantidad: p.cantidad });
@@ -1663,9 +1616,16 @@ ${unionRegistro}
       if (filtros.cod_suc_ori && !codigos.includes(filtros.cod_suc_ori)) {
         throw new ForbiddenException('Solo puede ver los traspasos de sus almacenes asignados.');
       }
-      // Sus almacenes como origen, más las devoluciones que volvieron a ellos
-      const lista = codigos.map((c) => param(c)).join(', ');
-      where.push(`(ta.SUC_ORI IN (${lista}) OR (ta.TIPO = 'DEVOLUCION' AND ta.SUC_DES IN (${lista})))`);
+      // El encargado ve solo los movimientos que él registró, más las
+      // devoluciones de sus salidas (aunque las haya registrado otro encargado)
+      const yo = param(usuario.cod_usu);
+      where.push(`(
+        ta.COD_USU_ENCARGADO = ${yo}
+        OR (ta.TIPO = 'DEVOLUCION' AND EXISTS (
+          SELECT 1 FROM SISTEMA_TRASPASO_AUTORIZACION tao
+          WHERE tao.ID_TA = ta.ID_TA_ORIGEN AND tao.COD_USU_ENCARGADO = ${yo}
+        ))
+      )`);
     }
     if (filtros.cod_suc_ori) {
       where.push(`ta.SUC_ORI = ${param(filtros.cod_suc_ori)}`);
@@ -1750,25 +1710,15 @@ ${unionRegistro}
       ORDER BY ds.COD_REM, ds.NRO
     `, cods);
 
-    // Seguimiento de las salidas a venta: vendido / devuelto por producto y
-    // los documentos (ventas o créditos) en que salió
+    // Salidas: cuánto se devolvió de cada producto (el almacén no sigue ventas)
     const idsTa = traspasos.map((t) => Number(t.idAutorizacion));
     const marcas = idsTa.map((_, i) => `@${i}`).join(', ');
-    let seguimiento: { idTa: number; idFab: number; vendida: number; devuelta: number }[] = [];
-    let documentos: { idTa: number; tipoDoc: string; codDoc: string; cantidad: number }[] = [];
+    let seguimiento: { idTa: number; idFab: number; devuelta: number }[] = [];
     if (await this.traspasoEstados.tablasDisponibles()) {
       seguimiento = await this.dataSource.query(`
-        SELECT ID_TA as idTa, ID_FAB as idFab, CANT_VENDIDA as vendida, CANT_DEVUELTA as devuelta
+        SELECT ID_TA as idTa, ID_FAB as idFab, CANT_DEVUELTA as devuelta
         FROM SISTEMA_TRASPASO_DET
         WHERE ID_TA IN (${marcas})
-      `, idsTa);
-      documentos = await this.dataSource.query(`
-        SELECT d.ID_TA as idTa, v.TIPO_DOC as tipoDoc, v.COD_DOC as codDoc, SUM(v.CANTIDAD) as cantidad
-        FROM SISTEMA_TRASPASO_VENTA v
-        INNER JOIN SISTEMA_TRASPASO_DET d ON d.ID_TAD = v.ID_TAD
-        WHERE d.ID_TA IN (${marcas})
-        GROUP BY d.ID_TA, v.TIPO_DOC, v.COD_DOC
-        ORDER BY MIN(v.ID_TV)
       `, idsTa);
     }
     const codigosAsignados = asignados.map((a) => a.codSuc);
@@ -1781,7 +1731,6 @@ ${unionRegistro}
         .map((it) => {
           const cantidad = Number(it.cantidad);
           const seg = seguimiento.find((s) => Number(s.idTa) === idTa && Number(s.idFab) === Number(it.idFab));
-          const vendida = Number(seg?.vendida ?? 0);
           const devuelta = Number(seg?.devuelta ?? 0);
           return {
             idFab: it.idFab,
@@ -1789,23 +1738,20 @@ ${unionRegistro}
             descPro: it.descPro,
             cantidad,
             obs: it.obs || null,
-            // Solo en salidas a venta con detalle registrado; si no, null
-            vendida: conSeguimiento && seg ? vendida : null,
+            // Solo en salidas con detalle registrado; si no, null.
+            // porDevolver = lo que todavía se puede devolver
             devuelta: conSeguimiento && seg ? devuelta : null,
-            pendiente: conSeguimiento && seg ? cantidad - vendida - devuelta : null,
+            porDevolver: conSeguimiento && seg ? cantidad - devuelta : null,
           };
         });
-      const hayPendiente = items.some((it) => (it.pendiente ?? 0) > 0);
+      const quedaPorDevolver = items.some((it) => (it.porDevolver ?? 0) > 0);
       return {
         ...t,
         totalUnidades: items.reduce((s, it) => s + it.cantidad, 0),
         items,
-        documentos: documentos
-          .filter((d) => Number(d.idTa) === idTa)
-          .map((d) => ({ tipoDoc: d.tipoDoc, codDoc: d.codDoc, cantidad: Number(d.cantidad) })),
         // Puede registrar la devolución: Administrador o encargado del almacén de origen
         puedeDevolver:
-          conSeguimiento && t.estado === 'PENDIENTE' && hayPendiente &&
+          conSeguimiento && t.estado !== 'DEVUELTO' && quedaPorDevolver &&
           (esAdmin || codigosAsignados.includes(String(t.codSucOri))),
       };
     });

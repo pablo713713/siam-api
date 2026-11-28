@@ -24,6 +24,7 @@
      9. SISTEMA_DEVOLUCION_REGISTRO (devoluciones firmadas y cambios de producto)
     10. SISTEMA_AUDITORIA (auditoría general: ventas, créditos, pagos, devoluciones,
         tipo de cambio, roles, almacenes, clientes y usuarios)
+    11. Estados de las salidas: COMPLETADO / PARCIAL / DEVUELTO (sin seguimiento de venta)
    ============================================================================= */
 
 /* =============================================================================
@@ -83,7 +84,7 @@ BEGIN
         FECHA              AS CAST(FECHA_HORA AS DATE)    PERSISTED,
         HORA               AS CAST(FECHA_HORA AS TIME(0)) PERSISTED,
 
-        -- SALIDA_VENTA: PENDIENTE -> VENDIDO | DEVUELTO
+        -- SALIDA_VENTA: COMPLETADO -> PARCIAL | DEVUELTO (bloque 11)
         -- Otros tipos:  COMPLETADO
         ESTADO             VARCHAR(10)  NOT NULL,
         ID_TA_ORIGEN       INT          NULL,       -- en una devolución: el traspaso que se devuelve
@@ -382,5 +383,56 @@ BEGIN
     CREATE INDEX IX_SAU_EMP_FECHA ON dbo.SISTEMA_AUDITORIA (COD_EMP, FECHA);
     CREATE INDEX IX_SAU_MODULO    ON dbo.SISTEMA_AUDITORIA (MODULO, ACCION);
     CREATE INDEX IX_SAU_DOCUMENTO ON dbo.SISTEMA_AUDITORIA (DOCUMENTO);
+END
+GO
+
+/* =============================================================================
+   11. Estados de las salidas (traspasos SALIDA_VENTA, hacia MOTOR ZONE)
+   El almacén no sabe si un producto se vendió: la salida no se enlaza con
+   ventas. Firman encargado y vendedor y la salida queda COMPLETADO; si luego
+   el vendedor devuelve, queda PARCIAL (devolvió una parte) o DEVUELTO (todo).
+     - Pasa las salidas existentes (PENDIENTE / VENDIDO) al estado nuevo según
+       lo que ya se devolvió.
+     - Reemplaza CK_STA_ESTADO para aceptar solo COMPLETADO, PARCIAL y DEVUELTO.
+   Las columnas CANT_VENDIDA y SISTEMA_TRASPASO_VENTA quedan sin uso (no se
+   borran: conservan la historia).
+   ============================================================================= */
+
+IF EXISTS (SELECT 1 FROM sys.check_constraints
+           WHERE name = 'CK_STA_ESTADO' AND definition NOT LIKE '%PARCIAL%')
+BEGIN
+    ALTER TABLE dbo.SISTEMA_TRASPASO_AUTORIZACION DROP CONSTRAINT CK_STA_ESTADO;
+END
+GO
+
+IF OBJECT_ID('dbo.SISTEMA_TRASPASO_DET', 'U') IS NOT NULL
+BEGIN
+    UPDATE ta
+    SET ESTADO = CASE
+            WHEN ISNULL(d.devuelta, 0) <= 0          THEN 'COMPLETADO'
+            WHEN ISNULL(d.devuelta, 0) >= d.total    THEN 'DEVUELTO'
+            ELSE 'PARCIAL'
+        END
+    FROM dbo.SISTEMA_TRASPASO_AUTORIZACION ta
+    LEFT JOIN (
+        SELECT ID_TA, SUM(CANTIDAD) as total, SUM(CANT_DEVUELTA) as devuelta
+        FROM dbo.SISTEMA_TRASPASO_DET
+        GROUP BY ID_TA
+    ) d ON d.ID_TA = ta.ID_TA
+    WHERE ta.TIPO = 'SALIDA_VENTA'
+      AND ta.ESTADO IN ('PENDIENTE', 'VENDIDO', 'DEVUELTO');
+END
+GO
+
+-- Cualquier otro estado viejo que quede (no debería) pasa a COMPLETADO
+UPDATE dbo.SISTEMA_TRASPASO_AUTORIZACION
+SET ESTADO = 'COMPLETADO'
+WHERE ESTADO NOT IN ('COMPLETADO', 'PARCIAL', 'DEVUELTO');
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_STA_ESTADO')
+BEGIN
+    ALTER TABLE dbo.SISTEMA_TRASPASO_AUTORIZACION ADD CONSTRAINT CK_STA_ESTADO
+        CHECK (ESTADO IN ('COMPLETADO', 'PARCIAL', 'DEVUELTO'));
 END
 GO

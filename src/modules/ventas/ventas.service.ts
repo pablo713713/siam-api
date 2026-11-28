@@ -185,15 +185,6 @@ export class VentasService {
       `, [item.cantidad, item.id_fab, COD_SUC_MOTORZONE]);
     }
 
-    // Lo vendido se descuenta de las salidas a venta pendientes de este vendedor
-    // (pasan a VENDIDO cuando ya no queda nada por vender ni devolver)
-    await this.traspasoEstados.asignarVenta(queryRunner, {
-      cod_usu: v.cod_usu,
-      tipoDoc: 'VENTA',
-      codDoc: cod_venta,
-      items: v.items.map((i) => ({ id_fab: i.id_fab, cantidad: i.cantidad })),
-    });
-
     return { cod_venta, total: totalFinal };
   }
 
@@ -537,13 +528,9 @@ export class VentasService {
         }
       }
 
-      // 3. Lo que salió de una salida a venta pasa de MOTOR ZONE a su almacén de origen
-      const regresos = await this.productosService.devolverPorAnulacion(queryRunner, {
-        tipoDoc: 'VENTA',
-        codDoc: cod_venta,
-        cod_usu,
-        items: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
-      });
+      // Las ventas no se enlazan con las salidas de almacén: lo anulado queda
+      // en MOTOR ZONE. Si el vendedor lo regresa al almacén, el encargado
+      // registra la devolución de esa salida (con doble firma).
 
       await this.auditoria.registrar({
         cod_usu, modulo: 'VENTA', accion: 'ANULAR', documento: cod_venta,
@@ -551,19 +538,16 @@ export class VentasService {
         antes: { estado: venta.estado, total: Number(venta.total) },
         despues: {
           estado: 'A',
-          repuesto: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
-          devueltoAOrigen: regresos,
+          repuestoEnMotorZone: items.map((it) => ({ id_fab: it.id_fab, cantidad: it.cantidad })),
         },
       }, queryRunner);
 
       await queryRunner.commitTransaction();
 
-      const devueltoAOrigen = regresos.reduce((s, r) => s + r.unidades, 0);
       const total = items.reduce((s, it) => s + it.cantidad, 0);
       return {
         message: `Venta ${cod_venta} anulada correctamente`,
-        unidadesMotorZone: total - devueltoAOrigen,
-        devueltoAOrigen: regresos,
+        unidadesMotorZone: total,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();
